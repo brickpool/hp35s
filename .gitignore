@@ -1,0 +1,10 @@
+# Ignore wiki directory
+/wiki/
+
+# Ignore extras directory
+/extras/CBT
+/extras/docs
+/extras/Emulator
+
+# Ignore Komodo directory
+/Komodo/
