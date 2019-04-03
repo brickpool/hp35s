@@ -1,7 +1,7 @@
 ; Serial and parallel circuts
 A001  LBL A
 A002  CLZ
-A003  SF 0
+A003  SF 10
 A004  ->(I)
 A005  CF 10
 A006  x=0?
