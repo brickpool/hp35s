@@ -1,20 +1,25 @@
 ;-- Current density J --
-;CK=E21F
-;LN=30
+;CK=A84A
+;LN=24
 ;
-J001  LBL J     ; rsh LBL J
+; start
+J001  LBL J     ; &rsh; LBL J
+; init
 J002  RPN       ; MODE 5RPN
-J003  INPUT I   ; lsh INPUT I
-J004  INPUT A   ; lsh INPUT A
-J005  /         ; /             ; x=I/A
-J006  STO J     ; rsh STO J
-J007  ENG 3     ; lsh <- 3ENG 3
-J008  VIEW J    ; lsh VIEW J
-J009  FIX 4     ; lsh <- 1FIX 4
-J010  RTN       ; lsh RTN esc
+; input I and A
+J003  INPUT I   ; &lsh; INPUT I
+J004  INPUT A   ; &lsh; INPUT A
+; J=I/A
+J005  /         ; &divide;
+J006  STO J     ; &rsh; STO J
+; view J
+J007  VIEW J    ; &lsh; VIEW J
+J008  RTN       ; &lsh; RTN &Cscr;
+; end
 ;
 ;-- Example --
-; I = 4 A, A = 2 mm^2, J = ? A/mm^2
+; J = ? A/mm^2
+; I = 4 A, A = 2 mm^2
 ;-- Load Prg J --
 ; XEQ J ENTER
 ;-- Start Solving --
@@ -23,46 +28,47 @@ J010  RTN       ; lsh RTN esc
 ; A?
 ;  2 R/S
 ; J=
-;  2.000E0
+;  2
 ;-- End J --
 
 ;-- Ohm's Law R --
-;CK=BF75
-;LN=90
+;CK=E031
+;LN=69
 ;
-R001  LBL A     ; rsh LBL A
+; start
+R001  LBL R     ; &rsh; LBL R
+; init
 R002  RPN       ; MODE 5RPN
-R003  INPUT R   ; lsh INPUT R
-R004  x=0?      ; rsh x?0 6=
-R005  GTO R015  ; GTO RCL R 015 ; IF R=0 THEN GOTO label
-R006  INPUT U   ; lsh INPUT U
-R007  x=0?      ; rsh x?0 6=
-R008  GTO R023  ; GTO RCL R 023 ; IF U=0 THEN GOTO label
-R009  x<>y      ; x<>y          ; y=R, x=U -> y=U, x=R
-R010  /         ; /             ; x=U/R
-R011  STO I     ; rsh STO I
-R012  ENG 3     ; lsh <- 3ENG 3
-R013  VIEW I    ; lsh VIEW I
-R014  GOTO R029 ; GTO RCL R 029
-R015  Rv        ; R&darr        ; x=0 -> t=x
-R016  INPUT U   ; lsh INPUT U
-R017  INPUT I   ; lsh INPUT I
-R018  /         ; /             ; x=U/I
-R019  STO R     ; rsh STO R
-R020  ENG 3     ; lsh <- 3ENG 3
-R021  VIEW R    ; lsh VIEW R
-R022  GOTO R029 ; GTO RCL R 029
-R023  Rv        ; R&darr        ; y=R, x=0 -> t=0, x=R
-R024  INPUT I   ; lsh INPUT I
-R025  *         ; *             ; x=R*I
-R026  STO U     ; rsh STO U
-R027  ENG 3     ; lsh <- 3ENG 3
-R028  VIEW U    ; lsh VIEW U
-R029  FIX 4     ; lsh <- 1FIX 4
-R030  RTN       ; lsh RTN esc
+; input R, U and I
+R003  INPUT R   ; &lsh; INPUT R
+R004  x=0?      ; &rsh; x?0 6=
+R005  GTO R013  ; GTO RCL R 013 ; IF R=0 THEN GOTO label R=U/I
+R006  INPUT U   ; &lsh; INPUT U
+R007  x=0?      ; &rsh; x?0 6=
+R008  GTO R019  ; GTO RCL R 019 ; IF U=0 THEN GOTO label U=R*I
+; I=U/R
+R009  RCL/ R    ; RCL &divide; R
+R010  STO I     ; &rsh; STO I
+R011  VIEW I    ; &lsh; VIEW I
+R012  RTN       ; &lsh; RTN
+; R=U/I
+R013  INPUT U   ; &lsh; INPUT U
+R014  INPUT I   ; &lsh; INPUT I
+R015  /         ; &divide;
+R016  STO R     ; &rsh; STO R
+R017  VIEW R    ; &lsh; VIEW R
+R018  RTN       ; &lsh; RTN
+; U=R*I
+R019  INPUT I   ; &lsh; INPUT I
+R020  RCL* R    ; RCL &times; R
+R021  STO U     ; &rsh; STO U
+R022  VIEW U    ; &lsh; VIEW U
+R023  RTN       ; &lsh; RTN &Cscr;
+; end
 ;
 ;-- Example --
-; R = 2200 Ohm, U = 10 V, I = ? mA
+; I = ? mA
+; R = 2200 Ohm, U = 10 V
 ;-- Load Prg R --
 ; XEQ R ENTER
 ;-- Start Solving --
