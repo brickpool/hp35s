@@ -1,77 +1,77 @@
 ;-- Electric power P --
-;CK=A035
-;LN=249
-
+; CK=1AAF
+; LN=249
+;
 ; init
 P001  LBL P         ; &rsh; LBL P
 P002  RPN           ; MODE 5RPN
-
 ; menu
 P003  SF 10         ; &lsh; &uarr; 1 . 0
-P004  1P 2U 3I 4R   ; EQN 1 RCL P &rsh; 0 2 RCL U &rsh; 0 3 RCL I &rsh; 0 4 RCL R ENTER
+P004  1P 2V 3I 4R   ; EQN 1 RCL P &rsh; 0 2 RCL V &rsh; 0 3 RCL I &rsh; 0 4 RCL R ENTER
 P005  CF 10         ; &lsh; &uarr; 2 . 0
 P006  1             ; 1 ENTER
-P007  x=y?          ; &rsh; x?y 6=
-P008  GTO P023      ; GTO RCL P 023 ; IF x=1 THEN GOTO label P=
+P007  x=y?          ; &lsh; x?y 6
+P008  GTO P023      ; GTO RCL P 023 ; IF y=1 THEN GOTO 'P='
 P009  Rv            ; R&darr;
 P010  2             ; 2 ENTER
-P011  x=y?          ; &rsh; x?y 6=
-P012  GTO P045      ; GTO RCL P 045 ; IF x=2 THEN GOTO label U=
+P011  x=y?          ; &lsh; x?y 6
+P012  GTO P045      ; GTO RCL P 045 ; IF y=2 THEN GOTO 'V='
 P013  Rv            ; R&darr;
 P014  3             ; 3 ENTER
-P015  x=y?          ; &rsh; x?y 6=
-P016  GTO P052      ; GTO RCL P 052 ; IF x=3 THEN GOTO label I=
+P015  x=y?          ; &lsh; x?y 6
+P016  GTO P052      ; GTO RCL P 052 ; IF y=3 THEN GOTO 'I='
 P017  Rv            ; R&darr;
 P018  4             ; 3 ENTER
-P019  x=y?          ; &rsh; x?y 6=
-P020  GTO P061      ; GTO RCL P 061 ; IF x=4 THEN GOTO label R=
+P019  x=y?          ; &lsh; x?y 6
+P020  GTO P061      ; GTO RCL P 061 ; IF y=4 THEN GOTO 'R='
 P021  Rv            ; R&darr;
 P022  STOP          ; R/S
 ;
 ; P=
-P023  INPUT U       ; &lsh; INPUT U
-P024  x=0?          ; &rsh; x?0 6=
-P025  GTO P031      ; GTO RCL P 031 ; IF U=0 THEN GOTO label P=I^2*R
+P023  INPUT V       ; &lsh; INPUT V
+P024  x=0?          ; &rsh; x?0 6
+P025  GTO P031      ; GTO RCL P 031 ; IF V=0 THEN GOTO 'P=I^2*R'
 P026  INPUT I       ; &lsh; INPUT I
-P027  x=0?          ; &rsh; x?0 6=
-P028  GTO P036      ; GTO RCL P 035 ; IF I=0 THEN GOTO label P=U^2/R
-; P=U*I
+P027  x=0?          ; &rsh; x?0 6
+P028  GTO P036      ; GTO RCL P 035 ; IF I=0 THEN GOTO 'P=V^2/R'
+; P=V*I
 P029  *             ; &times;
-P030  GTO P042      ; GTO RCL P 042 ; GOTO view P
+P030  GTO P042      ; GTO RCL P 042 ; GOTO 'view P'
 ; P=I^2*R
 P031  INPUT I       ; &lsh; INPUT R
 P032  x^2           ; &rsh; x&sup2;
 P033  INPUT R       ; &lsh; INPUT R
 P034  *             ; &times;
-P035  GTO P042      ; GTO RCL P 042 ; GOTO view P
-; P=U^2/R
+P035  GTO P042      ; GTO RCL P 042 ; GOTO 'view P'
+; P=V^2/R
 P036  INPUT R       ; &lsh; INPUT R
-P037  x<=0?         ; &rsh; x?0 2=
-P038  GTO P036      ; GTO RCL P 036 ; IF R<=0 THEN GOTO INPUT R
+P037  x<=0?         ; &rsh; x?0 2
+P038  GTO P036      ; GTO RCL P 036 ; IF R<=0 THEN GOTO 'P=V^2/R'
 P039  1/X           ; 1/x
-P040  RCL* U        ; RCL &times; U
-P041  RCL* U        ; RCL &times; U
+P040  RCL* V        ; RCL &times; V
+P041  RCL* V        ; RCL &times; V
 ; view P
 P042  STO P         ; &rsh; STO P
 P043  VIEW P        ; &lsh; VIEW P
 P044  RTN           ; &lsh; RTN
-
-; U=
+;
+; V=
 P045  INPUT P       ; &lsh; INPUT P
 P046  INPUT R       ; &lsh; INPUT R
-; U=SQRT(P*R)
+; V=SQRT(P*R)
 P047  *             ; &times;
 P048  SQRT          ; &radic;x
-; view U
-P049  STO U         ; &rsh; STO U
-P050  VIEW U        ; &lsh; VIEW U
+; view V
+P049  STO V         ; &rsh; STO V
+P050  VIEW V        ; &lsh; VIEW V
 P051  RTN           ; &lsh; RTN
-
+;
 ; I=
 P052  INPUT P       ; &lsh; INPUT P
+; input R
 P053  INPUT R       ; &lsh; INPUT R
-P054  x<=0?         ; &rsh; x?0 2=
-P055  GTO P053      ; GTO RCL P 053 ; IF R<=0 THEN GOTO INPUT R
+P054  x<=0?         ; &rsh; x?0 2
+P055  GTO P053      ; GTO RCL P 053 ; IF R<=0 THEN GOTO 'input R'
 ; I=SQRT(P/R)
 P056  /             ; &divide;
 P057  SQRT          ; &radic;x
@@ -79,22 +79,22 @@ P057  SQRT          ; &radic;x
 P058  STO  I        ; &rsh; STO I
 P059  VIEW I        ; &lsh; VIEW I
 P060  RTN           ; &lsh; RTN
-
+;
 ; R=
 P061  INPUT P       ; &lsh; INPUT P
-P062  x<=0?         ; &rsh; x?0 2=
-P063  GTO P061      ; GTO RCL P 061 ; IF P<=0 THEN GOTO INPUT P
-P064  INPUT U       ; &lsh; INPUT U
-P065  x=0?          ; &rsh; x?0 6=
-P066  GTO P070      ; GTO RCL P 070 ; IF U=0 THEN GOTO label R=P/I^2
-; R=U^2/P
+P062  x<=0?         ; &rsh; x?0 2
+P063  GTO P061      ; GTO RCL P 061 ; IF P<=0 THEN GOTO 'R='
+P064  INPUT V       ; &lsh; INPUT V
+P065  x=0?          ; &rsh; x?0 6
+P066  GTO P070      ; GTO RCL P 070 ; IF V=0 THEN GOTO 'R=P/I^2'
+; R=V^2/P
 P067  x^2           ; &rsh; x&sup2;
 P068  RCL/ P        ; RCL &divide; P
-P069  GTO P076      ; GTO RCL P 076 ; GOTO view R
+P069  GTO P076      ; GTO RCL P 076 ; GOTO 'view R'
 ; R=P/I^2
 P070  INPUT I       ; &lsh; INPUT I
 P071  x<=0?         ; &rsh; x?0 2=
-P072  GTO P070      ; GTO RCL P 070 ; IF I<=0 THEN GOTO INPUT I
+P072  GTO P070      ; GTO RCL P 070 ; IF I<=0 THEN GOTO 'R=P/I^2'
 P073  x^2           ; &rsh; x&sup2;
 P074  1/X           ; 1/x
 P075  RCL* P        ; RCL &times; P
@@ -109,11 +109,11 @@ P078  RTN           ; &lsh; RTN &Cscr;
 ; P = 0.5 W, I = 20 mA
 ;-- Load Prg P --
 ; XEQ P ENTER
-; 1P 2U 3I 4R
+; 1P 2V 3I 4R
 ;  4 R/S
 ; P?
 ;  0.5 R/S
-; U?
+; V?
 ;  0 R/S
 ; I?
 ;  0.02 R/S

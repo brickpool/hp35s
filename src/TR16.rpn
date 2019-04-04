@@ -1,6 +1,6 @@
 ;-- Current density J --
-;CK=A84A
-;LN=24
+; CK=A84A
+; LN=24
 ;
 ; start
 J001  LBL J     ; &rsh; LBL J
@@ -32,49 +32,49 @@ J008  RTN       ; &lsh; RTN &Cscr;
 ;-- End J --
 
 ;-- Ohm's Law R --
-;CK=E031
-;LN=69
+; CK=9CCF
+; LN=69
 ;
 ; start
 R001  LBL R     ; &rsh; LBL R
 ; init
 R002  RPN       ; MODE 5RPN
-; input R, U and I
+; input R, V and I
 R003  INPUT R   ; &lsh; INPUT R
 R004  x=0?      ; &rsh; x?0 6=
-R005  GTO R013  ; GTO RCL R 013 ; IF R=0 THEN GOTO label R=U/I
-R006  INPUT U   ; &lsh; INPUT U
+R005  GTO R013  ; GTO RCL R 013 ; IF R=0 THEN GOTO 'R=V/I'
+R006  INPUT V   ; &lsh; INPUT V
 R007  x=0?      ; &rsh; x?0 6=
-R008  GTO R019  ; GTO RCL R 019 ; IF U=0 THEN GOTO label U=R*I
-; I=U/R
+R008  GTO R019  ; GTO RCL R 019 ; IF V=0 THEN GOTO 'V=R*I'
+; I=V/R
 R009  RCL/ R    ; RCL &divide; R
 R010  STO I     ; &rsh; STO I
 R011  VIEW I    ; &lsh; VIEW I
 R012  RTN       ; &lsh; RTN
-; R=U/I
-R013  INPUT U   ; &lsh; INPUT U
+; R=V/I
+R013  INPUT V   ; &lsh; INPUT V
 R014  INPUT I   ; &lsh; INPUT I
 R015  /         ; &divide;
 R016  STO R     ; &rsh; STO R
 R017  VIEW R    ; &lsh; VIEW R
 R018  RTN       ; &lsh; RTN
-; U=R*I
+; V=R*I
 R019  INPUT I   ; &lsh; INPUT I
 R020  RCL* R    ; RCL &times; R
-R021  STO U     ; &rsh; STO U
-R022  VIEW U    ; &lsh; VIEW U
+R021  STO V     ; &rsh; STO V
+R022  VIEW V    ; &lsh; VIEW V
 R023  RTN       ; &lsh; RTN &Cscr;
 ; end
 ;
 ;-- Example --
 ; I = ? mA
-; R = 2200 Ohm, U = 10 V
+; R = 2200 Ohm, V = 10 V
 ;-- Load Prg R --
 ; XEQ R ENTER
 ;-- Start Solving --
 ; R?
 ;  2200 R/S
-; U?
+; V?
 ;  10 R/S
 ; I=
 ;  4.545E-3

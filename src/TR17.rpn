@@ -1,25 +1,97 @@
-; Serial and parallel circuts
-A001  LBL A
-A002  CLZ
-A003  SF 10
-A004  ->(I)
-A005  CF 10
-A006  x=0?
-A007  GTO A016
-A008  ENTER
-A009  1/x
-A010  Z+
-A011  STO I
-A012  Rv
-A013  STO(I)
-A014  VIEW(I)
-A015  GTO A003
-A016  Zx
-A017  x<>0?
-A018  1/x
-A019  Zy
-A020  FS? 0
-A021  x<>y
-A022  STO V
-A023  VIEW V
-A024  RTN
+;-- Series and parallel circuits --
+; CK=15F4
+; LN=287
+;
+; start
+C001  LBL C         ; &rsh; LBL R
+; init
+C002  RPN           ; MODE 5RPN
+C003  CF 0          ; &lsh; &uarr; 2 0
+C004  CLZ           ; &rsh; CLEAR 4
+; menu
+C005  SF 10         ; &lsh; &uarr; 1 . 0
+C006  1PAR 2SER     ; EQN 1 RCL P RCL A RCL R &rsh; 0 2 RCL S RCL E RCL R ENTER
+C007  CF 10         ; &lsh; &uarr; 2 . 0
+C008  1             ; 1 ENTER
+C009  x=y?          ; &lsh; x?y 6
+C010  GTO C017      ; GTO RCL C 017         ; IF x=1 THEN GOTO 'parallel'
+C011  Rv            ; R&darr;
+C012  2             ; 2 ENTER
+C013  x=y?          ; &lsh; x?y 6
+C014  GTO C038      ; GTO RCL C 038         ; IF x=2 THEN GOTO 'series'
+C015  Rv            ; R&darr;
+C016  STOP          ; R/S
+;
+; parallel
+C017  SF 10         ; &lsh; &uarr; 1 . 0
+                    ; EQN 1 RCL R &rsh; 0 2 RCL C &rsh; 0 3 RCL L &rsh; 0
+                    ; 4 RCL P &rsh; 0 5 RCL I &rsh; 0 6 RCL G &rsh; 0 7 RCL Z ENTER
+C018  1R 2C 3L 4P 5I 6G 7Z
+C019  CF 10         ; &lsh; &uarr; 2 . 0
+C020  x<=0?         ; &rsh; x?0 2
+C021  GTO C017      ; GTO RCL C 017         ; IF x<=0 THEN GOTO 'parallel'
+C022  7             ; 7 ENTER
+C023  x<y?          ; &lsh; x<0 3
+C024  GTO C017      ; GTO RCL C 017         ; IF y>7 THEN GOTO 'parallel'
+C025  Rv            ; R&darr;
+C026  1             ; 1 ENTER
+C027  x=y?          ; &lsh; x?y 6
+C028  SF 0          ; &lsh; &uarr; 1 0      ; IF y=1 THEN SF(0)
+C029  Rv            ; R&darr;
+C030  3             ; 3 ENTER
+C031  x=y?          ; &lsh; x?y 6
+C032  SF 0          ; &lsh; &uarr; 1 0      ; IF y=3 THEN SF(0)
+C033  Rv            ; R&darr;
+C034  7             ; 7 ENTER
+C035  x=y?          ; &lsh; x?y 6
+C036  SF 0          ; &lsh; &uarr; 1 0      ; IF y=7 THEN SF(0)
+C037  GTO C054      ; GTO RCL C 054         ; GOTO 'input'
+;
+; series
+C038  SF 10         ; &lsh; &uarr; 1 . 0
+                    ; EQN 1 RCL R &rsh; 0 2 RCL C &rsh; 0 3 RCL L &rsh; 0
+                    ; 4 RCL P &rsh; 0 5 RCL V &rsh; 0 5 RCL G ENTER
+C039  1R 2C 3L 4P 5V 6G
+C040  CF 10         ; &lsh; &uarr; 2 . 0
+C041  x<=0?         ; &rsh; x?0 2
+C042  GTO C038      ; GTO RCL C 038         ; IF x<=0 THEN GOTO 'series'
+C043  6             ; 6 ENTER
+C044  x<y?          ; &lsh; x?y 3
+C045  GTO C038      ; GTO RCL C 038         ; IF y>6 THEN GOTO 'series'
+C046  Rv            ; R&darr;
+C047  2             ; 2 ENTER
+C048  x=y?          ; &lsh; x?y 6
+C049  SF 0          ; &lsh; &uarr; 1 0      ; IF y=2 THEN SF(0)
+C050  Rv            ; R&darr;
+C051  6             ; 6 ENTER
+C052  x=y?          ; &lsh; x?y 6
+C053  SF 0          ; &lsh; &uarr; 1 0      ; IF y=6 THEN SF(0)
+;
+; input
+C054  SF 10         ; &lsh; &uarr; 1 . 0
+C055  ->(I)         ; EQN &lsh; 6 RCL I &larr; <= <= ENTER
+C056  CF 10         ; &lsh; &uarr; 2 . 0
+C057  x=0?          ; &rsh; x?0 6
+C058  GTO C067      ; GTO RCL C 067         ; IF x=0 THEN GOTO 'done'
+C059  ENTER         ; ENTER
+C060  1/x           ; 1/X
+C061  Z+            ; &Sigma;+
+C062  STO I         ; &rsh; STO I
+C063  Rv            ; R&darr;
+C064  STO(I)        ; &rsh; STO 0
+C065  VIEW(I)       ; &lsh; VIEW 0
+C066  GTO C054      ; GTO RCL C 054         ; GOTO 'input'
+;
+; done
+C067  Zx            ; &rsh; SUM 2
+C068  x<>0?         ; &rsh; x?0 1
+C069  1/x           ; 1/X                   ; IF x<>0 THEN x=1/x
+C070  Zy            ; &rsh; SUM 3
+C071  FS? 0         ; &lsh; &uarr; 3 0
+C072  x<>y          ; x<>y                  ; IF SF=0 THEN SWAP(x,y)
+C073  CF 0          ; &lsh; &uarr; 2 0
+; view
+C074  STO V         ; &rsh; STO V
+C075  VIEW V        ; &lsh; VIEW V
+C076  RTN           ; &lsh; RTN &Cscr;
+; end
