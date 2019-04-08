@@ -3,7 +3,7 @@
 ; LN=287
 ;
 ; start
-C001  LBL C         ; &rsh; LBL R
+C001  LBL C         ; &rsh; LBL C
 ; init
 C002  RPN           ; MODE 5RPN
 C003  CF 0          ; &lsh; &uarr; 2 0

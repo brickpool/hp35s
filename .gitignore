@@ -1,3 +1,9 @@
+# Ignore Backup directory
+_gsdata_/
+
+# Ignore Komodo directory
+/Komodo/
+
 # Ignore wiki directory
 /wiki/
 
@@ -5,6 +11,3 @@
 /extras/CBT
 /extras/docs
 /extras/Emulator
-
-# Ignore Komodo directory
-/Komodo/
