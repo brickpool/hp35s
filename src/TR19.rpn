@@ -1,0 +1,153 @@
+;-- Wye-Delta or Star-delta Transformation  --
+; CK=9506
+; LN=289
+;
+; http://www.electronics-tutorials.ws/dccircuits/dcp_10.html
+; T-Network       Star-Network
+; 1-[P]-.-[Q]-2         1
+;       |               |
+;      [R]             [P]
+;       |               |
+;  -----+-----         / \
+;       3         3 [R]  [Q] 2
+;
+; Pi-Network      Delta-Network
+; 1--.-[A]-.--2        1
+;    |     |          / \
+;   [B]   [C]        B   A
+;    |     |        /     \
+;  --'--.--'--   3 '---C---' 2
+;       3
+;
+; start
+Y001  LBL Y         ; &rsh; LBL Y
+; init
+Y002  RPN           ; MODE 5RPN
+; menu
+Y003  SF 10         ; &lsh; &uarr; 1 . 0
+                    ; EQN
+                    ; 1 RCL T &lsh; 6 &rarr; <= <= <= <= &lsh; &pi; &rsh; 0
+                    ; 2 &lsh; &pi; &lsh; 6 &rarr; <= <= <= <= RCL T &rsh; 0
+                    ; 3 RCL S &lsh; 6 &rarr; <= <= <= <= RCL D &rsh; 0
+                    ; 4 RCL D &lsh; 6 &rarr; <= <= <= <= RCL S ENTER
+Y004  1T->pi 2pi->T 3S->D 4D->S
+Y005  CF 10         ; &lsh; &uarr; 2 . 0
+Y006  1             ; 1 ENTER
+Y007  x=y?          ; &lsh; x?y 6
+Y008  GTO Y023      ; GTO RCL Y 023         ; IF x=1 THEN GOTO 'S->D'
+Y009  Rv            ; R&darr;
+Y010  2             ; 2 ENTER
+Y011  x=y?          ; &lsh; x?y 6
+Y012  GTO Y058      ; GTO RCL Y 058         ; IF x=2 THEN GOTO 'D->S'
+Y013  Rv            ; R&darr;
+Y014  3             ; 2 ENTER
+Y015  x=y?          ; &lsh; x?y 6
+Y016  GTO Y023      ; GTO RCL Y 023         ; IF x=3 THEN GOTO 'S->D'
+Y017  Rv            ; R&darr;
+Y018  4             ; 2 ENTER
+Y019  x=y?          ; &lsh; x?y 6
+Y020  GTO Y058      ; GTO RCL Y 058         ; IF x=4 THEN GOTO 'D->S'
+Y021  Rv            ; R&darr;
+Y022  STOP          ; R/S
+;
+; S->D
+Y023  INPUT P       ; &lsh; INPUT P
+Y024  INPUT Q       ; &lsh; INPUT Q
+Y025  INPUT R       ; &lsh; INPUT R
+Y026  *             ; &times;
+Y027  *             ; &times;
+Y028  x=0?          ; &rsh; x?0 6
+Y029  GTO Y023      ; GTO RCL Y 023         ; IF x=0 THEN GOTO 'S->D'
+; x=P*Q+Q*R+R*P
+Y030  RCL P         ; RCL P
+Y031  RCL Q         ; RCL Q
+Y032  *             ; &times; 
+Y033  RCL Q         ; RCL Q
+Y034  RCL R         ; RCL R
+Y035  *             ; &times;
+Y036  RCL R         ; RCL R
+Y037  RCL P         ; RCL P
+Y038  *             ; &times; 
+Y039  +             ; +
+Y040  +             ; +
+Y041  STO A         ; &rsh; STO A
+Y042  STO B         ; &rsh; STO B
+Y043  STO C         ; &rsh; STO C
+; A=x/R
+Y044  RCL R         ; RCL R
+Y045  STO/ A        ; &rsh; STO &divide; A
+; B=x/Q
+Y046  RCL Q         ; RCL Q
+Y047  STO/ B        ; &rsh; STO &divide; B
+; C=x/P
+Y048  RCL P         ; RCL P
+Y049  STO/ C        ; &rsh; STO &divide; C
+; view ABC
+Y050  0             ; 0 ENTER
+Y051  RCL A         ; RCL A
+Y052  RCL B         ; RCL B
+Y053  RCL C         ; RCL C
+Y054  VIEW A        ; &lsh; VIEW A
+Y055  VIEW B        ; &lsh; VIEW B
+Y056  VIEW C        ; &lsh; VIEW C
+Y057  RTN
+;
+; D->S
+Y058  INPUT A       ; &lsh; INPUT A
+Y059  INPUT B       ; &lsh; INPUT B
+Y060  INPUT C       ; &lsh; INPUT C
+Y061  +             ; +
+Y062  +             ; +
+Y063  x=0?          ; &rsh; x?0 6
+Y064  GTO Y058      ; GTO RCL Y 058         ; IF x=0 THEN GOTO 'D->S'
+; x=1/(A+B+C)
+Y065  1/X           ; 1/x
+Y066  STO P         ; &rsh; STO P
+Y067  STO Q         ; &rsh; STO Q
+Y068  STO R         ; &rsh; STO R
+; P=A*B*x
+Y069  RCL A         ; RCL A
+Y070  RCL B         ; RCL B
+Y071  *             ; &times;
+Y072  STO* P        ; &rsh; STO &times; P
+; Q=A*C*x
+Y073  RCL A         ; RCL A
+Y074  RCL C         ; RCL C
+Y075  *             ; &times;
+Y076  STO* Q        ; &rsh; STO &times; Q
+; Q=B*C*x
+Y077  RCL B         ; RCL B
+Y078  RCL C         ; RCL C
+Y079  *             ; &times;
+Y080  STO* R        ; &rsh; STO &times; R
+; view PQR
+Y081  0             ; 0 ENTER
+Y082  RCL P         ; RCL P
+Y083  RCL Q         ; RCL Q
+Y084  RCL R         ; RCL R
+Y085  VIEW P        ; &lsh; VIEW P
+Y086  VIEW Q        ; &lsh; VIEW Q
+Y087  VIEW R        ; &lsh; VIEW R
+P088  RTN           ; &lsh; RTN &Cscr;
+; end
+
+;-- Example --
+; P = ? Ohm, Q = ? Ohm, R = ? Ohm
+; A = 20 Ohm, B = 30 Ohm, C = 80 Ohm
+;-- Load Prg Y --
+; XEQ Y ENTER
+; 1T->pi 2pi->T 3S->D 4D->S
+;  4 R/S
+; A?
+;  20 R/S
+; B?
+;  30 R/S
+; B?
+;  80 R/S
+; P=
+;  4.61
+; Q=
+;  12.31
+; R=
+;  18.46
+;-- End Y --
