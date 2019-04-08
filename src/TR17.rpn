@@ -72,7 +72,7 @@ C053  SF 0          ; \Lsh \wedge 1 0       ; IF y=6 THEN SF(0)
 ;
 ; input
 C054  SF 10         ; \Lsh \wedge 1 . 0
-C055  ->(I)         ; EQN \Lsh 6 RCL I < \Leftarrow \Leftarrow ENTER
+C055  ->(I)         ; EQN \Lsh 6 RCL I < < \Leftarrow \Leftarrow ENTER
 C056  CF 10         ; \Lsh \wedge 2 . 0
 C057  x=0?          ; \Rsh x?0 6
 C058  GTO C067      ; GTO RCL C 067         ; IF x=0 THEN GOTO 'done'
