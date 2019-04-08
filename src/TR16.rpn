@@ -3,18 +3,18 @@
 ; LN=24
 ;
 ; start
-J001  LBL J       ; &rsh; LBL J
+J001  LBL J       ; \Rsh LBL J
 ; init
 J002  RPN         ; MODE 5RPN
 ; input I and A
-J003  INPUT I     ; &lsh; INPUT I
-J004  INPUT A     ; &lsh; INPUT A
+J003  INPUT I     ; \Lsh INPUT I
+J004  INPUT A     ; \Lsh INPUT A
 ; J=I/A
-J005  /           ; &divide;
-J006  STO J       ; &rsh; STO J
+J005  /           ; \div
+J006  STO J       ; \Rsh STO J
 ; view J
-J007  VIEW J      ; &lsh; VIEW J
-J008  RTN         ; &lsh; RTN &Cscr;
+J007  VIEW J      ; \Lsh VIEW J
+J008  RTN         ; \Lsh RTN \C
 ; end
 ;
 ;-- Example --
@@ -36,34 +36,34 @@ J008  RTN         ; &lsh; RTN &Cscr;
 ; LN=69
 ;
 ; start
-R001  LBL R       ; &rsh; LBL R
+R001  LBL R       ; \Rsh LBL R
 ; init
 R002  RPN         ; MODE 5RPN
 ; input R, V and I
-R003  INPUT R     ; &lsh; INPUT R
-R004  x=0?        ; &rsh; x?0 6
+R003  INPUT R     ; \Lsh INPUT R
+R004  x=0?        ; \Rsh x?0 6
 R005  GTO R013    ; GTO RCL R 013 ; IF R=0 THEN GOTO 'R=V/I'
-R006  INPUT V     ; &lsh; INPUT V
-R007  x=0?        ; &rsh; x?0 6
+R006  INPUT V     ; \Lsh INPUT V
+R007  x=0?        ; \Rsh x?0 6
 R008  GTO R019    ; GTO RCL R 019 ; IF V=0 THEN GOTO 'V=R*I'
 ; I=V/R
-R009  RCL/ R      ; RCL &divide; R
-R010  STO I       ; &rsh; STO I
-R011  VIEW I      ; &lsh; VIEW I
-R012  RTN         ; &lsh; RTN
+R009  RCL/ R      ; RCL \div R
+R010  STO I       ; \Rsh STO I
+R011  VIEW I      ; \Lsh VIEW I
+R012  RTN         ; \Lsh RTN
 ; R=V/I
-R013  INPUT V     ; &lsh; INPUT V
-R014  INPUT I     ; &lsh; INPUT I
-R015  /           ; &divide;
-R016  STO R       ; &rsh; STO R
-R017  VIEW R      ; &lsh; VIEW R
-R018  RTN         ; &lsh; RTN
+R013  INPUT V     ; \Lsh INPUT V
+R014  INPUT I     ; \Lsh INPUT I
+R015  /           ; \div
+R016  STO R       ; \Rsh STO R
+R017  VIEW R      ; \Lsh VIEW R
+R018  RTN         ; \Lsh RTN
 ; V=R*I
-R019  INPUT I     ; &lsh; INPUT I
-R020  RCL* R      ; RCL &times; R
-R021  STO V       ; &rsh; STO V
-R022  VIEW V      ; &lsh; VIEW V
-R023  RTN         ; &lsh; RTN &Cscr;
+R019  INPUT I     ; \Lsh INPUT I
+R020  RCL* R      ; RCL \times R
+R021  STO V       ; \Rsh STO V
+R022  VIEW V      ; \Lsh VIEW V
+R023  RTN         ; \Lsh RTN \C
 ; end
 ;
 ;-- Example --
