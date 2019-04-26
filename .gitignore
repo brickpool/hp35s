@@ -1,7 +1,9 @@
 # Ignore Backup directory
 _gsdata_/
 
-# Ignore Komodo directory
+# Ignore Komodo
+*.komodoproject
+/.komodotools/
 /Komodo/
 
 # Ignore wiki directory
