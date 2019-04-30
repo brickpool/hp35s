@@ -1,0 +1,184 @@
+$VAR1 = {
+          'startaddr' => 'START_A',
+          'model' => 'P35S',
+          'labels' => {
+                        'END_B' => {
+                                     'statement' => 4,
+                                     'segment' => 'program_B',
+                                     'type' => 'near'
+                                   },
+                        'START_A' => {
+                                       'statement' => 0,
+                                       'segment' => 'program_A',
+                                       'type' => 'near'
+                                     },
+                        'RETURN' => {
+                                      'statement' => 15,
+                                      'segment' => 'program_A',
+                                      'type' => 'near'
+                                    },
+                        'START_B' => {
+                                       'statement' => 0,
+                                       'segment' => 'program_B',
+                                       'type' => 'near'
+                                     }
+                      },
+          'segments' => {
+                          'program_A' => {
+                                           'statements' => [
+                                                             {
+                                                               'LBL' => {
+                                                                          'variable' => 'A',
+                                                                          'type' => 'instruction'
+                                                                        }
+                                                             },
+                                                             {
+                                                               'FS?' => {
+                                                                          'number' => '1',
+                                                                          'type' => 'instruction'
+                                                                        }
+                                                             },
+                                                             {
+                                                               'GOTO' => {
+                                                                           'label' => 'start_B',
+                                                                           'type' => 'instruction'
+                                                                         }
+                                                             },
+                                                             {
+                                                               'RADIX.' => {
+                                                                             'type' => 'instruction'
+                                                                           }
+                                                             },
+                                                             {
+                                                               '1' => {
+                                                                        'type' => 'number'
+                                                                      }
+                                                             },
+                                                             {
+                                                               '+' => {
+                                                                        'type' => 'instruction'
+                                                                      }
+                                                             },
+                                                             {
+                                                               'XOR' => {
+                                                                          'type' => 'instruction'
+                                                                        }
+                                                             },
+                                                             {
+                                                               'Z+' => {
+                                                                         'type' => 'instruction'
+                                                                       }
+                                                             },
+                                                             {
+                                                               'EQN' => {
+                                                                          'equation' => 'str',
+                                                                          'type' => 'instruction'
+                                                                        }
+                                                             },
+                                                             {
+                                                               'Zx' => {
+                                                                         'type' => 'instruction'
+                                                                       }
+                                                             },
+                                                             {
+                                                               'R^' => {
+                                                                         'type' => 'instruction'
+                                                                       }
+                                                             },
+                                                             {
+                                                               'EQN' => {
+                                                                          'expression' => '2+3',
+                                                                          'type' => 'instruction'
+                                                                        }
+                                                             },
+                                                             {
+                                                               'Rv' => {
+                                                                         'type' => 'instruction'
+                                                                       }
+                                                             },
+                                                             {
+                                                               'STO' => {
+                                                                          'variable' => 'Z',
+                                                                          'type' => 'instruction'
+                                                                        }
+                                                             },
+                                                             {
+                                                               'VIEW' => {
+                                                                           'variable' => 'Z',
+                                                                           'type' => 'instruction'
+                                                                         }
+                                                             },
+                                                             {
+                                                               'RTN' => {
+                                                                          'type' => 'instruction'
+                                                                        }
+                                                             }
+                                                           ],
+                                           'type' => 'code'
+                                         },
+                          'STACK' => {
+                                       'assignments' => {
+                                                          'REGX' => {
+                                                                      'value' => 1,
+                                                                      'type' => 'register'
+                                                                    }
+                                                        },
+                                       'type' => 'stack'
+                                     },
+                          'program_B' => {
+                                           'statements' => [
+                                                             {
+                                                               'LBL' => {
+                                                                          'variable' => 'B',
+                                                                          'type' => 'instruction'
+                                                                        }
+                                                             },
+                                                             {
+                                                               'INPUT' => {
+                                                                            'variable' => 'I',
+                                                                            'type' => 'instruction'
+                                                                          }
+                                                             },
+                                                             {
+                                                               'x<>' => {
+                                                                          'variable' => '(I)',
+                                                                          'type' => 'instruction'
+                                                                        }
+                                                             },
+                                                             {
+                                                               'GOTO' => {
+                                                                           'address' => 'A001',
+                                                                           'type' => 'instruction'
+                                                                         }
+                                                             },
+                                                             {
+                                                               'RTN' => {
+                                                                          'type' => 'instruction'
+                                                                        }
+                                                             }
+                                                           ],
+                                           'type' => 'code'
+                                         },
+                          '_DATA' => {
+                                       'type' => 'data',
+                                       'definitions' => {
+                                                          'str' => {
+                                                                     'value' => '1+2+3',
+                                                                     'type' => 'equation'
+                                                                   },
+                                                          'f' => {
+                                                                   'value' => '6.7',
+                                                                   'type' => 'equation'
+                                                                 },
+                                                          'j' => {
+                                                                   'value' => -5,
+                                                                   'type' => 'equation'
+                                                                 },
+                                                          'i' => {
+                                                                   'value' => 4,
+                                                                   'type' => 'equation'
+                                                                 }
+                                                        }
+                                     }
+                        }
+        };
