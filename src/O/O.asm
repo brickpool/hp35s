@@ -1,13 +1,12 @@
-TITLE Ohms Law
-MODEL 35S
-CODESEG
-start:
+; Ohms Law
+MODEL P35S
+SEGMENT CODE
 LBL O           ; \Rsh LBL O
 
 init:
   RPN           ; MODE 5RPN
 
-input:
+read:
   ; input R, V and I
   INPUT R       ; \Lsh INPUT R
   ; IF R=0 THEN GOTO 'R=V/I'
@@ -45,6 +44,7 @@ calcV:
   VIEW V        ; \Lsh VIEW V
 
 RTN             ; \Lsh RTN 
-end start       ; \C
+ENDS
+END             ; \C
 ; CK=9CCF
 ; LN=69

@@ -12,6 +12,7 @@
 #   2019-04-29: Version 0.1 (the directive %TITLE, DISPLAY and RADIX
 #               are not yet implemented and only the polish notation
 #               mode is supported)
+#   2019-05-02: Bugfix, GTO
 
 use strict;
 use warnings;
@@ -67,7 +68,7 @@ our @instructions = (
   # G1
   '+/-', '+', '-', '*', '/',
   # G2
-  ',', '1/x', '10^x', '%', '%CHG', 'pi', 'Z+', 'Z-',
+  '1/x', '10^x', '%', '%CHG', 'pi', 'Z+', 'Z-',
   # G3
   'Zx', 'Zx^2', 'Zxy', 'Zy', 'Zy^2', 'zx', 'zy',
   # G4
@@ -94,7 +95,7 @@ our @instructions = (
   'STOP',
   # G15
   'sx', 'sy', 'x^2', 'sqrt', 'xroot', '\=x', '\^x', '!', 
-  # 16
+  # G16
   '\=xw', 'x<>y', 'x!=y?', 'x<=y?', 'x<y?', 'x>y?', 'x>=y?',
   # G17
   'x=y?', 'x!=0?', 'x<=0?', 'x<0?', 'x>0?', 'x>=0?', 'x=0?', 'XOR', 
@@ -104,7 +105,7 @@ our @instructions = (
 
 our @with_address = (
   # G8
-  'GOTO',
+  'GTO',
   # G15
   'XEQ',
 );
@@ -158,7 +159,7 @@ my @functions = (
   # G4
   'ABS', 'ACOS', 'ACOSH', 'ARG', 'ASIN', 'ASINH', 'ATAN',
   # G5
-  'ATANH', '->°C', 
+  'ATANH', '->°C',
   # G6
   '->CM', 'COS', 'COSH', '->DEG',
   # G8
@@ -493,10 +494,7 @@ sub parse_code_statement {
   }
   or
     eval { $number = $self->token_number }
-# isolated variables are only allowed in mode ALG
-#  or
-#    eval { $variable = $self->generic_token( variable => qr/(?:[A-Z]|(?:\([IJ]\)))\b/ ) }
-  or
+  or 
     $self->fail( "Illegal instruction" );
   
   # get current position in str for "fail_from"
@@ -517,7 +515,7 @@ sub parse_code_statement {
     }
     else {
       if ( grep { $_ eq $mnemonic } @with_address ) {
-        # instructions with an address: GOTO and XEQ
+        # instructions with an address: GTO and XEQ
         eval { $operand = $self->token_ident } or
           $self->fail( "Illegal origin address" );
 
