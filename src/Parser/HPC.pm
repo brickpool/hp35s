@@ -12,7 +12,10 @@
 #   2019-04-29: Version 0.1 (the directive %TITLE, DISPLAY and RADIX
 #               are not yet implemented and only the polish notation
 #               mode is supported)
-#   2019-05-02: Bugfix, GTO
+#   2019-05-02: bugfix, GTO
+#   2019-05-06: bugfix
+#                 '0' instruction
+#                 non escaping for 'token_string'
 
 use strict;
 use warnings;
@@ -481,28 +484,35 @@ sub parse_code_statement {
   my $variable;
   my $statement;
 
-  eval {
-    $mnemonic = $self->token_kw_operation(
-      @instructions,
-      @with_address,
-      @with_variables,
-      @with_digits,
-      @with_indirects, 
-      @expressions,
-#      @functions,
-    )
-  }
-  or
-    eval { $number = $self->token_number }
-  or 
+  my $ret = $self->any_of(
+    sub {
+      $mnemonic = $self->token_kw_operation(
+        @instructions,
+        @with_address,
+        @with_variables,
+        @with_digits,
+        @with_indirects, 
+        @expressions,
+  #      @functions,
+      )
+    },
+    sub {
+      $number = $self->token_number;
+    },
+    sub {
+      undef
+    }
+  );
+  defined $ret or
     $self->fail( "Illegal instruction" );
+  
   
   # get current position in str for "fail_from"
   my $pos = $self->pos;
   my ($line) = $self->where;
   $self->commit;
 
-  if ( $mnemonic ) {
+  if ( defined $mnemonic ) {
 
     my $operand;
     if ( grep { $_ eq $mnemonic } @instructions ) {
@@ -590,14 +600,14 @@ sub parse_code_statement {
 
     }
   }
-  elsif ( $number ) {
+  elsif ( defined $number ) {
     $statement = {
       $number => {
         type => 'number',
       }
     };
   }
-  elsif ( $variable ) {
+  elsif ( defined $variable ) {
     $statement = {
       $variable => {
         type => 'variable',
@@ -812,6 +822,43 @@ sub token_kw_operation
     pos($self->{str}) = $pos, $self->fail( "Expected any of ".join( ", ", @acceptable ) );
 
   return $kw;
+}
+
+=head2 $str = $parser->token_string
+
+Expects to find a quoted string, and consumes it. The string should be quoted
+using C<"> or C<'> quote marks.
+
+The content of the quoted string can not contain special characters.
+
+=cut
+
+sub token_string
+{
+  my $self = shift;
+
+  $self->fail( "Expected string" ) if $self->at_eos;
+
+  my $pos = pos $self->{str};
+
+  $self->skip_ws;
+  $self->{str} =~ m/\G($self->{patterns}{string_delim})/gc or
+     $self->fail( "Expected string delimiter" );
+
+  my $delim = $1;
+
+  $self->{str} =~ m/
+    \G(
+      (?:
+         \\.              # symbolic escape
+        |[^\\$delim]+     # plain chunk
+      )*?
+    )$delim/gcix or
+      pos($self->{str}) = $pos, $self->fail( "Expected contents of string" );
+
+  my $string = $1;
+
+  return $string;
 }
 
 =head2 $position = $parser->_find_before( $literal )

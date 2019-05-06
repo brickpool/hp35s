@@ -10,6 +10,7 @@
 # Changelog: 
 #   2019-04-09: Initial version created
 #   2019-05-02: Version 0.2 Rename File, use of Parser::HPC
+#   2019-05-06: fixing unicode handling
 
 use strict;
 use warnings;
@@ -20,7 +21,7 @@ use Parser::HPC;
 use Data::Dumper;
 
 # Declaration
-my $VERSION = '0.2';
+my $VERSION = '0.2.1';
 my $version;
 my $unicode;
 my $help;
@@ -144,14 +145,8 @@ my $unicodes = {
   '\^y'   => $ycirc,
   'y^x'   => 'y'.$supx,
   #
-  '|>'    => $rtrif,
+  '\>'    => $rtrif,
 };
-
-my $regex_instructions    = join '|', map { quotemeta $_ } @instructions;
-my $regex_with_address    = join '|', map { quotemeta $_ } @with_address;
-my $regex_with_digits     = join '|', map { quotemeta $_ } @with_digits;
-my $regex_with_variables  = join '|', map { quotemeta $_ } @with_variables, @with_indirects;
-my $regex_expressions     = join '|', map { quotemeta $_ } @expressions;
 
 my $lbl = '0';
 my $loc = $0;
@@ -280,12 +275,12 @@ foreach my $seq ( @segments ) {
     elsif ($entry->{type} eq 'instruction') {
       my $mnemonic = $statement;
       # instructions without an operand
-      if ($mnemonic =~ qr/$regex_instructions/) {
+      if ( grep { $_ eq $mnemonic } @instructions ) {
         $out .= sprintf("%s%03d\t%s\n", $lbl, ++$loc, $mnemonic);
       }
   
       # instructions with an address: GTO and XEQ
-      elsif ($mnemonic =~ qr/$regex_with_address/ ) {
+      elsif ( grep { $_ eq $mnemonic } @with_address ) {
   
         # absolut address
         if ( defined $entry->{address} ) {
@@ -319,7 +314,7 @@ foreach my $seq ( @segments ) {
       }
   
       # instructions with a variable: LBL, INPUT, VIEW, STO, ...
-      elsif ($mnemonic =~ qr/$regex_with_variables/) {
+      elsif ( grep { $_ eq $mnemonic } @with_variables, @with_indirects ) {
         defined $entry->{variable} or
           print STDERR "Warn: missing type 'variable' in instruction '$mnemonic'\n" and next;
   
@@ -333,7 +328,7 @@ foreach my $seq ( @segments ) {
       }
   
       # instructions with a number: CF, FIX, ...
-      elsif ($mnemonic =~ qr/$regex_with_digits/) {
+      elsif ( grep { $_ eq $mnemonic } @with_digits ) {
         defined $entry->{number} or
           print STDERR "Warn: missing type 'number' in instruction '$mnemonic'\n" and next;
   
@@ -342,7 +337,7 @@ foreach my $seq ( @segments ) {
       }
   
       # instructions with an expression: EQN
-      elsif ($mnemonic =~ qr/$regex_expressions/) {
+      elsif ( grep { $_ eq $mnemonic } @expressions ) {
       
         # expression
         if ( defined $entry->{expression} ) {
@@ -383,8 +378,11 @@ if ($unicode) {
   foreach (keys %$unicodes) {
     my $a = quotemeta $_;
     my $b = $unicodes->{$_};
-    $out =~ s/(\w+\s)$a/$1$b/g;
+    $out =~ s/$a/$b/g;
   }
+  # roll back for 1/x
+  my $inv = '1'.$divide.'x';
+  $out =~ s/$inv/1\/x/g;
   binmode(STDOUT, ":utf8");
 }
 
