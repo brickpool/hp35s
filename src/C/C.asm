@@ -10,9 +10,8 @@ SEGMENT DATA
   ; 1 RCL R \Rsh 0 2 RCL C \Rsh 0 3 RCL L \Rsh 0
   ; 4 RCL P \Rsh 0 5 RCL V \Rsh 0 5 RCL G 
   eqnSer  EQU '1R 2C 3L 4P 5V 6G'
-  ; ->(I)
-  ; \Lsh 6 RCL I < < \Leftarrow \Leftarrow
-  eqnToI  EQU '|>(I)'
+  ; \Rsh STO RCL 0
+  eqnToI  EQU '\>(I)'
 ENDS
 
 SEGMENT CODE
