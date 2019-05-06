@@ -76,7 +76,7 @@ star2delta:
   RCL P               ; RCL P
   STO/ C              ; \Rsh STO \div C
   ; view ABC
-  EQN '0'             ; 0 ENTER
+  0                   ; 0 ENTER
   RCL A               ; RCL A
   RCL B               ; RCL B
   RCL C               ; RCL C
@@ -116,7 +116,7 @@ delta2star:
   *                   ; \times
   STO* R              ; \Rsh STO \times R
   ; view PQR
-  EQN '0'             ; 0 ENTER
+  0                   ; 0 ENTER
   RCL P               ; RCL P
   RCL Q               ; RCL Q
   RCL R               ; RCL R
