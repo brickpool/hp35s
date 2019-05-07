@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-#    
+#
 # (c) 2019 brickpool
 #     J.Schneider (http://github.com/brickpool/)
 #
@@ -9,13 +9,14 @@
 #
 # Changelog: 
 #   2019-04-12: Initial version created
-#   2019-04-29: Version 0.1 (the directive %TITLE, DISPLAY and RADIX
-#               are not yet implemented and only the polish notation
-#               mode is supported)
+#   2019-04-29: Version 0.1
+#               - the directive %TITLE, DISPLAY and RADIX
+#                 and the symbols TIME and DATE are not implemented
+#               - only the polish notation mode is supported
 #   2019-05-02: bugfix, GTO
 #   2019-05-06: bugfix
-#                 '0' instruction
-#                 non escaping for 'token_string'
+#               - '0' instruction
+#               - non escaping for 'token_string'
 
 use strict;
 use warnings;
@@ -505,7 +506,6 @@ sub parse_code_statement {
   );
   defined $ret or
     $self->fail( "Illegal instruction" );
-  
   
   # get current position in str for "fail_from"
   my $pos = $self->pos;
