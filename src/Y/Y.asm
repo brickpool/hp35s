@@ -1,10 +1,10 @@
 ; Wye-Delta or Star-delta Transformation Y
 MODEL P35S
 SEGMENT DATA
-  ; 1 RCL T \Lsh 6 > \Leftarrow \Leftarrow \Leftarrow \Leftarrow \Lsh \pi \Rsh 0
-  ; 2 \Lsh \pi \Lsh 6 > \Leftarrow \Leftarrow \Leftarrow \Leftarrow RCL T \Rsh 0
-  ; 3 RCL S \Lsh 6 > \Leftarrow \Leftarrow \Leftarrow \Leftarrow RCL D \Rsh 0
-  ; 4 RCL D \Lsh 6 > \Leftarrow \Leftarrow \Leftarrow \Leftarrow RCL S
+  ; 1 RCL T \Lsh 2 > \Leftarrow \Leftarrow \Leftarrow \Lsh \pi \Rsh 0
+  ; 2 \Lsh \pi \Lsh 2 > \Leftarrow \Leftarrow \Leftarrow RCL T \Rsh 0
+  ; 3 RCL S \Lsh 2 > \Leftarrow \Leftarrow \Leftarrow RCL D \Rsh 0
+  ; 4 RCL D \Lsh 2 > \Leftarrow \Leftarrow \Leftarrow RCL S
   eqnMenu EQU '1T->pi 2pi->T 3S->D 4D->S'
 ENDS
 
