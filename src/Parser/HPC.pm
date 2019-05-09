@@ -13,10 +13,12 @@
 #               - the directive %TITLE, DISPLAY and RADIX
 #                 and the symbols TIME and DATE are not implemented
 #               - only the polish notation mode is supported
-#   2019-05-02: bugfix, GTO
+#   2019-05-02: bugfix GTO
 #   2019-05-06: bugfix
 #               - '0' instruction
 #               - non escaping for 'token_string'
+#   2019-05-08: add rta
+#   2019-05-09: bugfix <-ENG
 
 use strict;
 use warnings;
@@ -82,7 +84,7 @@ our @instructions = (
   # G6
   'CLZ', 'CLx', 'CLVARS', 'CLSTK', 'nCr', 'DEC', 'DEG', 
   # G7
-  '->ENG', 'ENG->', 'ENTER', 'e^x',
+  '<-ENG', 'ENG->', 'ENTER', 'e^x',
   # G8
   'FP', 'GRAD', 'HEX',
   # G9
@@ -92,7 +94,7 @@ our @instructions = (
   # G11
   '->MILE', 'n', 'NAND', 'NOR', 'NOT', 'OCT', 'OR', 'nPr', 'PSE',
   # G12
-  'r', 'RAD', '->RAD', 'RADIX,', 'RADIX.', 'RANDOM', 'RMDR',
+  'r', 'rta', 'RAD', '->RAD', 'RADIX,', 'RADIX.', 'RANDOM', 'RMDR',
   # G13
   'RND', 'RPN', 'RTN', 'Rv', 'R^', 'SEED', 'SGN', 
   # G14
