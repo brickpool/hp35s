@@ -1,0 +1,31 @@
+# The Assembler
+
+The perl script asm2hcp converts an assembler program to HP35s native program code
+
+## Usage
+```
+asm2hpc.pl --help
+USAGE:
+  c:> type <asm-file> | perl asm2hpc.pl [options] 1> outfile.35s 2> outfile.err
+
+VERSION: 0.3.0
+  Web: http://www.brickpool.de/
+
+OPTIONS:
+  -h, --help          Print this text
+  -v, --version       Prints version
+  -u, --unicode       Output as Unicode (UTF-8)
+  -s, --shortcut      Output shortcut keys as comment
+  --debug             Show debug information on STDERR
+
+  --file=<asm-file>:
+    Location of asm-file (Default is STDIN)
+
+This script converts an assembler program to HP35s native program code
+The output will be sent to STDOUT
+```
+
+## Example
+```
+asm2hpc.pl --unicode --shortcut --file=C/C.asm > C/C.35s
+```
