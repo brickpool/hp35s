@@ -1,4 +1,4 @@
-# Ignore Backup directory
+# Ignore backup directory
 _gsdata_/
 
 # Ignore Komodo
@@ -9,7 +9,10 @@ _gsdata_/
 # Ignore wiki directory
 /wiki/
 
-# Ignore extras directory
+# Ignore extras
 /extras/CBT
 /extras/docs
 /extras/Emulator
+
+# Ignore test files
+/src/test.asm
