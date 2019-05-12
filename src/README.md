@@ -1,6 +1,8 @@
 # The Assembler
 
-The perl script asm2hcp converts an assembler program to HP35s native program code
+The perl script `asm2hcp.pl` converts an assembler program to HP35s native program code.
+
+The assembler _directives_, _symbols_ and _error messages_ are described in the [wiki](http://github.com/brickpool/hp35s/wiki).
 
 ## Usage
 ```
@@ -8,7 +10,7 @@ asm2hpc.pl --help
 USAGE:
   c:> type <asm-file> | perl asm2hpc.pl [options] 1> outfile.35s 2> outfile.err
 
-VERSION: 0.3.0
+VERSION: 0.3.1
   Web: http://www.brickpool.de/
 
 OPTIONS:
