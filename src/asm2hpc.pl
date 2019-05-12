@@ -14,6 +14,7 @@
 #   2019-05-07: fixing sime minor bugs (0.2.2)
 #   2019-05-08: add r\theta{a}
 #   2019-05-09: add option shortcut (0.3.0)
+#   2019-05-10: fixing key sequences for CF, FIX, ... and EQN
 
 use strict;
 use warnings;
@@ -23,7 +24,7 @@ use Parser::HPC;
 use Data::Dumper;
 
 # Declaration
-my $VERSION = '0.3.0';
+my $VERSION = '0.3.1';
 my $version;
 my $unicode;
 my $shortcut;
@@ -50,6 +51,7 @@ $debug        = 0 unless defined $debug;
 my $parser = Parser::HPC->new;
 
 # unicode char
+use constant _not     => "\N{U+00AC}";
 use constant _macr    => "\N{U+00AF}";
 use constant _sup2    => "\N{U+00B2}";
 use constant _times   => "\N{U+00D7}";
@@ -60,8 +62,12 @@ use constant _rsh     => "\N{U+21B1}";
 use constant _lArr    => "\N{U+21D0}";
 use constant _int     => "\N{U+222B}";
 use constant _ymacr   => "\N{U+0233}";
+use constant _vltri   => "\N{U+22B2}";
+use constant _vrtri   => "\N{U+22B3}";
 use constant _supx    => "\N{U+02E3}";
+use constant _xutri   => "\N{U+25B3}";
 use constant _brtri   => "\N{U+25B6}";
+use constant _xdtri   => "\N{U+25BD}";
 use constant _xcirc   => "x\N{U+0302}";
 use constant _Sigma   => "\N{U+03A3}";
 use constant _theta   => "\N{U+03B8}";
@@ -72,9 +78,10 @@ use constant _uarr    => "\N{U+2191}";
 use constant _rarr    => "\N{U+2192}";
 use constant _darr    => "\N{U+2193}";
 use constant _sqrt    => "\N{U+221A}";
-use constant _not     => "\N{U+2260}";
+use constant _neq     => "\N{U+2260}";
 use constant _leq     => "\N{U+2264}";
 use constant _geq     => "\N{U+2265}";
+use constant _Cscr    => "\N{U+1D49E}";
 use constant _iscr    => "\N{U+1D4BE}";
 
 my $unicodes = {
@@ -86,6 +93,7 @@ my $unicodes = {
   '/->'   => _rsh,
   '<-\\'  => _lsh,
   '10^x'  => '10'._supx,
+  'p'     => _pi,
   'pi'    => _pi,
   'Z+'    => _Sigma.'+',
   'Z-'    => _Sigma.'-',
@@ -150,11 +158,11 @@ my $unicodes = {
   '\^x'   => _xcirc,
   # G16
   '\=xw'  => 'x'._macr.'w',
-  'x!=y?' => 'x'._not.'y?',
+  'x!=y?' => 'x'._neq.'y?',
   'x<=y?' => 'x'._leq.'y?',
   'x>=y?' => 'x'._geq.'y?',
   # G17
-  'x!=0?' => 'x'._not.'0?',
+  'x!=0?' => 'x'._neq.'0?',
   'x<=0?' => 'x'._leq.'0?',
   'x>=0?' => 'x'._geq.'0?',
   # G18
@@ -165,6 +173,12 @@ my $unicodes = {
   'y^x'   => 'y'._supx,
   #
   '\>'    => _brtri,
+  'wedge' => _xutri,
+  'lhd'   => _vltri,
+  'rhd'   => _vrtri,
+  'vee'   => _xdtri,
+  '~'     => _not,
+  'CAN'   => _Cscr,
 };
 
 my $sequences = {
@@ -172,6 +186,7 @@ my $sequences = {
   '10^x'    => '/-> 10^x',
   '%'       => '/-> %',
   '%CHG'    => '<-\ %CHG',
+  'p'       => '<-\ pi',
   'pi'      => '<-\ pi',
   'Z-'      => '<-\ Z-',
   # G3
@@ -328,6 +343,119 @@ my $sequences = {
   '\^y'     => '<-\ L.R. 2',
 };
 
+# Codepage 437
+my $eqn_sequences = {
+  # 0..31
+  ' ' => '/-> SPACE',
+  '!' => '/-> !',
+  '"' => '',
+  '#' => '',
+  '$' => '',
+  '%' => '/-> % rhd rhd <= <= <=',
+  '&' => '',
+  "'" => '',
+  '(' => '() <=',
+  ')' => '() lhd <= rhd',
+  # '*' => '*',
+  # '+' => '+',
+  ',' => '<-\ ,',
+  # '-' => '-',
+  # '.' => '.',
+  # '/' => '/',
+  # '0' => '0',
+  # '1' => '1',
+  # '2' => '2',
+  # '3' => '3',
+  # '4' => '4',
+  # '5' => '5',
+  # '6' => '6',
+  # '7' => '7',
+  # '8' => '8',
+  # '9' => '9',
+  ':' => '',
+  ';' => '',
+  # '<' => '<',
+  '=' => '<-\ =',
+  # '>' => '>',
+  '?' => '',
+  '@' => '',
+  'A' => 'RCL A',
+  'B' => 'RCL B',
+  'C' => 'RCL C',
+  'D' => 'RCL D',
+  'E' => 'RCL E',
+  'F' => 'RCL F',
+  'G' => 'RCL G',
+  'H' => 'RCL H',
+  'I' => 'RCL I',
+  'J' => 'RCL J',
+  'K' => 'RCL K',
+  'L' => 'RCL L',
+  'M' => 'RCL M',
+  'N' => 'RCL N',
+  'O' => 'RCL O',
+  'P' => 'RCL P',
+  'Q' => 'RCL Q',
+  'R' => 'RCL R',
+  'S' => 'RCL S',
+  'T' => 'RCL T',
+  'U' => 'RCL U',
+  'V' => 'RCL V',
+  'W' => 'RCL W',
+  'X' => 'RCL X',
+  'Y' => 'RCL Y',
+  'Z' => 'RCL Z',
+  '[' => '<-\ [] <=',
+  ']' => '<-\ [] lhd <= rhd',
+  '^' => 'y^x',
+  '_' => '',
+  '`' => '',
+  # 'a' => 'a',                           # alpha
+  'b' => '/-> BASE 8',
+  'c' => '',
+  'd' => '/-> BASE 5',
+  # 'e' => 'e',
+  'f' => '',
+  'g' => '',
+  'h' => '/-> BASE 6',
+  # 'i' => 'i',                           # iscr
+  'j' => '',
+  'k' => '',
+  'l' => '',
+  'm' => '<-\ L.R. 4',
+  'n' => '/-> SUMS 1',
+  'o' => '/-> BASE 7',
+  # 'p' => 'p',                           # pi
+  'q' => '',
+  'r' => '<-\ L.R. 3',
+  's' => '/-> S,z 1 <=',
+  # 't' => 't',                           # theta
+  'u' => '<-\ CONST vee vee vee 3',
+  'v' => '',
+  'w' => '/-> \=x,\=y 3 lhd <= rhd',
+  'x' => '/-> S,z 1 lhd <= rhd',
+  'y' => '/-> S,z 2 lhd <= rhd',
+  # 'z' => '',
+  '{' => '',
+  '|' => '',
+  '}' => '',
+  '~' => '+/-',
+  # 127..166
+  'a' => '<-\ CONST wedge wedge 4 <= <=', # 166
+  # 167..226
+  'p' => '<-\ pi',                        # 227
+  # 228
+  'z' => '/-> S,z 3 <=',                  # 229
+  'µ' => '<-\ CONST vee vee vee 4 <=',    # 230
+  # 231..232
+  't' => '/-> t',                         # 233
+  # 234..247
+  '°' => '<-\ ->°F <= <= <= lhd <= rhd',  # 248
+  # 249..252
+  '²' => '/-> SUM 4 lhd <= <= rhd',       # 253
+  # 254..255
+};
+
 my $lbl = '0';
 my $loc = $0;
 my $out = '';
@@ -448,94 +576,38 @@ foreach my $seq ( @segments ) {
       print STDERR "Warn: missing 'type' in statement '$statement'\n" and next;
 
     if ($entry->{type} eq 'number') {
-      my $number = $statement;
-      my $keysequence = $shortcut ? sprintf("\t\t; %d ENTER", $number) : '';
-      $out .= sprintf("%s%03d\t%s%s\n", $lbl, ++$loc, $number, $keysequence);
+      $out .= sprintf_number_statement( $statement );
     }
-
     elsif ($entry->{type} eq 'instruction') {
       my $mnemonic = $statement;
       # instructions without an operand
       if ( grep { $_ eq $mnemonic } @instructions ) {
-        my $keysequence = '';
-        defined $shortcut and
-          $keysequence = sprintf("\t\t; %s", $sequences->{$mnemonic} ? $sequences->{$mnemonic} : $mnemonic);
-        $out .= sprintf("%s%03d\t%s%s\n", $lbl, ++$loc, $mnemonic, $keysequence);
+        $out .= sprintf_single_instruction( $mnemonic );
       }
-
       # instructions with an address: GTO and XEQ
       elsif ( grep { $_ eq $mnemonic } @with_address ) {
-
         # absolute address
         if ( defined $entry->{address} ) {
-          my $addr = $entry->{address};
-          my $keysequence = '';
-          defined $shortcut and
-            $keysequence = sprintf("\t; %s %s", $sequences->{$mnemonic} ? $sequences->{$mnemonic} : $mnemonic, $addr);
-          $out .= sprintf("%s%03d\t%s %s%s\n", $lbl, ++$loc, $mnemonic, $addr, $keysequence);
+          $out .= sprintf_address_instruction( $mnemonic, $entry->{address} );
         }
-
         # address label
         elsif ( defined $entry->{label} ) {
-          my $label = $entry->{label};
-          defined $response->{labels}->{$label}->{segment} or
-            print STDERR "Warn: missing 'label' for instruction '$mnemonic'\n" and next;
-
-          if ( $response->{labels}->{$label}->{segment} eq $seq ) {
-            my $near = $response->{labels}->{$label}->{statement} + $line - $loc + 1;
-            my $keysequence = '';
-            defined $shortcut and
-              $keysequence = sprintf("\t; %s %s %03d", $sequences->{$mnemonic} ? $sequences->{$mnemonic} : $mnemonic, $lbl, $near);
-            $out .= sprintf("%s%03d\t%s %s%03d%s\n", $lbl, ++$loc, $mnemonic, $lbl, $near, $keysequence);
-          }
-          else {
-            print STDERR "Warn: far 'label' not supported yet\n";
-            my $far = $response->{labels}->{$label}->{segment};
-            my $near = $response->{labels}->{$label}->{statement} + 1;
-            my $keysequence = '';
-            defined $shortcut and
-              $keysequence = sprintf("\t; %s ...", $sequences->{$mnemonic} ? $sequences->{$mnemonic} : $mnemonic);
-            $out .= sprintf("%s%03d\t%s %s+%03d%s\n", $lbl, ++$loc, $mnemonic, $far, $near, $keysequence);
-          }
+          $out .= sprintf_label_instruction( $mnemonic, $entry->{label}, $seq, $line );
         }
-
         # unknown operand
         else {
           print STDERR "Warn: missing type 'address' or 'label' in instruction '$mnemonic'\n";
           next;
         }
       }
-
       # instructions with a variable: LBL, INPUT, VIEW, STO, ...
       elsif ( grep { $_ eq $mnemonic } @with_variables, @with_indirects ) {
-        defined $entry->{variable} or
-          print STDERR "Warn: missing type 'variable' in instruction '$mnemonic'\n" and next;
-
-        my $variable = $entry->{variable};
-        if ($mnemonic =~ /LBL/) {
-          # set line number if instruction is 'LBL'
-          $lbl = $variable;
-          $loc = 0;
-        }
-        my $space = $variable =~ /\([IJ]\)/ ? '' : ' ';   # indirects have no space
-        my $keysequence = '';
-        defined $shortcut and
-          $keysequence = sprintf("\t\t; %s %s", $sequences->{$mnemonic} ? $sequences->{$mnemonic} : $mnemonic, $variable);
-        $out .= sprintf("%s%03d\t%s%s%s%s\n", $lbl, ++$loc, $mnemonic, $space, $variable, $keysequence);
+        $out .= sprintf_variable_instruction( $mnemonic, $entry->{variable} );
       }
-
       # instructions with a number: CF, FIX, ...
       elsif ( grep { $_ eq $mnemonic } @with_digits ) {
-        defined $entry->{number} or
-          print STDERR "Warn: missing type 'number' in instruction '$mnemonic'\n" and next;
-
-        my $number = $entry->{number};
-        my $keysequence = '';
-        defined $shortcut and
-          $keysequence = sprintf("\t\t; %s %s", $sequences->{$mnemonic} ? $sequences->{$mnemonic} : $mnemonic, $number);
-        $out .= sprintf("%s%03d\t%s %s%s\n", $lbl, ++$loc, $mnemonic, $number, $keysequence);
+        $out .= sprintf_number_instruction( $mnemonic, $entry->{number} );
       }
-
       # instructions with an expression: EQN
       elsif ( grep { $_ eq $mnemonic } @expressions ) {
       
@@ -546,27 +618,19 @@ foreach my $seq ( @segments ) {
         }
         # equation
         elsif ( defined $entry->{equation} ) {
-          my $definition = $entry->{equation};
-          defined $equations->{$definition} or
-            print STDERR "Warn: missing 'equation' for instruction '$mnemonic'\n" and next;
-
-          my $equation = $equations->{$definition};
-          $out .= sprintf("%s%03d\t%s\n", $lbl, ++$loc, $equation);
+          $out .= sprintf_equation_instruction( $mnemonic, $entry->{equation} );
         }
-
         # unknown operand
         else {
           print STDERR "Warn: missing type 'expression' or 'equation' in instruction '$mnemonic'\n";
           next;
         }
       }
-
       # unknown instruction
       else {
         print STDERR "Warn: unknown instruction '$mnemonic'\n";
       }
     }
-
     # unknown statement
     else {
       print STDERR "Warn: unknown statement '$statement'\n";
@@ -583,8 +647,11 @@ if ($unicode) {
     my $b = $unicodes->{$_};
     $out =~ s/$a/$b/g;
   }
+  # roll back for +/-
+  my $reg = '\+'._divide.'-';
+  $out =~ s/$reg/\+\/-/g;
   # roll back for 1/x
-  my $reg = '1'._divide.'x';
+  $reg = '1'._divide.'x';
   $out =~ s/$reg/1\/x/g;
   # roll back for /c
   $reg = _divide.'c';
@@ -608,6 +675,127 @@ print STDOUT $out;
 
 ###############################
 # Here are the subs 
+
+# number statement
+sub sprintf_number_statement {
+  my $number = shift;
+  my $keysequence = '';
+
+  defined $shortcut and
+    $keysequence = sprintf("\t\t; %d ENTER", $number);
+  return sprintf("%s%03d\t%s%s\n", $lbl, ++$loc, $number, $keysequence);
+}
+
+# instructions without an operand
+sub sprintf_single_instruction {
+  my $mnemonic = shift;
+  my $keysequence = '';
+
+  defined $shortcut and
+    $keysequence = sprintf("\t\t; %s", $sequences->{$mnemonic} ? $sequences->{$mnemonic} : $mnemonic);
+  return sprintf("%s%03d\t%s%s\n", $lbl, ++$loc, $mnemonic, $keysequence);
+}
+
+# instructions with absolute address
+sub sprintf_address_instruction {
+  my $mnemonic = shift;
+  my $addr = shift;
+  my $keysequence = '';
+
+  defined $shortcut and
+    $keysequence = sprintf("\t; %s %s", $sequences->{$mnemonic} ? $sequences->{$mnemonic} : $mnemonic, $addr);
+  return sprintf("%s%03d\t%s %s%s\n", $lbl, ++$loc, $mnemonic, $addr, $keysequence);
+}
+
+# instructions with address label
+sub sprintf_label_instruction {
+  my $mnemonic = shift;
+  my $label = shift;
+  my $seq = shift;
+  my $line = shift;
+  my $keysequence = '';
+  
+  defined $response->{labels}->{$label}->{segment} or
+    print STDERR "Warn: missing 'label' for instruction '$mnemonic'\n" and next;
+
+  if ( $response->{labels}->{$label}->{segment} eq $seq ) {
+    my $near = $response->{labels}->{$label}->{statement} + $line - $loc + 1;
+    my $digits = join(' ', split(//, sprintf("%03d", $near)));
+    defined $shortcut and
+      $keysequence = sprintf("\t; %s %s %s", $sequences->{$mnemonic} ? $sequences->{$mnemonic} : $mnemonic, $lbl, $digits);
+    return sprintf("%s%03d\t%s %s%03d%s\n", $lbl, ++$loc, $mnemonic, $lbl, $near, $keysequence);
+  }
+  else {
+    print STDERR "Warn: far 'label' not supported yet\n";
+    my $far = $response->{labels}->{$label}->{segment};
+    my $near = $response->{labels}->{$label}->{statement} + 1;
+    defined $shortcut and
+      $keysequence = sprintf("\t; %s ...", $sequences->{$mnemonic} ? $sequences->{$mnemonic} : $mnemonic);
+    return sprintf("%s%03d\t%s %s+%03d%s\n", $lbl, ++$loc, $mnemonic, $far, $near, $keysequence);
+  }
+}
+
+# instructions with a variable
+sub sprintf_variable_instruction {
+  my $mnemonic = shift;
+  my $variable = shift;
+  my $keysequence = '';
+
+  defined $variable or
+    print STDERR "Warn: missing type 'variable' in instruction '$mnemonic'\n" and next;
+
+  if ($mnemonic =~ /LBL/) {
+    # set line number if instruction is 'LBL'
+    $lbl = $variable;
+    $loc = 0;
+  }
+  my $space = $variable =~ /\([IJ]\)/ ? '' : ' ';   # indirects have no space
+  defined $shortcut and
+    $keysequence = sprintf("\t\t; %s %s", $sequences->{$mnemonic} ? $sequences->{$mnemonic} : $mnemonic, $variable);
+  return sprintf("%s%03d\t%s%s%s%s\n", $lbl, ++$loc, $mnemonic, $space, $variable, $keysequence);
+}
+
+sub sprintf_number_instruction {
+  my $mnemonic = shift;
+  my $number = shift;
+  my $keysequence = '';
+
+  defined $number or
+    print STDERR "Warn: missing type 'number' in instruction '$mnemonic'\n" and next;
+
+  my $digits = $number < 10 ? $number : sprintf(". %d", $number % 10);
+  defined $shortcut and
+    $keysequence = sprintf("\t\t; %s %s", $sequences->{$mnemonic} ? $sequences->{$mnemonic} : $mnemonic, $digits);
+  return sprintf("%s%03d\t%s %s%s\n", $lbl, ++$loc, $mnemonic, $number, $keysequence);
+}
+
+sub sprintf_equation_instruction {
+  my $mnemonic = shift;
+  my $definition = shift;
+  my $keysequence = '';
+  my $ret = '';
+
+  defined $equations->{$definition} or
+    print STDERR "Warn: missing 'equation' for instruction '$mnemonic'\n" and next;
+
+  my $equation = $equations->{$definition};
+  if ($shortcut) {
+    foreach (split //, $equation) {
+      $keysequence .= sprintf(" %s", $eqn_sequences->{$_} ? $eqn_sequences->{$_} : $_);
+    }
+    # '() <= RCL I () lhd <= rhd'  'RCL (I)'
+    $keysequence =~ s/\(\) <= RCL I \(\) lhd <= rhd/RCL 0/g;
+    # '() <= RCL J () lhd <= rhd'  'RCL (J)'
+    $keysequence =~ s/\(\) <= RCL J \(\) lhd <= rhd/RCL \./g;
+    # '\ >'  'STO SC'
+    $keysequence =~ s/\\ >/STO CAN/g;
+    # '- >'  ' /-> 2 rsh <= <= <='
+    $keysequence =~ s/ \- \>/ \/-> 2 rhd <= <= <=/g;
+    $ret = sprintf(";%s\n", $keysequence);
+  }
+  $ret .= sprintf("%s%03d\t%s\n", $lbl, ++$loc, $equation);
+  return $ret;
+}
 
 sub version () {
   print "$1 ($VERSION) - by J.Schneider http://www.brickpool.de/\n" if $0 =~ /([^\/\\]+)$/;
