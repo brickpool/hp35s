@@ -1,23 +1,24 @@
 Y001	LBL Y		; ↱ LBL Y
 Y002	RPN		; MODE 5
-Y003	SF 10		; ↰ FLAGS 1 10
+Y003	SF 10		; ↰ FLAGS 1 . 0
+; 1 RCL T ↱ 2 ⊳ ⇐ ⇐ ⇐ ↰ π ↱ SPACE 2 ↰ π ↱ 2 ⊳ ⇐ ⇐ ⇐ RCL T ↱ SPACE 3 RCL S ↱ 2 ⊳ ⇐ ⇐ ⇐ RCL D ↱ SPACE 4 RCL D ↱ 2 ⊳ ⇐ ⇐ ⇐ RCL S
 Y004	1T→π 2π→T 3S→D 4D→S
-Y005	CF 10		; ↰ FLAGS 2 10
+Y005	CF 10		; ↰ FLAGS 2 . 0
 Y006	1		; 1 ENTER
 Y007	x=y?		; ↰ x?y 6
-Y008	GTO Y023	; GTO Y 023
+Y008	GTO Y023	; GTO Y 0 2 3
 Y009	R↓		; R↓
 Y010	2		; 2 ENTER
 Y011	x=y?		; ↰ x?y 6
-Y012	GTO Y058	; GTO Y 058
+Y012	GTO Y058	; GTO Y 0 5 8
 Y013	R↓		; R↓
 Y014	3		; 3 ENTER
 Y015	x=y?		; ↰ x?y 6
-Y016	GTO Y023	; GTO Y 023
+Y016	GTO Y023	; GTO Y 0 2 3
 Y017	R↓		; R↓
 Y018	4		; 4 ENTER
 Y019	x=y?		; ↰ x?y 6
-Y020	GTO Y058	; GTO Y 058
+Y020	GTO Y058	; GTO Y 0 5 8
 Y021	R↓		; R↓
 Y022	STOP		; R/S
 Y023	INPUT P		; ↰ INPUT P
@@ -26,7 +27,7 @@ Y025	INPUT R		; ↰ INPUT R
 Y026	×		; ×
 Y027	×		; ×
 Y028	x=0?		; ↱ x?0 6
-Y029	GTO Y023	; GTO Y 023
+Y029	GTO Y023	; GTO Y 0 2 3
 Y030	RCL P		; RCL P
 Y031	RCL Q		; RCL Q
 Y032	×		; ×
@@ -61,7 +62,7 @@ Y060	INPUT C		; ↰ INPUT C
 Y061	+		; +
 Y062	+		; +
 Y063	x=0?		; ↱ x?0 6
-Y064	GTO Y058	; GTO Y 058
+Y064	GTO Y058	; GTO Y 0 5 8
 Y065	1/x		; 1/x
 Y066	STO P		; ↱ STO P
 Y067	STO Q		; ↱ STO Q

@@ -5,7 +5,7 @@ SEGMENT DATA
   ; 2 \Lsh \pi \Lsh 2 > \Leftarrow \Leftarrow \Leftarrow RCL T \Rsh 0
   ; 3 RCL S \Lsh 2 > \Leftarrow \Leftarrow \Leftarrow RCL D \Rsh 0
   ; 4 RCL D \Lsh 2 > \Leftarrow \Leftarrow \Leftarrow RCL S
-  eqnMenu EQU '1T->pi 2pi->T 3S->D 4D->S'
+  eqnMenu EQU '1T->p 2p->T 3S->D 4D->S'
 ENDS
 
 SEGMENT CODE
