@@ -19,6 +19,7 @@
 #               - non escaping for 'token_string'
 #   2019-05-08: add rta
 #   2019-05-09: bugfix <-ENG
+#   2019-05-10: test for unknown characters at EQU
 
 use strict;
 use warnings;
@@ -53,6 +54,7 @@ Pattern used to skip comments between tokens. Defaults to C</;.*\n+/>
 
 use constant pattern_comment    => qr/;.*\n/;
 use constant pattern_operation  => qr/[^\s\(\)]+/;
+use constant unknown_equ_chars  => qr/[#\$&:;\?\@_`\{\}\|]/;
 
 my @directives = (
   'DISPLAY', 'ENDS', 'END', 'EQU', 'MODEL', 'RADIX', 'SEGMENT', 'SET', '%TITLE',
@@ -405,6 +407,13 @@ sub parse_data_statement {
   )
   or
     $self->fail( "Need expression" );
+
+  # test if value has unknown character
+  $fail_pos = $self->pos;
+  my @fragments = split unknown_equ_chars, $value;
+  my $diff = length($value) - length($fragments[0]);
+  ($diff == 0) or
+    $self->fail_from( $fail_pos - $diff - 1, "Unknown character" );
 
   # create new entry
   my $entry = {
