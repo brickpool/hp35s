@@ -20,6 +20,12 @@
 #   2019-05-08: add rta
 #   2019-05-09: bugfix <-ENG
 #   2019-05-10: test for unknown characters at EQU
+#   2019-05-14: change trigraphs
+#               - \=x to \x-
+#               - \=y to \y-
+#               - \^x to \x^
+#               - \^y to \y^
+
 
 use strict;
 use warnings;
@@ -54,7 +60,7 @@ Pattern used to skip comments between tokens. Defaults to C</;.*\n+/>
 
 use constant pattern_comment    => qr/;.*\n/;
 use constant pattern_operation  => qr/[^\s\(\)]+/;
-use constant unknown_equ_chars  => qr/[#\$&:;\?\@_`\{\}\|]/;
+use constant unknown_equ_chars  => qr/[#\$&:;\?\@_`\{\}]/;
 
 my @directives = (
   'DISPLAY', 'ENDS', 'END', 'EQU', 'MODEL', 'RADIX', 'SEGMENT', 'SET', '%TITLE',
@@ -102,13 +108,13 @@ our @instructions = (
   # G14
   'STOP',
   # G15
-  'sx', 'sy', 'x^2', 'sqrt', 'xroot', '\=x', '\^x', '!', 
+  'sx', 'sy', 'x^2', 'sqrt', 'xroot', '\x-', '\x^', '!', 
   # G16
-  '\=xw', 'x<>y', 'x!=y?', 'x<=y?', 'x<y?', 'x>y?', 'x>=y?',
+  '\x-w', 'x<>y', 'x!=y?', 'x<=y?', 'x<y?', 'x>y?', 'x>=y?',
   # G17
   'x=y?', 'x!=0?', 'x<=0?', 'x<0?', 'x>0?', 'x>=0?', 'x=0?', 'XOR', 
   # G18
-  'xiy', 'x+yi', '\=y', '\^y', 'y^x',
+  'xiy', 'x+yi', '\y-', '\y^', 'y^x',
 );
 
 our @with_address = (
