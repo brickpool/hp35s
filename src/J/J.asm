@@ -1,27 +1,28 @@
 ; Current density J
 MODEL P35S
 SEGMENT CODE
-
-LBL J               ; \Rsh LBL J
+start:
+LBL J               ; program J
 
 init:
-  RPN               ; MODE 5RPN
+  RPN               ; mode 5RPN
 
 read:
   ; input I and A
-  INPUT I           ; \Lsh INPUT I
-  INPUT A           ; \Lsh INPUT A
+  INPUT I
+  INPUT A
 
 calc:
   ; J=I/A
-  /                 ; \div
+  /                 ; \:-
 
 print:
-  STO J             ; \Rsh STO J
-  VIEW J            ; \Lsh VIEW J
+  STO J
+  VIEW J
 
-RTN                 ; \Lsh RTN
+RTN
 ENDS
-END                 ; \C
+
+END
 ; CK=A84A
 ; LN=24

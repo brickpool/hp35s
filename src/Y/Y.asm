@@ -1,131 +1,129 @@
 ; Wye-Delta or Star-delta Transformation Y
 MODEL P35S
 SEGMENT DATA
-  ; 1 RCL T \Lsh 2 > \Leftarrow \Leftarrow \Leftarrow \Lsh \pi \Rsh 0
-  ; 2 \Lsh \pi \Lsh 2 > \Leftarrow \Leftarrow \Leftarrow RCL T \Rsh 0
-  ; 3 RCL S \Lsh 2 > \Leftarrow \Leftarrow \Leftarrow RCL D \Rsh 0
-  ; 4 RCL D \Lsh 2 > \Leftarrow \Leftarrow \Leftarrow RCL S
-  eqnMenu EQU '1T->p 2p->T 3S->D 4D->S'
+  eqnMenu EQU '1T\->\pi 2\pi\->T 3S\->D 4D\->S'
 ENDS
 
 SEGMENT CODE
 start:
-LBL Y                 ; \Rsh LBL Y
+LBL Y
 
 init:
-  RPN                 ; MODE 5RPN
+  RPN                 ; mode RPN
 
 menu:
-  SF 10               ; \Lsh \wedge 1 . 0
-    EQN eqnMenu       ; EQN [eqnMenu] ENTER
-  CF 10               ; \Lsh \wedge 2 . 0
+  ; Display Menue
+  SF 10
+    EQN eqnMenu
+  CF 10
   ; IF x=1 THEN GOTO 'S->D'
-  1                   ; 1 ENTER
-  x=y?                ; \Lsh x?y 6
-    GTO star2delta    ; GTO label 'star2delta'
-  Rv                  ; R\downarrow
+  1
+  x=y?
+    GTO star2delta
+  Rv
   ; IF x=2 THEN GOTO 'D->S'
-  2                   ; 2 ENTER
-  x=y?                ; \Lsh x?y 6
-    GTO delta2star    ; GTO label 'delta2star'
-  Rv                  ; R\downarrow
+  2
+  x=y?
+    GTO delta2star
+  Rv
   ; IF x=3 THEN GOTO 'S->D'
-  3                   ; 2 ENTER
-  x=y?                ; \Lsh x?y 6
-    GTO star2delta    ; GTO label 'star2delta'
-  Rv                  ; R\downarrow
+  3
+  x=y?
+    GTO star2delta
+  Rv
   ; IF x=4 THEN GOTO 'D->S'
-  4                   ; 2 ENTER
-  x=y?                ; \Lsh x?y 6
-    GTO delta2star    ; GTO label 'delta2star'
-  Rv                  ; R\downarrow
-STOP                  ; R/S
+  4
+  x=y?
+    GTO delta2star
+  Rv
+STOP
 
 star2delta:
   ; S->D
-  INPUT P             ; \Lsh INPUT P
-  INPUT Q             ; \Lsh INPUT Q
-  INPUT R             ; \Lsh INPUT R
-  *                   ; \times
-  *                   ; \times
+  INPUT P
+  INPUT Q
+  INPUT R
+  *
+  *
   ; IF x=0 THEN GOTO 'S->D'
-  x=0?                ; \Rsh x?0 6
-    GTO star2delta    ; GTO label 'star2delta'
+  x=0?
+    GTO star2delta
   ; x=P*Q+Q*R+R*P
-  RCL P               ; RCL P
-  RCL Q               ; RCL Q
-  *                   ; \times 
-  RCL Q               ; RCL Q
-  RCL R               ; RCL R
-  *                   ; \times
-  RCL R               ; RCL R
-  RCL P               ; RCL P
-  *                   ; \times 
-  +                   ; +
-  +                   ; +
-  STO A               ; \Rsh STO A
-  STO B               ; \Rsh STO B
-  STO C               ; \Rsh STO C
+  RCL P
+  RCL Q
+  *
+  RCL Q
+  RCL R
+  *
+  RCL R
+  RCL P
+  *
+  +
+  +
+  STO A
+  STO B
+  STO C
   ; A=x/R
-  RCL R               ; RCL R
-  STO/ A              ; \Rsh STO \div A
+  RCL R
+  STO/ A
   ; B=x/Q
-  RCL Q               ; RCL Q
-  STO/ B              ; \Rsh STO \div B
+  RCL Q
+  STO/ B
   ; C=x/P
-  RCL P               ; RCL P
-  STO/ C              ; \Rsh STO \div C
+  RCL P
+  STO/ C
   ; view ABC
-  0                   ; 0 ENTER
-  RCL A               ; RCL A
-  RCL B               ; RCL B
-  RCL C               ; RCL C
-  VIEW A              ; \Lsh VIEW A
-  VIEW B              ; \Lsh VIEW B
-  VIEW C              ; \Lsh VIEW C
+  0
+  RCL A
+  RCL B
+  RCL C
+  VIEW A
+  VIEW B
+  VIEW C
 RTN
 
 delta2star:
   ; D->S
-  INPUT A             ; \Lsh INPUT A
-  INPUT B             ; \Lsh INPUT B
-  INPUT C             ; \Lsh INPUT C
-  +                   ; +
-  +                   ; +
+  INPUT A
+  INPUT B
+  INPUT C
+  +
+  +
   ; IF x=0 THEN GOTO 'D->S'
-  x=0?                ; \Rsh x?0 6
-    GTO delta2star    ; GTO label 'delta2star'
+  x=0?
+    GTO delta2star
   ; x=1/(A+B+C)
-  1/x                 ; 1/X
-  STO P               ; \Rsh STO P
-  STO Q               ; \Rsh STO Q
-  STO R               ; \Rsh STO R
+  1/x
+  STO P
+  STO Q
+  STO R
   ; P=A*B*x
-  RCL A               ; RCL A
-  RCL B               ; RCL B
-  *                   ; \times
-  STO* P              ; \Rsh STO \times P
+  RCL A
+  RCL B
+  *
+  STO* P
   ; Q=A*C*x
-  RCL A               ; RCL A
-  RCL C               ; RCL C
-  *                   ; \times
-  STO* Q              ; \Rsh STO \times Q
+  RCL A
+  RCL C
+  *
+  STO* Q
   ; Q=B*C*x
-  RCL B               ; RCL B
-  RCL C               ; RCL C
-  *                   ; \times
-  STO* R              ; \Rsh STO \times R
+  RCL B
+  RCL C
+  *
+  STO* R
   ; view PQR
-  0                   ; 0 ENTER
-  RCL P               ; RCL P
-  RCL Q               ; RCL Q
-  RCL R               ; RCL R
-  VIEW P              ; \Lsh VIEW P
-  VIEW Q              ; \Lsh VIEW Q
-  VIEW R              ; \Lsh VIEW R
+  0
+  RCL P
+  RCL Q
+  RCL R
+  VIEW P
+  VIEW Q
+  VIEW R
 
-RTN                   ; \Lsh RTN \C
+RTN
 ENDS
-END start             ; \C
+
+END start
 ; CK=9506
 ; LN=289

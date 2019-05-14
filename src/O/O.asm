@@ -1,50 +1,51 @@
 ; Ohms Law
 MODEL P35S
 SEGMENT CODE
-LBL O           ; \Rsh LBL O
+start:
+LBL O           ; program O
 
 init:
-  RPN           ; MODE 5RPN
+  RPN           ; mode RPN
 
 read:
   ; input R, V and I
-  INPUT R       ; \Lsh INPUT R
+  INPUT R
   ; IF R=0 THEN GOTO 'R=V/I'
-  x=0?          ; \Rsh x?0 6
-    GTO calcR   ; GTO RCL 'calcR'
-  INPUT V       ; \Lsh INPUT V
+  x=0?
+    GTO calcR
+  INPUT V
   ; IF V=0 THEN GOTO 'V=R*I'
-  x=0?          ; \Rsh x?0 6
-    GTO calcV   ; GTO RCL 'calcV'
+  x=0?
+    GTO calcV
 
 calcI:
   ; I=V/R
-  RCL/ R        ; RCL \div R
+  RCL/ R
   ; display I
-  STO I         ; \Rsh STO I
-  VIEW I        ; \Lsh VIEW I
-RTN             ; \Lsh RTN
+  STO I
+  VIEW I
+RTN
 
 calcR:
   ; R=V/I
-  INPUT V       ; \Lsh INPUT V
-  INPUT I       ; \Lsh INPUT I
-  /             ; \div
+  INPUT V
+  INPUT I
+  /             ; \:-
   ; display R
-  STO R         ; \Rsh STO R
-  VIEW R        ; \Lsh VIEW R
-RTN             ; \Lsh RTN
+  STO R
+  VIEW R
+RTN
 
 calcV:
   ; V=R*I
-  INPUT I       ; \Lsh INPUT I
-  RCL* R        ; RCL \times R
+  INPUT I
+  RCL* R
   ; display V
-  STO V         ; \Rsh STO V
-  VIEW V        ; \Lsh VIEW V
-
-RTN             ; \Lsh RTN 
+  STO V
+  VIEW V
+RTN
 ENDS
-END             ; \C
+
+END
 ; CK=9CCF
 ; LN=69

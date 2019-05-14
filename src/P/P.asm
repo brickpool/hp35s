@@ -1,139 +1,139 @@
 ; Electric power P
 MODEL P35S
 SEGMENT DATA
-  ; 1 RCL P \Rsh 0 2 RCL V \Rsh 0 3 RCL I \Rsh 0 4 RCL R
   eqnMenu EQU '1P 2V 3I 4R'
 ENDS
 
 SEGMENT CODE
 start:
-LBL P                 ; \Rsh LBL P
+LBL P                 ; program P
+
 init:
-  RPN                 ; MODE 5RPN
+  RPN                 ; mode RPN
 
 menu:
-  SF 10               ; \Lsh \wedge 1 . 0
-    EQN eqnMenu       ; EQN [eqnMenu] ENTER
-  CF 10               ; \Lsh \wedge 2 . 0
+  ; display [eqnMenu]
+  SF 10
+    EQN eqnMenu
+  CF 10
   ; IF y=1 THEN GOTO 'P='
-  1                   ; 1 ENTER
-  x=y?                ; \Lsh x?y 6
-    GTO calcP         ; GTO label 'calcP'
-  Rv                  ; R\downarrow
+  1
+  x=y?
+    GTO calcP
+  Rv
   ; IF y=2 THEN GOTO 'V='
-  2                   ; 2 ENTER
-  x=y?                ; \Lsh x?y 6
-    GTO calcV         ; GTO label 'calcV'
-  Rv                  ; R\downarrow
+  2
+  x=y?
+    GTO calcV
+  Rv
   ; IF y=3 THEN GOTO 'I='
-  3                   ; 3 ENTER
-  x=y?                ; \Lsh x?y 6
-    GTO calcI         ; GTO label 'calcI'
-  Rv                  ; R\downarrow
+  3
+  x=y?
+    GTO calcI
+  Rv
   ; IF y=4 THEN GOTO 'R='
-  4                   ; 3 ENTER
-  x=y?                ; \Lsh x?y 6
-    GTO calcR         ; GTO label 'calcR'
-  Rv                  ; R\downarrow
-STOP                  ; R/S
+  4
+  x=y?
+    GTO calcR
+  Rv
+STOP
 
 ; P=
 calcP:
-  INPUT V             ; \Lsh INPUT V
+  INPUT V
   ; IF V=0 THEN GOTO 'P=I^2*R'
-  x=0?                ; \Rsh x?0 6
-    GTO inputI4P      ; GTO label 'inputI4P'
-  INPUT I             ; \Lsh INPUT I
+  x=0?
+    GTO inputI4P
+  INPUT I
   ; IF I=0 THEN GOTO 'P=V^2/R'
-  x=0?                ; \Rsh x?0 6
-    GTO inputR        ; GTO label 'inputR'
+  x=0?
+    GTO inputR
   ; P=V*I
-  *                   ; \times
-GTO displayP          ; GTO label 'displayP'
+  *
+GTO displayP
 
 inputI4P:
   ; P=I^2*R
-  INPUT I             ; \Lsh INPUT I
-  x^2                 ; \Rsh x^{2}
-  INPUT R             ; \Lsh INPUT R
-  *                   ; \times
-GTO displayP          ; GTO label 'displayP'
+  INPUT I
+  x^2
+  INPUT R
+  *
+GTO displayP
 
 inputR:
   ; P=V^2/R
-  INPUT R             ; \Lsh INPUT R
-  x<=0?               ; \Rsh x?0 2
+  INPUT R
   ; IF R<=0 THEN GOTO 'P=V^2/R'
-  GTO displayP        ; GTO label 'displayP'
-  1/x                 ; 1/X
-  RCL* V              ; RCL \times V
-  RCL* V              ; RCL \times V
+  x<=0?
+    GTO displayP
+  1/x
+  RCL* V
+  RCL* V
 
 displayP:
-  STO P               ; \Rsh STO P
-  VIEW P              ; \Lsh VIEW P
-RTN                   ; \Lsh RTN
+  STO P
+  VIEW P
+RTN
 
 ; V=
 calcV:
-  INPUT P             ; \Lsh INPUT P
-  INPUT R             ; \Lsh INPUT R
+  INPUT P
+  INPUT R
   ; V=SQRT(P*R)
-  *                   ; \times
-  sqrt                ; \sqrt{x}
+  *
+  sqrt                ; \v/x
   ; display V
-  STO V               ; \Rsh STO V
-  VIEW V              ; \Lsh VIEW V
-RTN                   ; \Lsh RTN
+  STO V
+  VIEW V
+RTN
 
 ; I=
 calcI:
-  INPUT P             ; \Lsh INPUT P
-  ; input R
-  INPUT R             ; \Lsh INPUT R
-  ; IF R<=0 THEN GOTO 'input R'
-  x<=0?               ; \Rsh x?0 2
-    GTO calcV         ; GTO label 'calcV'
+  INPUT P
+  INPUT R
+  ; IF R<=0 THEN GOTO 'input I='
+  x<=0?
+    GTO calcI
   ; I=SQRT(P/R)
-  /                   ; \div
-  sqrt                ; \sqrt{x}
+  /                   ; \:-
+  sqrt                ; \v/x
   ; display I
-  STO  I              ; \Rsh STO I
-  VIEW I              ; \Lsh VIEW I
-RTN                   ; \Lsh RTN
+  STO  I
+  VIEW I
+RTN
 
 ; R=
 calcR:
-  INPUT P             ; \Lsh INPUT P
+  INPUT P
   ; IF P<=0 THEN GOTO 'R='
-  x<=0?               ; \Rsh x?0 2
-    GTO calcR         ; GTO label 'calcR'
-  INPUT V             ; \Lsh INPUT V
+  x<=0?
+    GTO calcR
+  INPUT V
   ; IF V=0 THEN GOTO 'R=P/I^2'
-  x=0?                ; \Rsh x?0 6
-    GTO inputI4R      ; GTO label 'inputI4R'
+  x=0?
+    GTO inputI4R
   ; R=V^2/P
-  x^2                 ; \Rsh x^{2}
-  RCL/ P              ; RCL \div P
-GTO displayR          ; GTO label 'displayR'
+  x^2
+  RCL/ P
+GTO displayR
 
 inputI4R:
   ; R=P/I^2
-  INPUT I             ; \Lsh INPUT I
+  INPUT I
   ; IF I<=0 THEN GOTO 'R=P/I^2'
-  x<=0?               ; \Rsh x?0 2=
-    GTO inputI4R      ; GTO label 'inputI4R'
-  x^2                 ; \Rsh x^{2}
-  1/x                 ; 1/X
-  RCL* P              ; RCL \times P
+  x<=0?
+    GTO inputI4R
+  x^2
+  1/x
+  RCL* P
 
 displayR:
-  STO R               ; \Rsh STO R
-  VIEW R              ; \Lsh VIEW R
+  STO R
+  VIEW R
 
-RTN                   ; \Lsh RTN
+RTN
 ENDS
 
-END start             ; \C
+END
 ; CK=1AAF
 ; LN=249
