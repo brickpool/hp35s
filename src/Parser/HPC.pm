@@ -25,7 +25,7 @@
 #               - \=y to \y-
 #               - \^x to \x^
 #               - \^y to \y^
-
+#   2019-05-15: add @functions to statements
 
 use strict;
 use warnings;
@@ -41,7 +41,7 @@ use strict;
 use warnings;
 
 use Exporter;
-our @EXPORT = qw(@instructions @with_address @with_digits @with_variables @with_indirects @expressions);
+our @EXPORT = qw(@instructions @with_address @with_digits @with_variables @with_indirects @expressions @functions);
 require Parser::MGC;
 our @ISA = qw(Exporter Parser::MGC);
 
@@ -167,7 +167,7 @@ our @expressions = (
   'EQN', 
 );
 
-my @functions = (
+our @functions = (
   # G2
   'INV',
   # G4
@@ -511,7 +511,7 @@ sub parse_code_statement {
         @with_digits,
         @with_indirects, 
         @expressions,
-  #      @functions,
+        @functions,
       )
     },
     sub {
@@ -532,7 +532,7 @@ sub parse_code_statement {
   if ( defined $mnemonic ) {
 
     my $operand;
-    if ( grep { $_ eq $mnemonic } @instructions ) {
+    if ( grep { $_ eq $mnemonic } @instructions, @functions ) {
       # instructions without an operand
       $statement = {
         $mnemonic => {
