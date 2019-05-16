@@ -1,7 +1,7 @@
 Y001	LBL Y		; ↱ LBL Y
 Y002	RPN		; MODE 5
 Y003	SF 10		; ↰ FLAGS 1 . 0
-; EQN 1 RCL T  ↱ →l < ⇦ ⇦ ⇦ ↰ π ↱ SPACE 2 ↰ π  ↱ →l < ⇦ ⇦ ⇦ RCL T ↱ SPACE 3 RCL S  ↱ →l < ⇦ ⇦ ⇦ RCL D ↱ SPACE 4 RCL D  ↱ →l < ⇦ ⇦ ⇦ RCL S ENTER
+; EQN 1 RCL T ↱ →l < ⇦ ⇦ ⇦ ↰ π ↱ SPACE 2 ↰ π ↱ →l < ⇦ ⇦ ⇦ RCL T ↱ SPACE 3 RCL S ↱ →l < ⇦ ⇦ ⇦ RCL D ↱ SPACE 4 RCL D ↱ →l < ⇦ ⇦ ⇦ RCL S ENTER
 Y004	1T→π 2π→T 3S→D 4D→S
 Y005	CF 10		; ↰ FLAGS 2 . 0
 Y006	1		; 1 ENTER
