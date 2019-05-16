@@ -207,7 +207,7 @@ my $sequences = {
   '\->\^oC' => '\+> \->\^oC',
   'CF'      => '\<+ FLAGS 2',
   # G6
-  'CLZ'     => '\+> CLEAR 4',
+  'CL\GS'   => '\+> CLEAR 4',
   'CLVARS'  => '\+> CLEAR 2',
   'CLx'     => '\+> CLEAR 1',
   'CLSTK'   => '\+> CLEAR 5',
