@@ -37,15 +37,15 @@ Next comes the unit to be calculated
 
 Subsequently, any number of values are read in until the value 0 is entered
 ```
-\>(I)
+>(I)
   1000 R/S
 ```
 ```
-\>(I)
+>(I)
   1200 R/S
 ```
 ```
-\>(I)
+>(I)
   0 R/S
 ```
 
