@@ -16,17 +16,20 @@
 #   2019-05-09: add option shortcut (0.3.0)
 #   2019-05-10: fixing key sequences for CF, FIX, ... and EQN
 #   2019-05-14: adding trigraphs to key sequences
+#   2019-05-15: output can be trigraph, ascii-text or unicode
+#   2019-05-16: correct handling of numbers
 
 use strict;
 use warnings;
 
 use Getopt::Long;
-use Parser::HPC;
+use Parser::HPC qw(@instructions @with_address @with_digits @with_variables @with_indirects @expressions @functions);
 use Data::Dumper;
 
 # Declaration
-my $VERSION = '0.3.2';
+my $VERSION = '0.3.3';
 my $version;
+my $ascii;
 my $unicode;
 my $shortcut;
 my $help;
@@ -39,6 +42,7 @@ Getopt::Long::Configure('bundling');
 GetOptions (
   "help"      => \$help,    "h"   => \$help,
   "version"   => \$version, "v"   => \$version,
+  "ascii"     => \$ascii,   "a"   => \$ascii,
   "unicode"   => \$unicode, "u"   => \$unicode,
   "shortcut"  => \$shortcut,"s"   => \$shortcut,
   "debug"                         => \$debug,
@@ -89,147 +93,101 @@ use constant _brtri   => "\N{U+25B6}";
 use constant _cancel  => "\N{U+1D402}";
 use constant _iscr    => "\N{U+1D4BE}";
 
-
-my $unicodes = {
+# HP Trigraphs
+my $trigraphs = {
   # G1
-  '*'     => _times,
-  '/'     => _divide,
+  '*'     => '\.x',
+  '/'     => '\:-',
   # G2
-  '10^x'  => '10'._supx,
-  'pi'    => _pi,
-  'Z+'    => _Sigma.'+',
-  'Z-'    => _Sigma.'-',
+  '10^x'  => '10\^x',
+  'pi'    => '\pi',
+  'Z+'    => '\GS+',
+  'Z-'    => '\GS-',
   # G3
-  'Zx'    => _Sigma.'x',
-  'Zx^2'  => _Sigma.'x'._sup2,
-  'Zxy'   => _Sigma.'xy',
-  'Zy'    => _Sigma.'y',
-  'Zy^2'  => _Sigma.'y'._sup2,
-  'S,z'   => 'S,'._sigma,
-  'zx'    => _sigma.'x',
-  'zy'    => _sigma.'y',
-  '$FN_d' => _int.'FN d',
-  # G4
-  't'     => _theta,
+  'Zx'    => '\GSx',
+  'Zx^2'  => '\GSx\^2',
+  'Zxy'   => '\GSxy',
+  'Zy'    => '\GSy',
+  'Zy^2'  => '\GSy\^2',
+  'S,z'   => 'S,\Gs',
+  'zx'    => '\Gsx',
+  'zy'    => '\Gsy',
+  '$FN_d' => '\.SFN d',
   # G5
-  '->°C'  => _rarr.'°C',
+  '->°C'  => '\->\^oC',
   # G6
-  'CLZ'   => 'CL'._Sigma,
-  '->CM'  => _rarr.'CM',
-  '->DEG' => _rarr.'DEG',
+  'CLZ'   => 'CL\GS',
+  '->CM'  => '\->CM',
+  '->DEG' => '\->DEG',
   # G7
-  '<-ENG' => _larr.'ENG',
-  'ENG->' => 'ENG'._rarr,
-  'e^x'   => 'e'._supx,
+  '<-ENG' => '\<-ENG',
+  'ENG->' => 'ENG\->',
+  'e^x'   => 'e\^x',
   # G8
-  '->°F'  => _rarr.'°F',
-  '->GAL' => _rarr.'GAL',
+  '->°F'  => '\->\^oF',
+  '->GAL' => '\->GAL',
   # G9
-  '->HMS' => _rarr.'HMS',
-  'HMS->' => 'HMS'._rarr,
-  '->IN'  => _rarr.'IN',
-  'INT/'  => 'INT'._divide,
+  '->HMS' => '\->HMS',
+  'HMS->' => 'HMS\->',
+  '->IN'  => '\->IN',
+  'INT/'  => 'INT\:-',
   # G10
-  '->KG'  => _rarr.'KG',
-  '->KM'  => _rarr.'KM',
-  '->L'   => _rarr.'L',
-  '->LB'  => _rarr.'LB',
+  '->KG'  => '\->KG',
+  '->KM'  => '\->KM',
+  '->L'   => '\->L',
+  '->LB'  => '\->LB',
   # G11
-  '->MILE'=> _rarr.'MILE',
+  '->MILE'=> '\->MILE',
   # G12
-  'rta'   => 'r'._theta.'a',
-  '->RAD' => _rarr.'RAD',
-  'RCL*'  => 'RCL'._times,
-  'RCL/'  => 'RCL'._divide,
+  'rta'   => 'r\Gha',
+  '->RAD' => '\->RAD',
+  'RCL*'  => 'RCL\.x',
+  'RCL/'  => 'RCL\:-',
   # G13
-  'Rv'    => 'R'._darr,
-  'R^'    => 'R'._uarr,
+  'Rv'    => 'R\|v',
+  'R^'    => 'R\|^',
   # G14
-  'STO*'  => 'STO'._times,
-  'STO/'  => 'STO'._divide,
+  'STO*'  => 'STO\.x',
+  'STO/'  => 'STO\:-',
   # G15
-  'sx'    => _sigma.'x',
-  'sy'    => _sigma.'y',
-  'x^2'   => 'x'._sup2,
-  'sqrt'  => _sqrt.'x',
-  'xroot' => 'x'._sqrt.'y',
+  'sx'    => '\Gsx',
+  'sy'    => '\Gsy',
+  'x^2'   => 'x\^2',
+  'sqrt'  => '\v/x',
+  'xroot' => 'x\v/y',
   # G16
-  '\x-w'  => 'x'._macr.'w',
-  'x!=y?' => 'x'._neq.'y?',
-  'x<=y?' => 'x'._leq.'y?',
-  'x>=y?' => 'x'._geq.'y?',
+  '\x-w'  => '\x-w',
+  'x!=y?' => 'x\=/y?',
+  'x<=y?' => 'x\<=y?',
+  'x>=y?' => 'x\>=y?',
   # G17
-  'x!=0?' => 'x'._neq.'0?',
-  'x<=0?' => 'x'._leq.'0?',
-  'x>=0?' => 'x'._geq.'0?',
+  'x!=0?' => 'x\=/0?',
+  'x<=0?' => 'x\<=0?',
+  'x>=0?' => 'x\>=0?',
   # G18
-  'xiy'   => 'x'._iscr.'y',
-  'x+yi'  => 'x+y'._iscr,
-  'y^x'   => 'y'._supx,
-  # Trigraphs
-  '\BS'   => _bksp,
-  '\CC'   => _cancel,
-  '\x-'   => 'x'._macr,
-  '\v/'   => _sqrt,
-  '\.S'   => _int,
-  '\GS'   => _Sigma,
-  '\|>'   => _brtri,
-  '\pi'   => _pi,
-  '\<='   => _leq,
-  '\>='   => _geq,
-  '\=/'   => _neq,
-  '\Ga'   => _alpha,
-  '\->'   => _rarr,
-  '\<-'   => _larr,
-  '\|v'   => _darr,
-  '\|^'   => _uarr,
-  '\Gg'   => _gamma,
-  '\Ge'   => _epsilon,
-  '\Gh'   => _theta,
-  '\Gl'   => _lambda,
-  '\Gs'   => _sigma,
-  '\oo'   => _infin,
-  '\^o'   => '°',
-  '\Gm'   => 'µ',
-  '\^2'   => _sup2,
-  '\.x'   => _times,
-  '\O/'   => _Phi,
-  '\:-'   => _divide,
-  '\<.'   => '<',
-  '\.>'   => '>',
-  '\.v'   => _vee,
-  '\.^'   => _wedge,
-  '\<+'   => _lsh,
-  '\+>'   => _rsh,
-  '\h-'   => 'h'._macr,
-  '\^x'   => _supx,
-  '\x^'   => 'x'._circ,
-  '\y^'   => _ycirc,
-  '\y-'   => _ymacr,
+  'xiy'   => 'x\Miy',
+#  'x+yi'  => 'x+y\Mi', only mode ALG
+  'y^x'   => 'y\^x',
 };
 
-
+# Key sequences
 my $sequences = {
   # G2
-  '10^x'    => '\+> 10\^x',
+  '10\^x'   => '\+> 10\^x',
   '%'       => '\+> %',
   '%CHG'    => '\<+ %CHG',
-  'p'       => '\<+ \pi',
-  'pi'      => '\<+ \pi',
-  'Z-'      => '\<+ \GS-',
+  '\pi'     => '\<+ \pi',
+  '\GS-'    => '\<+ \GS-',
   # G3
-  'Zx'      => '\+> SUMS 2',
-  'Zx^2'    => '\+> SUMS 4',
-  'Zxy'     => '\+> SUMS 6',
-  'Zy'      => '\+> SUMS 3',
-  'Zy^2'    => '\+> SUMS 4',
-  'zx'      => '\+> S,\Gs 3',
-  'zy'      => '\+> S,\Gs 4',
-  '$FN_d'   => '\<+ \.S',
+  '\GSx'    => '\+> SUMS 2',
+  '\GSx\^2' => '\+> SUMS 4',
+  '\GSxy'   => '\+> SUMS 6',
+  '\GSy'    => '\+> SUMS 3',
+  '\GSy\^2' => '\+> SUMS 4',
+  '\Gsx'    => '\+> S,\Gs 3',
+  '\Gsy'    => '\+> S,\Gs 4',
+  '\.SFN d' => '\<+ \.S',
   # G4
-  '['       => '\+> []',
-  ']'       => '',
-  't'       => '\+> \Gh',
   'ABS'     => '\+> ABS',
   'ACOS'    => '\+> ACOS',
   'ACOSH'   => '\<+ HYP \+> ACOS',
@@ -246,56 +204,56 @@ my $sequences = {
   'b'       => '\<+ L.R. 5',
   'BIN'     => '\+> BASE 4',
   '/c'      => '\<+ /c',
-  '->°C'    => '\+> \->\^oC',
+  '\->\^oC' => '\+> \->\^oC',
   'CF'      => '\<+ FLAGS 2',
   # G6
   'CLZ'     => '\+> CLEAR 4',
   'CLVARS'  => '\+> CLEAR 2',
   'CLx'     => '\+> CLEAR 1',
   'CLSTK'   => '\+> CLEAR 5',
-  '->CM'    => '\+> \->cm',
+  '\->CM'   => '\+> \->cm',
   'nCr'     => '\<+ nCr',
   'COSH'    => '\<+ HYP COS',
   'DEC'     => '\+> BASE 1',
   'DEG'     => 'MODE 1',
-  '->DEG'   => '\+> \->DEG',
+  '\->DEG'  => '\+> \->DEG',
   # G7
   'DSE'     => '\+> DSE',
   'ENG'     => '\<+ DISPLAY 3',
-  'e^x'     => '\+> e\^x',
+  'e\^x'    => '\+> e\^x',
   # G8
   'EXP'     => '\+> e\^x',
-  '->°F'    => '\<+ \->\^oF',
+  '\->\^oF' => '\<+ \->\^oF',
   'FIX'     => '\<+ DISPLAY 1',
   'FN='     => '\<+ FN=',
   'FP'      => '\<+ INTG 5',
   'FS?'     => '\<+ FLAGS 3',
-  '->GAL'   => '\<+ \->gal',
+  '\->GAL'  => '\<+ \->gal',
   'GRAD'    => 'MODE 3',
   'HEX'     => '\+> BASE 2',
   # G9
-  '->HMS'   => '\+> \->HMS',
-  'HMS->'   => '\<+ HMS\->',
-  '->IN'    => '\+> \->in',
+  '\->HMS'  => '\+> \->HMS',
+  'HMS\->'  => '\<+ HMS\->',
+  '\->IN'   => '\+> \->in',
   'IDIV'    => '\<+ INTG 2',
-  'INT/'    => '\<+ INTG 2',
+  'INT\:-'  => '\<+ INTG 2',
   'INTG'    => '\<+ INTG 4',
   'INPUT'   => '\<+ INPUT',
   'INV'     => '1/x',
   # G10
   'IP'      => '\<+ INTG 6',
   'ISG'     => '\<+ ISG',
-  '->KG'    => '\+> \->kg',
-  '->KM'    => '\+> \->KM',
-  '->L'     => '\+> \->l',
+  '\->KG'   => '\+> \->kg',
+  '\->KM'   => '\+> \->KM',
+  '\->L'    => '\+> \->l',
   'LASTx'   => '\+> LASTx',
-  '->LB'    => '\+> \->lb',
+  '\->LB'   => '\+> \->lb',
   'LBL'     => '\+> LBL',
   'LN'      => '\+> LN',
   'LOG'     => '\<+ LOG',
   'm'       => '\<+ L.R. 4',
   # G11
-  '->MILE'  => '\+> \->MILE',
+  '\->MILE' => '\+> \->MILE',
   'n'       => '\+> SUMS 1',
   'NAND'    => '\<+ LOGIC 5',
   'NOR'     => '\<+ LOGIC 6',
@@ -306,22 +264,22 @@ my $sequences = {
   'PSE'     => '\+> PSE',
   # G12
   'r'       => '\<+ L.R. 3',
-  'rta'     => '\<+ DISPLAY 1 0',
+  'r\Gha'   => '\<+ DISPLAY . 0',
   'RAD'     => 'MODE 1',
-  '->RAD'   => '\<+ \->RAD',
+  '\->RAD'  => '\<+ \->RAD',
   'RADIX,'  => '\<+ DISPLAY 6',
   'RADIX.'  => '\<+ DISPLAY 5',
   'RADOM'   => '\+> RADOM',
   'RCL+'    => 'RCL +',
   'RCL-'    => 'RCL -',
-  'RCL*'    => 'RCL *',
-  'RCL/'    => 'RCL \:-',
+  'RCL\.x'  => 'RCL \.x',
+  'RCL\:-'  => 'RCL \:-',
   'RMDR'    => '\<+ INTG 3',
   # G13
   'RND'     => '\<+ RND',
   'RPN'     => 'MODE 5',
   'RTN'     => '\<+ RTN',
-  'R^'      => '\+> R\|^',
+  'R\|^'    => '\+> R\|^',
   'SCI'     => '\<+ DISPLAY 2',
   'SEED'    => '\<+ SEED',
   'SF'      => '\<+ FLAGS 1',
@@ -329,50 +287,81 @@ my $sequences = {
   # G14
   'SINH'    => '\<+ HYP SIN',
   'SQ'      => '\+> x\^2',
-  'SQRT'    => '\v/',
+  'SQRT'    => '\v/x',
   'STO'     => '\+> STO',
   'STO+'    => '\+> STO +',
   'STO-'    => '\+> STO -',
-  'STO*'    => '\+> STO *',
-  'STO/'    => '\+> STO \:-',
+  'STO\.x'  => '\+> STO \.x',
+  'STO\:-'  => '\+> STO \:-',
   'STOP'    => 'R/S',
   # G15
-  'sx'      => '\+> S,\Gs 1',
-  'sy'      => '\+> S,\Gs 2',
+  '\Gsx'    => '\+> S,\Gs 1',
+  '\Gsy'    => '\+> S,\Gs 2',
   'TANH'    => '\<+ HYP TAN',
   'VIEW'    => '\<+ VIEW',
-  'x^2'     => '\+> x\^2',
-  'xroot'   => '\<+ x\v/y',
+  'x\^2'    => '\+> x\^2',
+  'x\v/y'   => '\<+ x\v/y',
   '\x-'     => '\<+ \x-,\y- 1',
   '\x^'     => '\<+ L.R. 1',
   '!'       => '\+> !',
   # G16
-  'XROOT'   => '\<+ xroot',
+  'XROOT'   => '\<+ x\v/y',
   '\x-w'    => '\<+ \x-,\y- 3',
   'x<>'     => '\<+ x<>y',
-  'x!=y?'   => '\<+ x?y 1',
-  'x<=y?'   => '\<+ x?y 2',
-  'x>=y?'   => '\<+ x?y 5',
+  'x\=/y?'  => '\<+ x?y 1',
+  'x\<=y?'  => '\<+ x?y 2',
+  'x\>=y?'  => '\<+ x?y 5',
   'x<y?'    => '\<+ x?y 3',
   'x>y?'    => '\<+ x?y 4',
   # G17
   'x=y?'    => '\<+ x?y 6',
-  'x!=0?'   => '\+> x?0 1',
-  'x<=0?'   => '\+> x?0 2',
-  'x>=0?'   => '\+> x?0 5',
+  'x\=/0?'  => '\+> x?0 1',
+  'x\<=0?'  => '\+> x?0 2',
+  'x\>=0?'  => '\+> x?0 5',
   'x<0?'    => '\+> x?0 3',
   'x>0?'    => '\+> x?0 4',
   'x=0?'    => '\+> x?0 6',
   'XOR'     => '\<+ LOGIC 2',
   # G18
-  'xiy'     => '\<+ DISPLAY 9',
-  'x+yi'    => '\<+ DISPLAY . 1',
+  'x\Miy'   => '\<+ DISPLAY 9',
+#  'x+y\Mi'  => '\<+ DISPLAY . 1',  only mode ALG
   '\y-'     => '\<+ \x-,\y- 2',
   '\y^'     => '\<+ L.R. 2',
 };
 
-# HP characters
-my $eqn_sequences = {
+# number sequences
+my $numbers = {
+  'dec' => '\CC \+> BASE 1 \+> PRGM',
+  'hex' => '\CC \+> BASE 2 \+> PRGM',
+  'oct' => '\CC \+> BASE 3 \+> PRGM',
+  'bin' => '\CC \+> BASE 4 \+> PRGM',
+  'd'   => '\+> BASE 5',
+  'h'   => '\+> BASE 6',
+  'o'   => '\+> BASE 7',
+  'b'   => '\+> BASE 8',
+  '0'   => '0',
+  '1'   => '1',
+  '2'   => '2',
+  '3'   => '3',
+  '4'   => '4',
+  '5'   => '5',
+  '6'   => '6',
+  '7'   => '7',
+  '8'   => '8',
+  '9'   => '9',
+  'A'   => 'SIN',
+  'B'   => 'COS',
+  'C'   => 'TAN',
+  'D'   => '\v/x',
+  'E'   => 'y^x',
+  'F'   => '1/x',
+  'e'   => 'E',
+  '-'   => '+/-',
+  '.'   => '.',
+};
+
+# EQN character
+my $character = {
   # 0..31
   ' ' => '\+> SPACE',
   '!' => '\+> !',
@@ -443,11 +432,11 @@ my $eqn_sequences = {
   'b' => '\+> BASE 8',
   'c' => '',
   'd' => '\+> BASE 5',
-  # 'e' => 'e',
+  'e' => 'E',
   'f' => '',
   'g' => '',
   'h' => '\+> BASE 6',
-  'i' => 'i',
+  'i' => '\Mi',
   'j' => '',
   'k' => '',
   'l' => '',
@@ -483,7 +472,7 @@ my $eqn_sequences = {
   '\>=' => '',
   '\=/' => '',
   '\Ga' => '\<+ CONST \.^ \.^ 1',
-  '\->' => ' \+> \->l \<. \BS \BS \BS',
+  '\->' => '\+> \->l \<. \BS \BS \BS',
   '\<-' => '',
   '\|v' => '',
   '\|^' => '',
@@ -524,9 +513,99 @@ my $eqn_sequences = {
   # 248..255
   # additional trigraphs
   '\h-' => '\<+ CONST \.v \.v 3',
+  # '\Mi' => '\Mi',
   '\x^' => '\<+ L.R. 1 \.> \BS \BS',
   '\y^' => '\<+ L.R. 2 \.> \BS \BS',
   '\y-' => '\<+ \x-,\y- 2',
+};
+
+# ASCII mapping
+my $plaintext = {
+  '\BS'   => 'bksp',
+  '\CC'   => 'cancel',
+  '\x-'   => 'xbar',
+  '\v/x'  => 'sqrt',
+  'x\v/y' => 'xroot',
+  '\.S'   => '$',
+  '\GS'   => 'Z',
+  '\|>'   => '>',
+  '\pi'   => 'pi',
+  '\<='   => '<=',
+  '\>='   => '>=',
+  '\=/'   => '!=',
+  '\Ga'   => 'alpha',
+  '\->'   => '->',
+  '\<-'   => '<-',
+  '\|v'   => 'v',
+  '\|^'   => '^',
+  '\Gg'   => 'gamma',
+  '\Ge'   => 'epsilon',
+  '\Gh'   => 't',
+  '\Gl'   => 'lambda',
+  '\Gs'   => 'z',
+  '\oo'   => 'infty',
+  '\^o'   => '^o',
+  '\Gm'   => 'mu',
+  '\^2'   => '^2',
+  '\.x'   => '*',
+  '\O/'   => 'Phi',
+  '\:-'   => '/',
+  '\<.'   => 'left',
+  '\.>'   => 'right',
+  '\.v'   => 'down',
+  '\.^'   => 'up',
+  '\<+'   => 'ctrl',
+  '\+>'   => 'shift',
+  '\h-'   => 'hbar',
+  '\Mi'   => 'i',
+  '\^x'   => '^x',
+  '\x^'   => 'xcirc',
+  '\y^'   => 'ycirc',
+  '\y-'   => 'ybar',
+};
+
+# Unicode mapping
+my $unicodes = {
+  '\BS'   => _bksp,
+  '\CC'   => _cancel,
+  '\x-'   => 'x'._macr,
+  '\v/'   => _sqrt,
+  '\.S'   => _int,
+  '\GS'   => _Sigma,
+  '\|>'   => _brtri,
+  '\pi'   => _pi,
+  '\<='   => _leq,
+  '\>='   => _geq,
+  '\=/'   => _neq,
+  '\Ga'   => _alpha,
+  '\->'   => _rarr,
+  '\<-'   => _larr,
+  '\|v'   => _darr,
+  '\|^'   => _uarr,
+  '\Gg'   => _gamma,
+  '\Ge'   => _epsilon,
+  '\Gh'   => _theta,
+  '\Gl'   => _lambda,
+  '\Gs'   => _sigma,
+  '\oo'   => _infin,
+  '\^o'   => '°',
+  '\Gm'   => 'µ',
+  '\^2'   => _sup2,
+  '\.x'   => _times,
+  '\O/'   => _Phi,
+  '\:-'   => _divide,
+  '\<.'   => '<',
+  '\.>'   => '>',
+  '\.v'   => _vee,
+  '\.^'   => _wedge,
+  '\<+'   => _lsh,
+  '\+>'   => _rsh,
+  '\h-'   => 'h'._macr,
+  '\Mi'   => _iscr,
+  '\^x'   => _supx,
+  '\x^'   => 'x'._circ,
+  '\y^'   => _ycirc,
+  '\y-'   => _ymacr,
 };
 
 my $lbl = '0';
@@ -648,13 +727,16 @@ foreach my $seq ( @segments ) {
     defined $entry->{type} or
       print STDERR "Warn: missing 'type' in statement '$statement'\n" and next;
 
-    if ($entry->{type} eq 'number') {
+    if ($entry->{type} =~ /decimal|binary|octal|hex/) {
       $out .= sprintf_number_statement( $statement );
+    }
+    elsif ($entry->{type} eq 'complex') {
+      $out .= sprintf_complex_statement( $statement );
     }
     elsif ($entry->{type} eq 'instruction') {
       my $mnemonic = $statement;
       # instructions without an operand
-      if ( grep { $_ eq $mnemonic } @instructions ) {
+      if ( grep { $_ eq $mnemonic } @instructions, @functions ) {
         $out .= sprintf_single_instruction( $mnemonic );
       }
       # instructions with an address: GTO and XEQ
@@ -713,29 +795,22 @@ foreach my $seq ( @segments ) {
 
 ### print to STDOUT
 
-# option --unicode 
+# option --unicode
 if ($unicode) {
   foreach (keys %$unicodes) {
     my $a = quotemeta $_;
     my $b = $unicodes->{$_};
     $out =~ s/$a/$b/g;
   }
-  # roll back for +/-
-  my $reg = '\+'._divide.'-';
-  $out =~ s/$reg/\+\/-/g;
-  # roll back for 1/x
-  $reg = '1'._divide.'x';
-  $out =~ s/$reg/1\/x/g;
-  # roll back for /c
-  $reg = _divide.'c';
-  $out =~ s/$reg/\/c/g;
-  # roll back for R/S
-  $reg = 'R'._divide.'S';
-  $out =~ s/$reg/R\/S/g;
-  # roll back for \O/, \v/ and \=/
-  $reg = '(\\[Ov=])'._divide;
-  $out =~ s/$reg/$1\//g;
   binmode(STDOUT, ":utf8");
+}
+# option --ascii
+elsif ($ascii) {
+  foreach (keys %$plaintext) {
+    my $a = quotemeta $_;
+    my $b = $plaintext->{$_};
+    $out =~ s/$a/$b/g;
+  }
 }
 else {
   print STDOUT '%%HP: T(3)A(D)F(.);', "\n";
@@ -752,9 +827,68 @@ sub sprintf_number_statement {
   my $number = shift;
   my $keysequence = '';
 
-  defined $shortcut and
-    $keysequence = sprintf("\t\t; %d ENTER", $number);
+  if ($shortcut) {
+    my ($sign, $digits, $exponent, $base) = $number =~ /^(\-?)([\.\dA-F]+)(?:e(\-?[\.\dA-F]+))?([dhob]?)$/;
+
+    # start sequence
+    if ($base eq 'd') {
+      $keysequence .= sprintf("\t\t; %s", $numbers->{'dec'});
+    }
+    elsif ($base eq 'h') {
+      $keysequence .= sprintf("\t\t; %s", $numbers->{'hex'});
+    }
+    elsif ($base eq 'o') {
+      $keysequence .= sprintf("\t\t; %s", $numbers->{'oct'});
+    }
+    elsif ($base eq 'b') {
+      $keysequence .= sprintf("\t\t; %s", $numbers->{'bin'});
+    }
+    else {
+      $keysequence = "\t\t;";
+    }
+
+    # sequence for mantissa and exponent
+    foreach (split //, $digits) {
+      exists $numbers->{$_} and
+        $keysequence .= sprintf(" %s", $numbers->{$_} );
+    }
+    if ($sign) {
+      $keysequence .= sprintf(" %s", $numbers->{'-'} );
+    }
+    if ($exponent) {
+      $keysequence .= sprintf(" %s", $numbers->{'e'} );
+      foreach (split //, $exponent) {
+        exists $numbers->{$_} and
+          $keysequence .= sprintf(" %s", $numbers->{$_} );
+      }
+    }
+
+    # end sequence
+    if ($base) {
+      $keysequence .= sprintf(" %s", $numbers->{$base});
+      $keysequence .= sprintf(" %s", $numbers->{'dec'});
+    }
+    $keysequence .= ' ENTER';
+  }
   return sprintf("%s%03d\t%s%s\n", $lbl, ++$loc, $number, $keysequence);
+}
+
+# complex statement
+sub sprintf_complex_statement {
+  my $complex = shift;
+  my $keysequence = '';
+
+  my ($a, $sep, $b) = split /([it])/, $complex;
+  defined $b or
+    print STDERR "Warn: unknown syntax for complex number '$complex'\n" and next;
+
+  $sep =~ s/i/\\Mi/;
+  $sep =~ s/t/\\Gh/;
+  my $seq = exists $sequences->{sep} ? $sequences->{sep} : $sep;
+
+  defined $shortcut and
+    $keysequence = sprintf("\t\t; %s %s %s ENTER", $a, $seq, $b);
+  return sprintf("%s%03d\t%s%s%s%s\n", $lbl, ++$loc, $a, $sep, $b, $keysequence);
 }
 
 # instructions without an operand
@@ -762,8 +896,12 @@ sub sprintf_single_instruction {
   my $mnemonic = shift;
   my $keysequence = '';
 
+  exists $trigraphs->{$mnemonic} and
+    $mnemonic = $trigraphs->{$mnemonic};
+
   defined $shortcut and
     $keysequence = sprintf("\t\t; %s", exists $sequences->{$mnemonic} ? $sequences->{$mnemonic} : $mnemonic);
+
   return sprintf("%s%03d\t%s%s\n", $lbl, ++$loc, $mnemonic, $keysequence);
 }
 
@@ -772,6 +910,9 @@ sub sprintf_address_instruction {
   my $mnemonic = shift;
   my $addr = shift;
   my $keysequence = '';
+
+  exists $trigraphs->{$mnemonic} and
+    $mnemonic = $trigraphs->{$mnemonic};
 
   defined $shortcut and
     $keysequence = sprintf("\t; %s %s", exists $sequences->{$mnemonic} ? $sequences->{$mnemonic} : $mnemonic, $addr);
@@ -788,6 +929,9 @@ sub sprintf_label_instruction {
   
   defined $response->{labels}->{$label}->{segment} or
     print STDERR "Warn: missing 'label' for instruction '$mnemonic'\n" and next;
+
+  exists $trigraphs->{$mnemonic} and
+    $mnemonic = $trigraphs->{$mnemonic};
 
   if ( $response->{labels}->{$label}->{segment} eq $seq ) {
     my $near = $response->{labels}->{$label}->{statement} + $line - $loc + 1;
@@ -815,6 +959,9 @@ sub sprintf_variable_instruction {
   defined $variable or
     print STDERR "Warn: missing type 'variable' in instruction '$mnemonic'\n" and next;
 
+  exists $trigraphs->{$mnemonic} and
+    $mnemonic = $trigraphs->{$mnemonic};
+
   if ($mnemonic =~ /LBL/) {
     # set line number if instruction is 'LBL'
     $lbl = $variable;
@@ -834,6 +981,9 @@ sub sprintf_number_instruction {
   defined $number or
     print STDERR "Warn: missing type 'number' in instruction '$mnemonic'\n" and next;
 
+  exists $trigraphs->{$mnemonic} and
+    $mnemonic = $trigraphs->{$mnemonic};
+
   my $digits = $number < 10 ? $number : sprintf(". %d", $number % 10);
   defined $shortcut and
     $keysequence = sprintf("\t\t; %s %s", exists $sequences->{$mnemonic} ? $sequences->{$mnemonic} : $mnemonic, $digits);
@@ -848,6 +998,9 @@ sub sprintf_equation_instruction {
 
   defined $equations->{$definition} or
     print STDERR "Warn: missing 'equation' for instruction '$mnemonic'\n" and next;
+
+  exists $trigraphs->{$mnemonic} and
+    $mnemonic = $trigraphs->{$mnemonic};
 
   my $equation = $equations->{$definition};
   if ($shortcut) {
@@ -869,7 +1022,10 @@ sub sprintf_equation_instruction {
         $_ = $trigraph;
         $trigraph = '';
       }
-      $keysequence .= sprintf(" %s", exists $eqn_sequences->{$_} ? $eqn_sequences->{$_} : $_);
+      my $seq = exists $character->{$_} ? $character->{$_} : $_;
+      if (length $seq > 0) {
+        $keysequence .= sprintf(" %s", $seq);
+      }
     }
 
     # 'RCL (I)'
@@ -904,6 +1060,7 @@ VERSION: $VERSION
 OPTIONS:
   -h, --help          Print this text
   -v, --version       Prints version
+  -a, --ascii         Output as ASCII (7-bit)
   -u, --unicode       Output as Unicode (UTF-8)
   -s, --shortcut      Output shortcut keys as comment
   --debug             Show debug information on STDERR

@@ -26,6 +26,7 @@
 #               - \^x to \x^
 #               - \^y to \y^
 #   2019-05-15: add @functions to statements
+#   2019-05-16: correct handling of numbers
 
 use strict;
 use warnings;
@@ -498,7 +499,11 @@ sub parse_code_statement {
   my $self = shift;
 
   my $mnemonic;
-  my $number;
+  my $binary;
+  my $octal;
+  my $hex;
+  my $complex;
+  my $decimal;
   my $variable;
   my $statement;
 
@@ -514,12 +519,12 @@ sub parse_code_statement {
         @functions,
       )
     },
-    sub {
-      $number = $self->token_number;
-    },
-    sub {
-      undef
-    }
+    sub { $binary   = $self->generic_token(binary => qr/[01]+b/, sub { $_[1] } ) },
+    sub { $octal    = $self->generic_token(octal => qr/[0-7]+o/, sub { $_[1] } ) },
+    sub { $hex      = $self->generic_token(hex => qr/[\dA-F]+h/, sub { $_[1] } ) },
+    sub { $complex  = $self->generic_token(comlex => qr/[\-\d\.e]+[it][\-\d\.e]+/, sub { $_[1] } ) },
+    sub { $decimal  = $self->generic_token(number => qr/[\-\d\.e]+d?/, sub { $_[1] } ) },
+    sub { undef },
   );
   defined $ret or
     $self->fail( "Illegal instruction" );
@@ -617,10 +622,38 @@ sub parse_code_statement {
 
     }
   }
-  elsif ( defined $number ) {
+  elsif ( defined $binary ) {
     $statement = {
-      $number => {
-        type => 'number',
+      $binary => {
+        type => 'binary',
+      }
+    };
+  }
+  elsif ( defined $octal ) {
+    $statement = {
+      $octal => {
+        type => 'octal',
+      }
+    };
+  }
+  elsif ( defined $hex ) {
+    $statement = {
+      $hex => {
+        type => 'hex',
+      }
+    };
+  }
+  elsif ( defined $complex ) {
+    $statement = {
+      $complex => {
+        type => 'complex',
+      }
+    };
+  }
+  elsif ( defined $decimal ) {
+    $statement = {
+      $decimal => {
+        type => 'decimal',
       }
     };
   }
