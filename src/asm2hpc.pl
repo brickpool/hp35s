@@ -8,26 +8,17 @@
 #######################################################################
 #
 # Changelog: 
-#   2019-04-09: Initial version (0.1) created
-#   2019-05-02: Version 0.2 Rename File, use of Parser::HPC
-#   2019-05-06: fixing unicode handling (0.2.1)
-#   2019-05-07: fixing sime minor bugs (0.2.2)
-#   2019-05-08: add r\theta{a}
-#   2019-05-09: add option shortcut (0.3.0)
-#   2019-05-10: fixing key sequences for CF, FIX, ... and EQN
-#   2019-05-14: adding trigraphs to key sequences
-#   2019-05-15: output can be trigraph, ascii-text or unicode
-#   2019-05-16: correct handling of numbers
+#   http://github.com/brickpool/hp35s/CHANGELOG.md
 
 use strict;
 use warnings;
 
 use Getopt::Long;
-use Parser::HPC qw(@instructions @with_address @with_digits @with_variables @with_indirects @expressions @functions);
+use Parser::HPC qw(@instructions @with_address @with_digits @with_variables @with_indirects @expressions @functions @register);
 use Data::Dumper;
 
 # Declaration
-my $VERSION = '0.3.3';
+my $VERSION = '0.3.4';
 my $version;
 my $ascii;
 my $unicode;
@@ -274,6 +265,10 @@ my $sequences = {
   'RCL-'    => 'RCL -',
   'RCL\.x'  => 'RCL \.x',
   'RCL\:-'  => 'RCL \:-',
+  'REGX'    => 'EQN \R|v 1 ENTER',
+  'REGY'    => 'EQN \R|v 2 ENTER',
+  'REGZ'    => 'EQN \R|v 3 ENTER',
+  'REGT'    => 'EQN \R|v 4 ENTER',
   'RMDR'    => '\<+ INTG 3',
   # G13
   'RND'     => '\<+ RND',
@@ -730,13 +725,16 @@ foreach my $seq ( @segments ) {
     if ($entry->{type} =~ /decimal|binary|octal|hex/) {
       $out .= sprintf_number_statement( $statement );
     }
+    elsif ($entry->{type} eq 'vector') {
+      $out .= sprintf_vector_statement( $statement );
+    }
     elsif ($entry->{type} eq 'complex') {
       $out .= sprintf_complex_statement( $statement );
     }
     elsif ($entry->{type} eq 'instruction') {
       my $mnemonic = $statement;
       # instructions without an operand
-      if ( grep { $_ eq $mnemonic } @instructions, @functions ) {
+      if ( grep { $_ eq $mnemonic } @instructions, @functions, @register ) {
         $out .= sprintf_single_instruction( $mnemonic );
       }
       # instructions with an address: GTO and XEQ
@@ -873,13 +871,33 @@ sub sprintf_number_statement {
   return sprintf("%s%03d\t%s%s\n", $lbl, ++$loc, $number, $keysequence);
 }
 
+# vector statement
+sub sprintf_vector_statement {
+  my $vector = shift;
+  my $keysequence = '';
+
+  $vector =~ /\[(\S+)\]/;
+  my ($a, $b, $c) = split /,/, $1;
+  defined $a and defined $b or
+    print STDERR "Warn: unknown syntax for vector number '$vector'\n" and next;
+
+  if ($shortcut) {
+    if (defined $c) {
+      $keysequence = sprintf("\t\t; %s \<+ , %s \<+ , %s ENTER", $a, $b, $c);
+    } else {
+      $keysequence = sprintf("\t\t; %s \<+ , %s ENTER", $a, $b);
+    }
+  }
+  return sprintf("%s%03d\t%s%s\n", $lbl, ++$loc, $vector, $keysequence);
+}
+
 # complex statement
 sub sprintf_complex_statement {
   my $complex = shift;
   my $keysequence = '';
 
   my ($a, $sep, $b) = split /([it])/, $complex;
-  defined $b or
+  defined $a and defined $b or
     print STDERR "Warn: unknown syntax for complex number '$complex'\n" and next;
 
   $sep =~ s/i/\\Mi/;

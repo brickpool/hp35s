@@ -8,25 +8,12 @@
 #######################################################################
 #
 # Changelog: 
-#   2019-04-12: Initial version created
-#   2019-04-29: Version 0.1
-#               - the directive %TITLE, DISPLAY and RADIX
-#                 and the symbols TIME and DATE are not implemented
-#               - only the polish notation mode is supported
-#   2019-05-02: bugfix GTO
-#   2019-05-06: bugfix
-#               - '0' instruction
-#               - non escaping for 'token_string'
-#   2019-05-08: add rta
-#   2019-05-09: bugfix <-ENG
-#   2019-05-10: test for unknown characters at EQU
-#   2019-05-14: change trigraphs
-#               - \=x to \x-
-#               - \=y to \y-
-#               - \^x to \x^
-#               - \^y to \y^
-#   2019-05-15: add @functions to statements
-#   2019-05-16: correct handling of numbers
+#   http://github.com/brickpool/hp35s/CHANGELOG.md
+#
+# ToDo:
+#   - the directive %TITLE, DISPLAY and RADIX
+#     and the symbols TIME and DATE are not implemented
+#   - only the polish notation mode is supported
 
 use strict;
 use warnings;
@@ -42,7 +29,7 @@ use strict;
 use warnings;
 
 use Exporter;
-our @EXPORT = qw(@instructions @with_address @with_digits @with_variables @with_indirects @expressions @functions);
+our @EXPORT = qw(@instructions @with_address @with_digits @with_variables @with_indirects @expressions @functions @register);
 require Parser::MGC;
 our @ISA = qw(Exporter Parser::MGC);
 
@@ -170,30 +157,34 @@ our @expressions = (
 
 our @functions = (
   # G2
-  'INV',
+#  'INV',
   # G4
-  'ABS', 'ACOS', 'ACOSH', 'ARG', 'ASIN', 'ASINH', 'ATAN',
+  'ABS', 'ACOS', 'ACOSH',
+#  'ALOG',
+  'ARG', 'ASIN', 'ASINH', 'ATAN',
   # G5
   'ATANH', '->°C',
   # G6
   '->CM', 'COS', 'COSH', '->DEG',
   # G8
-  'EXP', '->°F', '->GAL', 
+#  'EXP',
+  '->°F', '->GAL', 
   # G9
-  'IDIV', 'INV', 
+#  'IDIV', 'INV', 
   # G10
   'ISG',
   # G12
   'RMDR',
   # G14
-  'SIN', 'SINH', 'SQ', 'SQRT',
+  'SIN', 'SINH',
+#  'SQ', 'SQRT',
   # G15
   'TAN', 'TANH',
   # G16
-  'XROOT',
+#  'XROOT',
 );
 
-my @register = (
+our @register = (
   'REGX', 'REGY', 'REGZ', 'REGT',
 );
 
@@ -499,6 +490,7 @@ sub parse_code_statement {
   my $self = shift;
 
   my $mnemonic;
+  my $vector;
   my $binary;
   my $octal;
   my $hex;
@@ -517,12 +509,20 @@ sub parse_code_statement {
         @with_indirects, 
         @expressions,
         @functions,
+        @register,
       )
     },
+    # [1,2] [3,4,5]
+    sub { $vector   = $self->generic_token(vector => qr/\[[\-\d\.e]+,[\-\d\.e]+(?:,[\-\d\.e]+)?\]/, sub { $_[1] } ) },
+    # 0110b
     sub { $binary   = $self->generic_token(binary => qr/[01]+b/, sub { $_[1] } ) },
+    # 7012o
     sub { $octal    = $self->generic_token(octal => qr/[0-7]+o/, sub { $_[1] } ) },
+    # 12ABh
     sub { $hex      = $self->generic_token(hex => qr/[\dA-F]+h/, sub { $_[1] } ) },
+    # 1i2 3t4
     sub { $complex  = $self->generic_token(comlex => qr/[\-\d\.e]+[it][\-\d\.e]+/, sub { $_[1] } ) },
+    # 1 2.3 4e5 -6 7e-1
     sub { $decimal  = $self->generic_token(number => qr/[\-\d\.e]+d?/, sub { $_[1] } ) },
     sub { undef },
   );
@@ -537,7 +537,7 @@ sub parse_code_statement {
   if ( defined $mnemonic ) {
 
     my $operand;
-    if ( grep { $_ eq $mnemonic } @instructions, @functions ) {
+    if ( grep { $_ eq $mnemonic } @instructions, @functions, @register ) {
       # instructions without an operand
       $statement = {
         $mnemonic => {
@@ -621,6 +621,13 @@ sub parse_code_statement {
         $self->fail_from( $pos, "Argument mismatch" );
 
     }
+  }
+  elsif ( defined $vector ) {
+    $statement = {
+      $vector => {
+        type => 'vector',
+      }
+    };
   }
   elsif ( defined $binary ) {
     $statement = {
