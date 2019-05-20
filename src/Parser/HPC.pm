@@ -14,6 +14,7 @@
 #   - the directive %TITLE, DISPLAY and RADIX
 #     and the symbols TIME and DATE are not implemented
 #   - only the polish notation mode is supported
+#   - Thousand separator operations are not implemented
 
 use strict;
 use warnings;
@@ -78,29 +79,29 @@ our @instructions = (
   # G5
   'b', 'BIN', '/c',
   # G6
-  'CLZ', 'CLx', 'CLVARS', 'CLSTK', 'nCr', 'DEC', 'DEG', 
+  'CLZ', 'CLx', 'CLVARS', 'CLSTK', 'nCr', 'DEC', 'DEG',
   # G7
   '<-ENG', 'ENG->', 'ENTER', 'e^x',
   # G8
   'FP', 'GRAD', 'HEX',
   # G9
-  '->HMS', 'HMS->', '->IN', 'INT/', 'INTG', 
+  '->HMS', 'HMS->', '->IN', 'INT/', 'INTG',
   # G10
-  'IP', '->KG', '->KM', '->L', 'LASTx', '->LB', 'LN', 'LOG', 'm', 
+  'IP', '->KG', '->KM', '->L', 'LASTx', '->LB', 'LN', 'LOG', 'm',
   # G11
   '->MILE', 'n', 'NAND', 'NOR', 'NOT', 'OCT', 'OR', 'nPr', 'PSE',
   # G12
   'r', 'rta', 'RAD', '->RAD', 'RADIX,', 'RADIX.', 'RANDOM', 'RMDR',
   # G13
-  'RND', 'RPN', 'RTN', 'Rv', 'R^', 'SEED', 'SGN', 
+  'RND', 'RPN', 'RTN', 'Rv', 'R^', 'SEED', 'SGN',
   # G14
   'STOP',
   # G15
-  'sx', 'sy', 'x^2', 'sqrt', 'xroot', '\x-', '\x^', '!', 
+  'sx', 'sy', 'x^2', 'sqrt', 'xroot', '\x-', '\x^', '!',
   # G16
   '\x-w', 'x<>y', 'x!=y?', 'x<=y?', 'x<y?', 'x>y?', 'x>=y?',
   # G17
-  'x=y?', 'x!=0?', 'x<=0?', 'x<0?', 'x>0?', 'x>=0?', 'x=0?', 'XOR', 
+  'x=y?', 'x!=0?', 'x<=0?', 'x<0?', 'x>0?', 'x>=0?', 'x=0?', 'XOR',
   # G18
   'xiy', 'x+yi', '\y-', '\y^', 'y^x',
 );
@@ -114,7 +115,7 @@ our @with_address = (
 
 our @with_digits = (
   # G5
-  'CF', 
+  'CF',
   # G7
   'ENG',
   # G8
@@ -141,18 +142,18 @@ our @with_indirects = (
   # G10
   'ISG',
   # G12
-  'RCL', 'RCL+', 'RCL-', 'RCL*', 'RCL/', 'RMDR',
+  'RCL', 'RCL+', 'RCL-', 'RCL*', 'RCL/',
   # G14
   'SOLVE', 'STO', 'STO+', 'STO-', 'STO*', 'STO/',
   # G15
   'VIEW',
   # G16
-  'x<>', 
+  'x<>',
 );
 
 our @expressions = (
   # G7
-  'EQN', 
+  'EQN',
 );
 
 our @functions = (
@@ -168,9 +169,9 @@ our @functions = (
   '->CM', 'COS', 'COSH', '->DEG',
   # G8
 #  'EXP',
-  '->°F', '->GAL', 
+  '->°F', '->GAL',
   # G9
-#  'IDIV', 'INV', 
+#  'IDIV', 'INV',
   # G10
   'ISG',
   # G12

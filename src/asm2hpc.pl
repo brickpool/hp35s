@@ -210,6 +210,8 @@ my $sequences = {
   '\->DEG'  => '\+> \->DEG',
   # G7
   'DSE'     => '\+> DSE',
+  '\<-ENG'  => '\<+ \<-ENG',
+  'ENG\->'  => '\<+ ENG\->',
   'ENG'     => '\<+ DISPLAY 3',
   'e\^x'    => '\+> e\^x',
   # G8
@@ -260,7 +262,7 @@ my $sequences = {
   '\->RAD'  => '\<+ \->RAD',
   'RADIX,'  => '\<+ DISPLAY 6',
   'RADIX.'  => '\<+ DISPLAY 5',
-  'RADOM'   => '\+> RADOM',
+  'RANDOM'  => '\+> RAND',
   'RCL+'    => 'RCL +',
   'RCL-'    => 'RCL -',
   'RCL\.x'  => 'RCL \.x',
@@ -920,6 +922,8 @@ sub sprintf_single_instruction {
   defined $shortcut and
     $keysequence = sprintf("\t\t; %s", exists $sequences->{$mnemonic} ? $sequences->{$mnemonic} : $mnemonic);
 
+  # special handling for ENG
+  $mnemonic = 'ENG' if $mnemonic eq 'ENG\->';
   return sprintf("%s%03d\t%s%s\n", $lbl, ++$loc, $mnemonic, $keysequence);
 }
 

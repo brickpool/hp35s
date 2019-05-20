@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+- fixing output of `ENG->`
+- fixing syntax for `RANDOM`
+
 ## 0.3.4 - 2019-05-17
 ### Added
 - support vectors and register
