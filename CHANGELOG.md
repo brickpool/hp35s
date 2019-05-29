@@ -4,7 +4,12 @@ This CHANGELOG file is intended to help document all the details of HP35s develo
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [Unreleased] - 2019-05-24
+
+### Changed
+- `\Mi` to `\im`
+- `&#x25B6;` to `&#x25BA;`
+- `&#x1F132;` to `&#x1F172;`
 
 ### Fixed
 - fixing output of `ENG->`
@@ -25,10 +30,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - add functions to statements
 
 ### Changed
-- \=x to \x-
-- \=y to \y-
-- \^x to \x^
-- \^y to \y^
+- `\=x` to `\x-`
+- `\=y` to `\y-`
+- `\^x` to `\x^`
+- `\^y` to `\y^`
 
 ## 0.3.1 - 2019-05-10
 ### Changed

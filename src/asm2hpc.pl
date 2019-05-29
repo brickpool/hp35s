@@ -48,7 +48,7 @@ my $parser = Parser::HPC->new;
 
 # unicode char
 use constant _not     => "\N{U+00AC}";
-use constant _macr    => "\N{U+00AF}";
+use constant _macr    => "\N{U+0304}";
 use constant _sup2    => "\N{U+00B2}";
 use constant _times   => "\N{U+00D7}";
 use constant _divide  => "\N{U+00F7}";
@@ -80,8 +80,8 @@ use constant _vee     => "\N{U+2228}";
 use constant _neq     => "\N{U+2260}";
 use constant _leq     => "\N{U+2264}";
 use constant _geq     => "\N{U+2265}";
-use constant _brtri   => "\N{U+25B6}";
-use constant _cancel  => "\N{U+1D402}";
+use constant _brtri   => "\N{U+25BA}";
+use constant _cancel  => "\N{U+1F132}";
 use constant _iscr    => "\N{U+1D4BE}";
 
 # HP Trigraphs
@@ -156,8 +156,8 @@ my $trigraphs = {
   'x<=0?' => 'x\<=0?',
   'x>=0?' => 'x\>=0?',
   # G18
-  'xiy'   => 'x\Miy',
-#  'x+yi'  => 'x+y\Mi', only mode ALG
+  'xiy'   => 'x\imy',
+#  'x+yi'  => 'x+y\im', only mode ALG
   'y^x'   => 'y\^x',
 };
 
@@ -320,8 +320,8 @@ my $sequences = {
   'x=0?'    => '\+> x?0 6',
   'XOR'     => '\<+ LOGIC 2',
   # G18
-  'x\Miy'   => '\<+ DISPLAY 9',
-#  'x+y\Mi'  => '\<+ DISPLAY . 1',  only mode ALG
+  'x\imy'   => '\<+ DISPLAY 9',
+#  'x+y\im'  => '\<+ DISPLAY . 1',  only mode ALG
   '\y-'     => '\<+ \x-,\y- 2',
   '\y^'     => '\<+ L.R. 2',
 };
@@ -433,7 +433,7 @@ my $character = {
   'f' => '',
   'g' => '',
   'h' => '\+> BASE 6',
-  'i' => '\Mi',
+  'i' => '\im',
   'j' => '',
   'k' => '',
   'l' => '',
@@ -510,7 +510,7 @@ my $character = {
   # 248..255
   # additional trigraphs
   '\h-' => '\<+ CONST \.v \.v 3',
-  # '\Mi' => '\Mi',
+  # '\im' => '\im',
   '\x^' => '\<+ L.R. 1 \.> \BS \BS',
   '\y^' => '\<+ L.R. 2 \.> \BS \BS',
   '\y-' => '\<+ \x-,\y- 2',
@@ -554,7 +554,7 @@ my $plaintext = {
   '\<+'   => 'ctrl',
   '\+>'   => 'shift',
   '\h-'   => 'hbar',
-  '\Mi'   => 'i',
+  '\im'   => 'i',
   '\^x'   => '^x',
   '\x^'   => 'xcirc',
   '\y^'   => 'ycirc',
@@ -598,7 +598,7 @@ my $unicodes = {
   '\<+'   => _lsh,
   '\+>'   => _rsh,
   '\h-'   => 'h'._macr,
-  '\Mi'   => _iscr,
+  '\im'   => _iscr,
   '\^x'   => _supx,
   '\x^'   => 'x'._circ,
   '\y^'   => _ycirc,
@@ -902,7 +902,7 @@ sub sprintf_complex_statement {
   defined $a and defined $b or
     print STDERR "Warn: unknown syntax for complex number '$complex'\n" and next;
 
-  $sep =~ s/i/\\Mi/;
+  $sep =~ s/i/\\im/;
   $sep =~ s/t/\\Gh/;
   my $seq = exists $sequences->{sep} ? $sequences->{sep} : $sep;
 
