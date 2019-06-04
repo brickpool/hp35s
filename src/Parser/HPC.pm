@@ -153,7 +153,7 @@ our @with_indirects = (
 
 our @expressions = (
   # G7
-  'EQN',
+  'eqn',
 );
 
 our @functions = (
@@ -884,7 +884,7 @@ sub token_kw_operation
 
 =head2 $str = $parser->token_string
 
-Expects to find a quoted string, and consumes it. The string should be quoted
+Expects to find a quoted EQN string, and consumes it. The string should be quoted
 using C<"> or C<'> quote marks.
 
 The content of the quoted string can not contain special characters.

@@ -19,7 +19,7 @@ init:
 mainmenu:
   ; display [eqnMain]
   SF 10
-    EQN eqnMain
+    eqn eqnMain
   CF 10
   ; IF y=1 THEN GOTO 'parmenu'
   1
@@ -36,7 +36,7 @@ STOP                ; stop programm
 parmenu:
   ; display [eqnPar]
   SF 10
-    EQN eqnPar      
+    eqn eqnPar      
   CF 10
   ; IF x<=0 THEN GOTO 'parmenu'
   x<=0?
@@ -65,7 +65,7 @@ GTO read            ; jump to 'read'
 sermenu:
   ; display [eqnSer]
   SF 10
-    EQN eqnSer
+    eqn eqnSer
   CF 10
   ; IF x<=0 THEN GOTO sermenu
   x<=0?
@@ -88,7 +88,7 @@ sermenu:
 read:
   ; display [eqnToI]
   SF 10
-    EQN eqnToI
+    eqn eqnToI
   CF 10
   ; IF x=0 THEN GOTO 'done'
   x=0?

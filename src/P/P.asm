@@ -14,7 +14,7 @@ init:
 menu:
   ; display [eqnMenu]
   SF 10
-    EQN eqnMenu
+    eqn eqnMenu
   CF 10
   ; IF y=1 THEN GOTO 'P='
   1

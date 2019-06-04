@@ -14,7 +14,7 @@ init:
 menu:
   ; Display Menue
   SF 10
-    EQN eqnMenu
+    eqn eqnMenu
   CF 10
   ; IF x=1 THEN GOTO 'S->D'
   1

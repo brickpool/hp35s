@@ -4,16 +4,25 @@ This CHANGELOG file is intended to help document all the details of HP35s develo
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - 2019-05-24
+## [Unreleased]
+
+## [0.3.5] - 2019-06-04
+### Added
+- Charater-Set files to `extras`
 
 ### Changed
 - `\Mi` to `\im`
 - `&#x25B6;` to `&#x25BA;`
 - `&#x1F132;` to `&#x1F172;`
+- EQN character `%` and `,`
+- instruction `EQN` to `eqn`
 
 ### Fixed
 - fixing output of `ENG->`
 - fixing syntax for `RANDOM`
+
+### Remove
+- EQN character `a` and `u`
 
 ## 0.3.4 - 2019-05-17
 ### Added
@@ -83,4 +92,5 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - Initial version created
 
-[Unreleased]: https://github.com/brickpool/hp35s/compare/v0.3.4...HEAD
+[Unreleased]: https://github.com/brickpool/hp35s/compare/v0.3.5...HEAD
+[0.3.5]: https://github.com/brickpool/hp35s/compare/v0.3.4...v0.3.5

@@ -55,8 +55,8 @@ C051	6		; 6 ENTER
 C052	x=y?		; ↰ x?y 6
 C053	SF 0		; ↰ FLAGS 1 0
 C054	SF 10		; ↰ FLAGS 1 . 0
-; EQN STO 𝐂 RCL 0 ENTER
-C055	▶(I)
+; EQN STO 🄲 RCL 0 ENTER
+C055	►(I)
 C056	CF 10		; ↰ FLAGS 2 . 0
 C057	x=0?		; ↱ x?0 6
 C058	GTO C067	; GTO C 0 6 7
