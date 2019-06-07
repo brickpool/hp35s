@@ -5,12 +5,12 @@ asm2hpc.pl --file=O/O.asm > O/O.txt
 asm2hpc.pl --file=P/P.asm > P/P.txt
 asm2hpc.pl --file=Y/Y.asm > Y/Y.txt
 
-rem Output as ASCII (7-bit) with shortcut keys as comment
-asm2hpc.pl --shortcut --ascii --file=C/C.asm > C/C.asc
-asm2hpc.pl --shortcut --ascii --file=J/J.asm > J/J.asc
-asm2hpc.pl --shortcut --ascii --file=O/O.asm > O/O.asc
-asm2hpc.pl --shortcut --ascii --file=P/P.asm > P/P.asc
-asm2hpc.pl --shortcut --ascii --file=Y/Y.asm > Y/Y.asc
+rem Output as Plain text (7-bit ASCII) with shortcut keys as comment
+asm2hpc.pl --shortcut --plain --file=C/C.asm > C/C.asc
+asm2hpc.pl --shortcut --plain --file=J/J.asm > J/J.asc
+asm2hpc.pl --shortcut --plain --file=O/O.asm > O/O.asc
+asm2hpc.pl --shortcut --plain --file=P/P.asm > P/P.asc
+asm2hpc.pl --shortcut --plain --file=Y/Y.asm > Y/Y.asc
 
 rem Output as Unicode (UTF-8) with shortcut keys
 asm2hpc.pl --shortcut --unicode --file=C/C.asm > C/C.35s

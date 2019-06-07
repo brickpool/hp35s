@@ -10,13 +10,13 @@ asm2hpc.pl --help
 USAGE:
   c:> type <asm-file> | perl asm2hpc.pl [options] 1> outfile.35s 2> outfile.err
 
-VERSION: 0.3.3
+VERSION: 0.3.6
   Web: http://www.brickpool.de/
 
 OPTIONS:
   -h, --help          Print this text
   -v, --version       Prints version
-  -a, --ascii         Output as ASCII (7-bit)
+  -p, --plain         Output as Plain text (7-bit ASCII)
   -u, --unicode       Output as Unicode (UTF-8)
   -s, --shortcut      Output shortcut keys as comment
   --debug             Show debug information on STDERR
@@ -31,6 +31,6 @@ The output will be sent to STDOUT
 ## Example
 ```
 asm2hpc.pl --file=C/C.asm > C/C.txt
-asm2hpc.pl --ascii --shortcut --file=C/C.asm > C/C.asm
+asm2hpc.pl --plain --shortcut --file=C/C.asm > C/C.asm
 asm2hpc.pl --unicode --shortcut --file=C/C.asm > C/C.35s
 ```

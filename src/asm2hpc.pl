@@ -18,9 +18,9 @@ use Parser::HPC qw(@instructions @with_address @with_digits @with_variables @wit
 use Data::Dumper;
 
 # Declaration
-my $VERSION = '0.3.4';
+my $VERSION = '0.3.6';
 my $version;
-my $ascii;
+my $plain;
 my $unicode;
 my $shortcut;
 my $help;
@@ -33,7 +33,7 @@ Getopt::Long::Configure('bundling');
 GetOptions (
   "help"      => \$help,    "h"   => \$help,
   "version"   => \$version, "v"   => \$version,
-  "ascii"     => \$ascii,   "a"   => \$ascii,
+  "plain"     => \$plain,   "p"   => \$plain,
   "unicode"   => \$unicode, "u"   => \$unicode,
   "shortcut"  => \$shortcut,"s"   => \$shortcut,
   "debug"                         => \$debug,
@@ -46,46 +46,79 @@ $debug        = 0 unless defined $debug;
 
 my $parser = Parser::HPC->new;
 
-# unicode char
-use constant _not     => "\N{U+00AC}";
-use constant _macr    => "\N{U+0304}";
-use constant _sup2    => "\N{U+00B2}";
-use constant _times   => "\N{U+00D7}";
-use constant _divide  => "\N{U+00F7}";
-use constant _ycirc   => "\N{U+0177}";
-use constant _lsh     => "\N{U+21B0}";
-use constant _rsh     => "\N{U+21B1}";
-use constant _bksp    => "\N{U+21E6}";
-use constant _int     => "\N{U+222B}";
-use constant _ymacr   => "\N{U+0233}";
-use constant _supx    => "\N{U+02E3}";
-use constant _circ    => "\N{U+0302}";
-use constant _Sigma   => "\N{U+03A3}";
-use constant _Phi     => "\N{U+03A6}";
-use constant _alpha   => "\N{U+03B1}";
-use constant _gamma   => "\N{U+03B3}";
-use constant _epsilon => "\N{U+03B5}";
-use constant _theta   => "\N{U+03B8}";
-use constant _lambda  => "\N{U+03BB}";
-use constant _pi      => "\N{U+03C0}";
-use constant _sigma   => "\N{U+03C3}";
-use constant _larr    => "\N{U+2190}";
-use constant _uarr    => "\N{U+2191}";
-use constant _rarr    => "\N{U+2192}";
-use constant _darr    => "\N{U+2193}";
-use constant _sqrt    => "\N{U+221A}";
-use constant _infin   => "\N{U+221E}";
-use constant _wedge   => "\N{U+2227}";
-use constant _vee     => "\N{U+2228}";
-use constant _neq     => "\N{U+2260}";
-use constant _leq     => "\N{U+2264}";
-use constant _geq     => "\N{U+2265}";
-use constant _brtri   => "\N{U+25BA}";
-use constant _cancel  => "\N{U+1F132}";
-use constant _iscr    => "\N{U+1D4BE}";
+# unicode eqn charset
+use constant _supc      => "\N{U+1D9C}";
+use constant _supe      => "\N{U+1D49}";
+use constant _supg      => "\N{U+1D4D}";
+use constant _suph      => "\N{U+02B0}";
+use constant _supm      => "\N{U+1D50}";
+use constant _supn      => "\N{U+207F}";
+use constant _supp      => "\N{U+1D56}";
+use constant _supr      => "\N{U+02B3}";
+use constant _supt      => "\N{U+1D57}";
+use constant _capA      => "\N{U+1D00}";
+use constant _copf      => "\N{U+1D554}";
+use constant _Fopf      => "\N{U+1D53D}";
+use constant _Gopf      => "\N{U+1D53E}";
+use constant _supk      => "\N{U+1D4F}";
+use constant _Ropf      => "\N{U+211D}";
+use constant _supo      => "\N{U+1D52}";
+use constant _hbar      => "\N{U+210F}";
+use constant _topf      => "\N{U+1D565}";
+use constant _alpha     => "\N{U+03B1}";
+use constant _lambda    => "\N{U+03BB}";
+use constant _Phi       => "\N{U+03A6}";
+use constant _gamma     => "\N{U+03B3}";
+use constant _infin     => "\N{U+221E}";
+use constant _epsilon   => "\N{U+03B5}";
+use constant _supminus  => "\N{U+207B}";
+use constant _divide    => "\N{U+00F7}";
+use constant _times     => "\N{U+00D7}";
+use constant _Sigma     => "\N{U+03A3}";
+use constant _pi        => "\N{U+03C0}";
+use constant _rarr      => "\N{U+2192}";
+use constant _sup2      => "\N{U+00B2}";
+use constant _theta     => "\N{U+03B8}";
+use constant _supalpha  => "\N{U+1D45}";
+use constant _sigma     => "\N{U+03C3}";
+use constant _macr      => "\N{U+0304}";
+use constant _circ      => "\N{U+0302}";
+use constant _ycirc     => "\N{U+0177}";
+use constant _ymacr     => "\N{U+0233}";
+use constant _sup1      => "\N{U+00B9}";
+use constant _supB      => "\N{U+1D2E}";
+use constant _capC      => "\N{U+1D04}";
+use constant _supG      => "\N{U+1D33}";
+use constant _supN      => "\N{U+1D3A}";
+use constant _supa      => "\N{U+1D43}";
+use constant _supu      => "\N{U+1D58}";
+use constant _capE      => "\N{U+1D07}";
+use constant _iscr      => "\N{U+1D4BE}";
+use constant _supR      => "\N{U+1D3F}";
+use constant _supV      => "\N{U+2C7D}";
+use constant _capZ      => "\N{U+1D22}";
+use constant _brtri     => "\N{U+25BA}";
+# unicode non eqn charset
+use constant _sqrt      => "\N{U+221A}";
+use constant _int       => "\N{U+222B}";
+use constant _leq       => "\N{U+2264}";
+use constant _geq       => "\N{U+2265}";
+use constant _neq       => "\N{U+2260}";
+use constant _larr      => "\N{U+2190}";
+use constant _darr      => "\N{U+2193}";
+use constant _uarr      => "\N{U+2191}";
+use constant _supx      => "\N{U+02E3}";
+# unicode extra
+use constant _bksp      => "\N{U+21E6}";
+use constant _cancel    => "\N{U+1F132}";
+use constant _vee       => "\N{U+2228}";
+use constant _wedge     => "\N{U+2227}";
+use constant _lsh       => "\N{U+21B0}";
+use constant _rsh       => "\N{U+21B1}";
 
-# HP Trigraphs
-my $trigraphs = {
+
+# Instruction mapping
+my $tbl_instr_3graph = {
   # G1
   '*'     => '\.x',
   '/'     => '\:-',
@@ -162,7 +195,7 @@ my $trigraphs = {
 };
 
 # Key sequences
-my $sequences = {
+my $tbl_instr_seq = {
   # G2
   '10\^x'   => '\+> 10\^x',
   '%'       => '\+> %',
@@ -327,7 +360,7 @@ my $sequences = {
 };
 
 # number sequences
-my $numbers = {
+my $tbl_num_seq = {
   'dec' => '\CC \+> BASE 1 \+> PRGM',
   'hex' => '\CC \+> BASE 2 \+> PRGM',
   'oct' => '\CC \+> BASE 3 \+> PRGM',
@@ -357,252 +390,583 @@ my $numbers = {
   '.'   => '.',
 };
 
-# EQN character
-my $character = {
-  # 0..31
-  ' ' => '\+> SPACE',
-  '!' => '\+> !',
-  '"' => '',
-  '#' => '',
-  '$' => '',
-  '%' => '\+> % \.> \.> \BS \BS \BS \BS \BS \BS',
-  '&' => '',
-  "'" => '',
-  '(' => '() \BS',
-  ')' => '() \<. \BS \.>',
-  # '*' => '*',
-  # '+' => '+',
-  ',' => '\+> % \BS \BS \BS \BS \BS \.> \.> \BS',
-  # '-' => '-',
-  # '.' => '.',
-  # '/' => '/',
-  # '0' => '0',
-  # '1' => '1',
-  # '2' => '2',
-  # '3' => '3',
-  # '4' => '4',
-  # '5' => '5',
-  # '6' => '6',
-  # '7' => '7',
-  # '8' => '8',
-  # '9' => '9',
-  ':' => '',
-  ';' => '',
-  # '<' => '<',
-  '=' => '\<+ =',
-  # '>' => '>',
-  '?' => '',
-  '@' => '',
-  'A' => 'RCL A',
-  'B' => 'RCL B',
-  'C' => 'RCL C',
-  'D' => 'RCL D',
-  'E' => 'RCL E',
-  'F' => 'RCL F',
-  'G' => 'RCL G',
-  'H' => 'RCL H',
-  'I' => 'RCL I',
-  'J' => 'RCL J',
-  'K' => 'RCL K',
-  'L' => 'RCL L',
-  'M' => 'RCL M',
-  'N' => 'RCL N',
-  'O' => 'RCL O',
-  'P' => 'RCL P',
-  'Q' => 'RCL Q',
-  'R' => 'RCL R',
-  'S' => 'RCL S',
-  'T' => 'RCL T',
-  'U' => 'RCL U',
-  'V' => 'RCL V',
-  'W' => 'RCL W',
-  'X' => 'RCL X',
-  'Y' => 'RCL Y',
-  'Z' => 'RCL Z',
-  '[' => '\<+ [] \BS',
-  '\\' => '',
-  ']' => '\<+ [] \<. \BS \.>',
-  '^' => 'y^x',
-  '_' => '',
-  '`' => '',
-  'a' => '',
-  'b' => '\+> BASE 8',
-  'c' => '',
-  'd' => '\+> BASE 5',
-  'e' => 'E',
-  'f' => '',
-  'g' => '',
-  'h' => '\+> BASE 6',
-  'i' => '\im',
-  'j' => '',
-  'k' => '',
-  'l' => '',
-  'm' => '\<+ L.R. 4',
-  'n' => '\+> SUMS 1',
-  'o' => '\+> BASE 7',
-  'p' => '',
-  'q' => '',
-  'r' => '\<+ L.R. 3',
-  's' => '\+> S,\Gs 1 \BS',
-  't' => '',
-  'u' => '',
-  'v' => '',
-  'w' => '\+> \x-,\y- 3 \<. \BS \.>',
-  'x' => '\+> S,\Gs 1 \<. \BS \.>',
-  'y' => '\+> S,\Gs 2 \<. \BS \.>',
-  'z' => '',
-  '{' => '',
-  '|' => '',
-  '}' => '',
-  '~' => '',
-  # 127
-  '\<)' => '',
-  '\x-' => '\<+ \x-,\y- 1',
-  '\.V' => '',
-  '\v/' => '',
-  '\.S' => '',
-  '\GS' => '\+> SUM 2 \BS',
-  '\|>' => 'STO \CC',
-  '\pi' => '\<+ \pi',
-  '\.d' => '',
-  '\<=' => '',
-  '\>=' => '',
-  '\=/' => '',
-  '\Ga' => '\<+ CONST \.^ \.^ 1',
-  '\->' => '\+> \->l \<. \BS \BS \BS',
-  '\<-' => '',
-  '\|v' => '',
-  '\|^' => '',
-  '\Gg' => '\<+ CONST \.^ \.^ 5 \BS',
-  '\Ge' => '\<+ CONST \.v \.v 6 \BS ',
-  '\Gn' => '',
-  '\Gh' => '\+> \Gh',
-  '\Gl' => '\<+ CONST \.^ \.^ \.^ 2 \BS',
-  '\Gr' => '',
-  '\Gs' => '\+> S,\Gs 3 \BS',
-  '\Gt' => '',
-  '\Gw' => '',
-  '\GD' => '',
-  '\PI' => '',
-  '\GW' => '',
-  '\[]' => '',
-  '\oo' => '\<+ CONST 6 \.< \BS \.>',
-  # 160..170
-  '\<<' => '',
-  # 172..175
-  '°' => '\<+ ->\^oF \.> \BS \BS \BS \<. \BS \.>',
-  '\^o' => '\<+ ->\^oF \.> \BS \BS \BS \<. \BS \.>',
-  # 177
-  '²'   => '\+> SUM 4 \<. \BS \BS \.>',
-  '\^2' => '\+> SUM 4 \<. \BS \BS \.>',
-  # 179..180
-  'µ'   => '\<+ CONST \.v \.v \.v 4 \BS',
-  '\Gm' => '\<+ CONST \.v \.v \.v 4 \BS',
-  # 182..186
-  '\>>' => '',
-  # 188..214
-  # '\.x' => '\.x',
-  '\O/' => '\<+ CONST \.v \.v 4 \BS',
-  # 217..222
-  '\Gb' => '',
-  # 224..246
-  # '\:-' => '\:-',
-  # 248..255
-  # additional trigraphs
-  '\h-' => '\<+ CONST \.v \.v 3',
+# EQN sequences
+my $tbl_char_seq = {
+  # NUL
+  '\^b'   => '',
+  '\^c'   => '\<+ CONST \.^ \.^ 2 \.< \BS \.>',
+  '\^e'   => '\<+ CONST \.^ 4',
+  '\^g'   => '\<+ CONST 2',
+  '\^h'   => '\<+ CONST \.v \.v 2',
+  '\^m'   => '\<+ CONST \.v 2 \BS',
+  '\^n'   => '\<+ CONST \.v 4 \.< \BS \.>',
+  '\^p'   => '\<+ CONST \.v 3 \.< \BS \.>',
+  '\^r'   => '\<+ CONST \.v \.v \.v \.v 5 \BS',
+  '\^t'   => '\<+ CONST \.^ \.^ 4 \BS \.< \BS \.>',
+  '\^v'   => '',
+  '\^w'   => '',
+  '\^x'   => '',
+  '\^y'   => '',
+  '\015'  => '\<+ CONST 5 \.< \BS \.>',
+  '\016'  => '\<+ CONST 1',
+  '\017'  => '\<+ CONST \.v \.v \.v 2',
+  '\018'  => '\<+ CONST 3',
+  '\^k'   => '\<+ CONST \.v \.v 1',
+  '\020'  => '\<+ CONST \.v \.v \.v 1',
+  '\021'  => '\<+ CONST \.^ 3 \BS',
+  '\^d'   => '',
+  '\023'  => '\<+ CONST \.v \.v 3',
+  '\024'  => '\<+ CONST \.^ \.^ 3',
+  '\Ga'   => '\<+ CONST \.^ \.^ 1',
+  '\Gl'   => '\<+ CONST \.^ \.^ \.^ 2 \BS',
+  '\O/'   => '\<+ CONST \.v \.v 4 \BS',
+  '\Gg'   => '\<+ CONST \.^ \.^ 5 \BS',
+  '\oo'   => '\<+ CONST 6 \.< \BS \.>',
+  '\Ge'   => '\<+ CONST \.v \.v 6 \BS',
+  ' '     => '\+> SPACE',
+  '!'     => '\+> !',
+  '"'     => '',
+  '\GH'   => '',
+  '\036'  => '',
+  '%'     => '\+> % \.> \.> \BS \BS \BS',
+  '\^-'   => '+/-',
+  "'"     => '',
+  '('     => '() \.> \BS',
+  ')'     => '() \BS \.>',
+  '*'     => '\.x',                       # \.x
+  # '+'   => '+',
+  ','     => '\<+ % \.> \.> \BS \BS \BS', # \;,
+  # '-'   => '-',
+  '.'     => '',
+  '/'     => '\:-',                       # \:-
+  # '0'   => '0',
+  # '1'   => '1',
+  # '2'   => '2',
+  # '3'   => '3',
+  # '4'   => '4',
+  # '5'   => '5',
+  # '6'   => '6',
+  # '7'   => '7',
+  # '8'   => '8',
+  # '9'   => '9',
+  ':'     => '',
+  '\[]'   => '',
+  # '<'   => '<',
+  '='     => '\<+ =',
+  # '>'   => '>',
+  '?'     => '',
+  ';'     => '',
+  'A'     => 'RCL A',
+  'B'     => 'RCL B',
+  'C'     => 'RCL C',
+  'D'     => 'RCL D',
+  'E'     => 'RCL E',
+  'F'     => 'RCL F',
+  'G'     => 'RCL G',
+  'H'     => 'RCL H',
+  'I'     => 'RCL I',
+  'J'     => 'RCL J',
+  'K'     => 'RCL K',
+  'L'     => 'RCL L',
+  'M'     => 'RCL M',
+  'N'     => 'RCL N',
+  'O'     => 'RCL O',
+  'P'     => 'RCL P',
+  'Q'     => 'RCL Q',
+  'R'     => 'RCL R',
+  'S'     => 'RCL S',
+  'T'     => 'RCL T',
+  'U'     => 'RCL U',
+  'V'     => 'RCL V',
+  'W'     => 'RCL W',
+  'X'     => 'RCL X',
+  'Y'     => 'RCL Y',
+  'Z'     => 'RCL Z',
+  '['     => '\<+ [] \.> \BS',
+  '\092'  => '\+> BASE 8',                # b
+  ']'     => '\<+ [] \BS \.>',
+  '^'     => 'y^x',
+  '_'     => '',
+  '\096'  => '\+> BASE 7',                # o
+  'a'     => '',
+  'b'     => '\+> BASE 8',                # \092
+  'c'     => '',
+  'd'     => '\+> BASE 5',                # \252
+  'e'     => 'E',                         # \231
+  'f'     => '',
+  'g'     => '',
+  'h'     => '\+> BASE 6',                # \235
+  'i'     => '\im',                       # \im
+  'j'     => '',
+  'k'     => '',
+  'l'     => '',
+  'm'     => '\<+ L.R. 4',                # \179
+  'n'     => '\+> SUMS 1',                # \128
+  'o'     => '\+> BASE 7',                # \096
+  'p'     => '',
+  'q'     => '',
+  'r'     => '\<+ L.R. 3',                # \171
+  's'     => '\+> S,\Gs 1 \BS',           # \125
+  't'     => '',
+  'u'     => '',
+  'v'     => '',
+  'w'     => '\+> \x-,\y- 3 \.< \BS \.>',               # \_w
+  'x'     => '\+> S,\Gs 1 \.< \BS \.>',                 # \_x
+  'y'     => '\+> S,\Gs 2 \.< \BS \.>',                 # \_y
+  'z'     => '',
+  '\_b'   => '\<+ L.R. 5',
+  '\<-'   => '',
+  '\125'  => '\+> S,\Gs 1 \BS',           # s
+  '\126'  => '',
+  '\!?'   => '',
+  '\128'  => '\+> SUMS 1',                # n
+  # '\:-' => '\:-',                       # /
+  # '\.x' => '\.x',                       # *
+  '\v/'   => '',
+  '\.S'   => '',
+  '\GS'   => '\+> SUM 2 \BS',
+  '\134'  => '',
+  '\pi'   => '\<+ \pi',
+  '\136'  => '',
+  '\<='   => '',
+  '\>='   => '',
+  '\=/'   => '',
+  '\_y'   => '\+> S,\Gs 2 \.< \BS \.>',                 # y
+  '\->'   => '\+> \->l \.> \BS \BS \BS',
+  '\_x'   => '\+> S,\Gs 1 \.< \BS \.>',                 # x
+  '\Gm'   => '\<+ CONST \.v \.v \.v 4 \BS',             # µ
+  'µ'     => '\<+ CONST \.v \.v \.v 4 \BS',             # \Gm
+  '\144'  => '',
+  '\145'  => '\+> SUM 4 \.< \BS \BS \.>',               # ²
+  '²'     => '\+> SUM 4 \.< \BS \BS \.>',               # \145
+  '\146'  => '',
+  '\147'  => '',
+  '\^o'   => '\<+ ->\^oF \.> \BS \BS \BS \.< \BS \.>',  # °
+  '°'     => '\<+ ->\^oF \.> \BS \BS \BS \.< \BS \.>',  # \^o
+  '"'     => '',
+  '\150'  => '',
+  '\151'  => '',
+  '\152'  => '',
+  '\153'  => '',
+  '\154'  => '',
+  '\155'  => '',
+  '\156'  => '',
+  '\157'  => '\<+ CONST \.^ \.^ 2',
+  '\Gh'   => '\+> \Gh',
+  '\159'  => '',
+  '\160'  => '',
+  '\161'  => '',
+  '\162'  => '',
+  '\163'  => '',
+  '\164'  => '',
+  '\165'  => '',
+  '~'     => '',
+  '\167'  => '\<+ CONST \.^ \.^ 4 \BS \BS',
+  '\^='   => '',
+  '\_x'   => '\+> S,\Gs 1 \.< \BS \.>',     # x
+  '\GD'   => '',
+  '171'   => '\<+ L.R. 3',                  # r
+  '172'   => '',
+  '\,('   => '',
+  '\Gs'   => '\+> S,\Gs 3 \BS',
+  '\x-'   => '\<+ \x-,\y- 1',
+  '\y-'   => '\<+ \x-,\y- 2',
+  '\x^'   => '\<+ L.R. 1 \.> \BS \BS',
+  '\y^'   => '\<+ L.R. 2 \.> \BS \BS',
+  '\179'  => '\<+ L.R. 4',                  # m
+  '\180'  => '',
+  '\181'  => '',
+  '\182'  => '',
+  '\^0'   => '',
+  '\^1'   => '\<+ CONST \.^ 1 \.< \BS \.>',
+  '\^2'   => '\<+ CONST \.^ 2 \.< \BS \.>',
+  '\^3'   => '',
+  '\^4'   => '',
+  '\^5'   => '',
+  '\^6'   => '',
+  '\^7'   => '',
+  '\^8'   => '',
+  '\^9'   => '',
+  '\_w'   => '\+> \x-,\y- 3 \.< \BS \.>',   # w
+  '\194'  => '',
+  '\195'  => '',
+  '\^A'   => '',
+  '\^B'   => '\<+ CONST \.v \.v \.v 5 \.< \BS \.>',
+  '\^C'   => '\<+ CONST \.^ 1 \BS ',
+  '\^D'   => '',
+  '\^E'   => '',
+  '\^F'   => '',
+  '\^G'   => '\<+ CONST \.^ 3 \BS',
+  '\^H'   => '',
+  '\^I'   => '',
+  '\^J'   => '',
+  '\^K'   => '',
+  '\^L'   => '',
+  '\^M'   => '',
+  '\^N'   => '\<+ CONST 5 \BS',
+  '\^O'   => '',
+  '\211'  => '',
+  '\Gn'   => '',
+  '\213'  => '',
+  '\214'  => '',
+  '\215'  => '',
+  '\^a'   => '\<+ CONST \.v \.v 5 \BS',
+  '\217'  => '',
+  '\_p'   => '',
+  '\219'  => '',
+  '\|^'   => '',
+  '\|v'   => '',
+  '\222'  => '',
+  '\),'   => '',
+  '\^,'   => '',
+  '\Y_'   => '',
+  '\^.'   => '',
+  '\^u'   => '\<+ CONST \.v \.v \.v 3',
+  '\;('   => '',
+  '\;)'   => '',
+  '\230'  => '',
+  '\231'  => 'E',                           # e
+  '\232'  => '',
+  '\233'  => '',
+  '\^?'   => '',
+  '\^h'   => '\+> BASE 6',                  # h
   # '\im' => '\im',
-  '\x^' => '\<+ L.R. 1 \.> \BS \BS',
-  '\y^' => '\<+ L.R. 2 \.> \BS \BS',
-  '\y-' => '\<+ \x-,\y- 2',
+  '\^P'   => '',
+  '\^Q'   => '',
+  '\^R'   => '\<+ CONST 6 \BS',
+  '\^S'   => '',
+  '\^T'   => '',
+  '\^U'   => '',
+  '\^V'   => '\<+ CONST 4 \BS',
+  '\^W'   => '',
+  '\^X'   => '',
+  '\^Y'   => '',
+  '\^Z'   => '\<+ CONST \.^ \.^ \.^ 1 \BS',
+  '\^+'   => '',
+  '\^i'   => '',
+  '\250'  => '',
+  '\251'  => '',
+  '\252'  => '\+> BASE 5',                  # d
+  '\;,'   => '\+> % \BS \BS \BS \BS \BS \.> \.> \BS',   # ,
+  '\;.'   => '',
+  '\|>'   => 'STO \CC',
+  # additional char
+  '³'     => '',
+  '#'     => '',
+  '{'     => '',
+  '|'     => '',
+  '}'     => '',
+};
+
+# Optimize sequences
+my $tbl_opt_seq = {
+  # CONST
+  '\<+ CONST 4 \BS \<+ CONST \.v 2 \BS'             => '\<+ CONST 4',                   # \^V\^m
+  '\<+ CONST 5 \BS \<+ CONST 5 \.< \BS \.>'         => '\<+ CONST 5',                   # \^N\015
+  '\<+ CONST 6 \BS \<+ CONST 6 \.< \BS \.>'         => '\<+ CONST 6',                   # \^R\oo
+  '\<+ CONST \.^ 4 \<+ CONST 4 \BS'                 => '\<+ CONST \.v 1',               # \^e\^V
+  '\<+ CONST \.v 2 \BS \<+ CONST \.^ 4'             => '\<+ CONST \.v 2',               # \^m\^e
+  '\<+ CONST \.v 2 \BS \<+ CONST \.v 3 \.< \BS \.>' => '\<+ CONST \.v 3',               # \^m\^p
+  '\<+ CONST \.v 2 \BS \<+ CONST \.v 4 \.< \BS \.>' => '\<+ CONST \.v 4',               # \^m\^n
+  '\<+ CONST \.v 2 \BS \<+ CONST \.v \.v \.v 4 \BS' => '\<+ CONST \.v 5',               # \^m\Gm
+  '\<+ CONST \.v \.v 4 \BS \<+ CONST \.^ 3 \BS'     => '\<+ CONST \.v \.v 4',           # \O/\021
+  '\<+ CONST \.v \.v 5 \BS \<+ CONST \.^ 3 \BS'     => '\<+ CONST \.v \.v 5',           # \^a\021
+  '\<+ CONST \.v \.v 6 \BS \<+ CONST \.^ 3 \BS'     => '\<+ CONST \.v \.v 6',           # \Ge\021
+  '\<+ CONST \.v \.v \.v 4 \BS \<+ CONST \.^ 3 \BS' => '\<+ CONST \.v \.v \.v 4',       # \Gm\021
+  '\<+ CONST \.v \.v \.v 4 \BS \<+ CONST \.v \.v \.v 5 \.< \BS \.>'
+                                                    => '\<+ CONST \.v \.v \.v 5',       # \Gm\^B
+  '\<+ CONST \.v \.v \.v 4 \BS \<+ CONST 5 \BS'     => '\<+ CONST \.v \.v \.v 6',       # \Gm\^N
+  '\<+ CONST \.v \.v \.v 4 \BS \<+ CONST \.v 3 \.< \BS \.>'
+                                                    => '\<+ CONST \.v \.v \.v \.v 1',   # \Gm\^p
+  '\<+ CONST \.v \.v \.v 4 \BS \<+ CONST \.^ 4'     => '\<+ CONST \.v \.v \.v \.v 2',   # \Gm\^e
+  '\<+ CONST \.v \.v \.v 4 \BS \<+ CONST \.v 4 \.< \BS \.>'
+                                                    => '\<+ CONST \.v \.v \.v \.v 3',   # \Gm\^n
+  '\<+ CONST \.v \.v \.v 4 \BS \<+ CONST \.v \.v \.v 4 \BS'
+                                                    => '\<+ CONST \.v \.v \.v \.v 4',   # \Gm\Gm
+  '\<+ CONST \.v \.v \.v \.v 5 \BS \<+ CONST \.v 4 \.< \BS \.>'
+                                                    => '\<+ CONST \.v \.v \.v \.v 5',   # \^r\^n
+  '\<+ CONST \.^ \.^ \.^ 1 \BS \<+ CONST \.^ 3 \BS' => '\<+ CONST \.^ \.^ \.^ 1',       # \^Z\021
+  '\<+ CONST \.^ \.^ \.^ 2 \BS \<+ CONST \.^ \.^ 2 \.< \BS \.>'
+                                                    => '\<+ CONST \.^ \.^ \.^ 2',       # \Gl\^c
+  '\<+ CONST \.^ \.^ \.^ 2 \<+ CONST \.v 4 \.< \BS \.>'
+                                                    => '\<+ CONST \.^ \.^ \.^ 3',       # \Gl\^c\^n
+  '\<+ CONST \.^ \.^ \.^ 2 \<+ CONST \.v 3 \.< \BS \.>'
+                                                    => '\<+ CONST \.^ \.^ \.^ 4',       # \Gl\^c\^p
+  '\<+ CONST \.^ \.^ 4 \BS \BS \<+ CONST \.^ \.^ 4 \BS \.< \BS \.> \<+ CONST \.v 2 \BS'
+                                                    => '\<+ CONST \.^ \.^ 4',           # \167\^t\^m
+  '\<+ CONST \.^ \.^ 5 \BS \<+ CONST \.v 3 \.< \BS \.>'
+                                                    => '\<+ CONST \.^ \.^ 5',           # \Gg\^p
+  '\<+ CONST \.^ 1 \BS  \<+ CONST \.^ 1 \.< \BS \.>'
+                                                    => '\<+ CONST \.^ 1',               # \^C\^1
+  '\<+ CONST \.^ 1 \BS  \<+ CONST \.^ 2 \.< \BS \.>'
+                                                    => '\<+ CONST \.^ 2',               # \^C\^2
+  '\<+ CONST \.^ 3 \BS \<+ CONST \.^ 3 \BS'         => '\<+ CONST \.^ 3',               # \^G\021
+  # R\|v
+  'RCL R RCL E RCL G RCL X'                         => 'R\|v 1',                        # REGX
+  'RCL R RCL E RCL G RCL Y'                         => 'R\|v 2',                        # REGY
+  'RCL R RCL E RCL G RCL Z'                         => 'R\|v 3',                        # REGZ
+  'RCL R RCL E RCL G RCL T'                         => 'R\|v 4',                        # REGT
+  # SIN
+  'RCL S RCL I RCL N'                               => 'SIN \.> \BS \BS',               # SIN
+  'RCL A RCL S RCL I RCL N'                         => '\+> SIN \.> \BS \BS',           # ASIN
+  # COS
+  'RCL C RCL O RCL S'                               => 'COS \.> \BS \BS',               # COS
+  'RCL A RCL C RCL O RCL S'                         => '\+> COS \.> \BS \BS',           # ACOS
+  # TAN
+  'RCL T RCL A RCL N'                               => 'TAN \.> \BS \BS',               # TAN
+  'RCL I RCL N RCL T RCL G'                         => '\<+ INTG 4 \.> \BS \BS',        # INTG
+  'RCL A RCL T RCL A RCL N'                         => '\+> TAN \.> \BS \BS',           # ATAN
+  # 1/x
+  'RCL I RCL N RCL V'                               => '1/x \.> \BS \BS',               # INV
+  # ENTER
+  'RCL L RCL A RCL S RCL T \+> S,\Gs 1 \.< \BS \.>' => '\+> ENTER',                     # LASTx
+  # \v/x
+  'RCL S RCL Q RCL R RCL T'                         => '\v/x \.> \BS \BS',              # SQRT
+  'RCL X RCL R RCL O RCL O RCL T'                   => '\<+ x\v/y \.> \.> \BS \BS',     # XROOT
+  # ()
+  '() \.> \BS () \BS \.>'                           => '() \.>',                        # ()
+  '\<+ [] \.> \BS \<+ [] \BS \.>'                   => '\<+ [] \.>',                    # []
+  # 7
+  '\+> \->l \.> \BS \BS \BS \<+ ->\^oF \.> \BS \BS \BS \.< \BS \.> RCL F'
+                                                    => '\<+ \->\^oF \.> \BS \BS',       # \->\^oF
+  '\+> \->l \.> \BS \BS \BS \<+ ->\^oF \.> \BS \BS \BS \.< \BS \.> RCL C'
+                                                    => '\+> \->\^oC \.> \BS \BS',       # \->\^oC
+  # 8
+  'RCL H RCL M RCL S \+> \->l \.> \BS \BS \BS'      => '\<+ HMS\-> \.> \BS \BS',        # HMS\->
+  '\+> \->l \.> \BS \BS \BS RCL H RCL M RCL S'      => '\+> \->HMS \.> \BS \BS',        # \->HMS
+  # 9
+  '\+> \->l \.> \BS \BS \BS RCL R RCL A RCL D'      => '\<+ \->RAD \.> \BS \BS',        # \->RAD
+  '\+> \->l \.> \BS \BS \BS RCL D RCL E RCL G'      => '\+> \->DEG \.> \BS \BS',        # \->DEG
+  # \:-
+  '\+> % \.> \.> \BS \BS \BS RCL C RCL H RCL G'     => '\<+ %CHG \.> \.> \BS \BS \BS',  # %CHG
+  # 4
+  '\+> \->l \.> \BS \BS RCL B'                      => '\<+ \->lb \.> \BS \BS',         # \->LB
+  '\+> \->l \.> \BS \BS \BS RCL K RCL G'            => '\+> \->kg \.> \BS \BS',         # \->KG
+  # 5
+  '\+> \->l \.> \BS \BS \BS RCL M RCL I RCL L RCL E'
+                                                    => '\<+ \->MILE \.> \BS \BS',       # \->MILE
+  '\+> \->l \.> \BS \BS \BS RCL K RCL M'            => '\+> \->KM \.> \BS \BS',         # \->KM
+  # 6
+  '\+> \->l \.> \BS \BS \BS RCL G RCL A RCL L'      => '\<+ \->gal \.> \BS \BS',        # \->GAL
+  '\+> \->l \.> \BS \BS \BS RCL L'                  => '\+> \->l \.> \BS \BS',          # \->L
+  # \.x
+  '\+> SUMS 1 RCL C \<+ L.R. 3'                     => '\<+ nCr \.> \.> \BS \BS \BS',   # nCr
+  '\+> SUMS 1 RCL P \<+ L.R. 3'                     => '\+> nCr \.> \.> \BS \BS \BS',   # nPr
+  # 2
+  '\+> \->l \.> \BS \BS \BS RCL G RCL A RCL L'      => '\<+ \->gal \.> \BS \BS',        # \->GAL
+  '\+> \->l \.> \BS \BS \BS RCL L'                  => '\+> \->l \.> \BS \BS',          # \->L
+  # 3
+  'RCL S RCL E RCL E RCL D'                         => '\<+ SEED \.> \BS \BS',          # SEED
+  'RCL R RCL A RCL N RCL D'                         => '\+> RAND',                      # RAND
+  # -
+  '\+> SUM 2 \BS \+> S,\Gs 1 \.< \BS \.>'           => '\+> SUM 2',                     # \GSx
+  '\+> SUM 2 \BS \+> S,\Gs 2 \.< \BS \.>'           => '\+> SUM 3',                     # \GSy
+  '\+> SUM 2 \+> SUM 4 \.< \BS \BS \.>'             => '\+> SUM 4',                     # \GSx\145
+  '\+> S,\Gs 1 \.< \BS \.> \+> SUM 4 \.< \BS \BS \.>'
+                                                    => '\+> SUM 4 \.< \.< \BS \.> \.>', # x\145
+  # 0
+  '() \.> \BS RCL I () \BS \.>'                     => 'RCL 0',                         # (I)
+  # .
+  '() \.> \BS RCL J () \BS \.>'                     => 'RCL .',                         # (J)
+  # +
+  '\<+ \x-,\y- 1 \+> \x-,\y- 3 \.< \BS \.>'         => '\<+ \x-,\y- 3',                 # \x-\_w
+  '\+> S,\Gs 1 \BS \+> S,\Gs 1 \.< \BS \.>'         => '\+> S,\Gs 1',                   # sx
+  '\+> S,\Gs 1 \BS \+> S,\Gs 2 \.< \BS \.>'         => '\+> S,\Gs 2',                   # sy
+  '\+> S,\Gs 3 \BS \+> S,\Gs 1 \.< \BS \.>'         => '\+> S,\Gs 3',                   # \Gsx
+  '\+> S,\Gs 3 \BS \+> S,\Gs 2 \.< \BS \.>'         => '\+> S,\Gs 4',                   # \Gsy
 };
 
 # plaintext mapping
-my $plaintext = {
-  '\BS'   => 'bksp',
-  '\CC'   => 'cancel',
-  '\x-'   => 'xbar',
+my $tbl_char_plain = {
+  # equ charset
+  '\^c'   => '^c',
+  '\^e'   => '^e',
+  '\^g'   => '^g',
+  '\^h'   => '^h',
+  '\^m'   => '^m',
+  '\^n'   => '^n',
+  '\^p'   => '^p',
+  '\^r'   => '^r',
+  '\^t'   => '^t',
+  '\015'  => '^A',
+  '\016'  => 'c',
+  '\017'  => 'F',
+  '\018'  => 'G',
+  '\^k'   => '^k',
+  '\020'  => 'R',
+  '\021'  => '^o',
+  '\023'  => 'h',
+  '\024'  => 't',
+  '\Ga'   => 'a',
+  '\Gl'   => 'l',
+  '\O/'   => 'Ph',
+  '\Gg'   => 'g',
+  '\oo'   => 'oo',
+  '\Ge'   => 'e',
+  '\^-'   => '^-',
+  '\092'  => 'b',
+  '\096'  => 'o',
+  '\_b'   => 'b',
+  '\125'  => 's',
+  '\128'  => 'n',
+  '\:-'   => '/',
+  # '/'   => '/',
+  '\.x'   => '*',
+  # '*'   => '*',
+  '\GS'   => 'Z',
+  '\pi'   => 'pi',
+  '\_y'   => 'y',
+  '\->'   => '->',
+  '\_x'   => 'x',
+  '\Gm'   => 'm',
+  '\145'  => '^2',
+  '\^o'   => '^o',
+  '\157'  => '^z',
+  '\Gh'   => 't',
+  '\167'  => '^a',
+  '\171'  => 'r',
+  '\Gs'   => 'z',
+  '\x-'   => 'x',
+  '\y-'   => 'y',
+  '\x^'   => 'x',
+  '\y^'   => 'y',
+  '\179'  => 'm',
+  '\^1'   => '^1',
+  '\^2'   => '^2',
+  '\_w'   => 'w',
+  '\^B'   => '^B',
+  '\^C'   => '^C',
+  '\^G'   => '^G',
+  '\^N'   => '^N',
+  '\^a'   => '^a',
+  '\^u'   => '^u',
+  '\231'  => 'e',
+  # 'e'   => 'e',
+  '\235'  => 'h',
+  '\im'   => 'i',
+  # 'i'   => 'i',
+  '\^R'   => '^R',
+  '\^V'   => '^V',
+  '\^Z'   => '^Z',
+  '\252'  => 'd',
+  '\;,'   => ',',
+  '\|>'   => '>',
+  # non equ charset
   '\v/x'  => 'sqrt',
   'x\v/y' => 'xroot',
   '\.S'   => '$',
-  '\GS'   => 'Z',
-  '\|>'   => '>',
-  '\pi'   => 'pi',
   '\<='   => '<=',
   '\>='   => '>=',
   '\=/'   => '!=',
-  '\Ga'   => 'alpha',
-  '\->'   => '->',
   '\<-'   => '<-',
   '\|v'   => 'v',
   '\|^'   => '^',
-  '\Gg'   => 'gamma',
-  '\Ge'   => 'epsilon',
-  '\Gh'   => 't',
-  '\Gl'   => 'lambda',
-  '\Gs'   => 'z',
-  '\oo'   => 'infty',
-  '\^o'   => '^o',
-  '\Gm'   => 'mu',
-  '\^2'   => '^2',
-  '\.x'   => '*',
-  '\O/'   => 'Phi',
-  '\:-'   => '/',
-  '\<.'   => 'left',
+  '\^x'   => '^x',
+  # extra
+  '\BS'   => 'bksp',
+  '\CC'   => 'cancel',
+  '\.<'   => 'left',
   '\.>'   => 'right',
   '\.v'   => 'down',
   '\.^'   => 'up',
   '\<+'   => 'ctrl',
   '\+>'   => 'shift',
-  '\h-'   => 'hbar',
-  '\im'   => 'i',
-  '\^x'   => '^x',
-  '\x^'   => 'xcirc',
-  '\y^'   => 'ycirc',
-  '\y-'   => 'ybar',
 };
 
 # Unicode mapping
-my $unicodes = {
-  '\BS'   => _bksp,
-  '\CC'   => _cancel,
+my $tbl_char_unicode = {
+  # equ charset
+  '\^c'   => _supc,
+  '\^e'   => _supe,
+  '\^g'   => _supg,
+  '\^h'   => _suph,
+  '\^m'   => _supm,
+  '\^n'   => _supn,
+  '\^p'   => _supp,
+  '\^r'   => _supr,
+  '\^t'   => _supt,
+  '\015'  => _capA,
+  '\016'  => _copf,
+  '\017'  => _Fopf,
+  '\018'  => _Gopf,
+  '\^k'   => _supk,
+  '\020'  => _Ropf,
+  '\021'  => _supo,
+  '\023'  => _suph._macr,
+  '\024'  => _topf,
+  '\Ga'   => _alpha,
+  '\Gl'   => _lambda,
+  '\O/'   => _Phi,
+  '\Gg'   => _gamma,
+  '\oo'   => _infin,
+  '\Ge'   => _epsilon,
+  '\^-'   => _supminus,
+  '\092'  => 'b',
+  '\096'  => 'o',
+  '\_b'   => 'b',
+  '\125'  => 's',
+  '\128'  => 'n',
+  '\:-'   => _divide,
+  # '/'   => '/',
+  '\.x'   => _times,
+  # '*'   => '*',
+  '\GS'   => _Sigma,
+  '\pi'   => _pi,
+  '\_y'   => 'y',
+  '\->'   => _rarr,
+  '\_x'   => 'x',
+  '\Gm'   => 'µ',
+  '\145'  => _sup2,
+  '\^o'   => '°',
+  '\157'  => _sigma,
+  '\Gh'   => _theta,
+  '\167'  => _supalpha,
+  '\171'  => 'r',
+  '\Gs'   => _sigma,
   '\x-'   => 'x'._macr,
+  '\y-'   => _ymacr,
+  '\x^'   => 'x'._circ,
+  '\y^'   => _ycirc,
+  '\179'  => 'm',
+  '\^1'   => _sup1,
+  '\^2'   => _sup2,
+  '\_w'   => 'w',
+  '\^B'   => _supB,
+  '\^C'   => _capC,
+  '\^G'   => _supG,
+  '\^N'   => _supN,
+  '\^a'   => _supa,
+  '\^u'   => _supu,
+  '\231'  => _capE,
+  # 'e'   => _capE,
+  '\235'  => 'h',
+  '\im'   => _iscr,
+  # 'i'   => _iscr,
+  '\^R'   => _supR,
+  '\^V'   => _supV,
+  '\^Z'   => _capZ,
+  '\252'  => 'd',
+  '\;,'   => ',',
+  '\|>'   => _brtri,
+  # non equ charset
   '\v/'   => _sqrt,
   '\.S'   => _int,
-  '\GS'   => _Sigma,
-  '\|>'   => _brtri,
-  '\pi'   => _pi,
   '\<='   => _leq,
   '\>='   => _geq,
   '\=/'   => _neq,
-  '\Ga'   => _alpha,
-  '\->'   => _rarr,
   '\<-'   => _larr,
   '\|v'   => _darr,
   '\|^'   => _uarr,
-  '\Gg'   => _gamma,
-  '\Ge'   => _epsilon,
-  '\Gh'   => _theta,
-  '\Gl'   => _lambda,
-  '\Gs'   => _sigma,
-  '\oo'   => _infin,
-  '\^o'   => '°',
-  '\Gm'   => 'µ',
-  '\^2'   => _sup2,
-  '\.x'   => _times,
-  '\O/'   => _Phi,
-  '\:-'   => _divide,
-  '\<.'   => '<',
+  '\^x'   => _supx,
+  # extra
+  '\BS'   => _bksp,
+  '\CC'   => _cancel,
+  '\.<'   => '<',
   '\.>'   => '>',
   '\.v'   => _vee,
   '\.^'   => _wedge,
   '\<+'   => _lsh,
   '\+>'   => _rsh,
-  '\h-'   => 'h'._macr,
-  '\im'   => _iscr,
-  '\^x'   => _supx,
-  '\x^'   => 'x'._circ,
-  '\y^'   => _ycirc,
-  '\y-'   => _ymacr,
 };
 
 my $lbl = '0';
@@ -797,18 +1161,18 @@ foreach my $seq ( @segments ) {
 
 # option --unicode
 if ($unicode) {
-  foreach (keys %$unicodes) {
+  foreach (keys %$tbl_char_unicode) {
     my $a = quotemeta $_;
-    my $b = $unicodes->{$_};
+    my $b = $tbl_char_unicode->{$_};
     $out =~ s/$a/$b/g;
   }
   binmode(STDOUT, ":utf8");
 }
-# option --ascii
-elsif ($ascii) {
-  foreach (keys %$plaintext) {
+# option --plain
+elsif ($plain) {
+  foreach (keys %$tbl_char_plain) {
     my $a = quotemeta $_;
-    my $b = $plaintext->{$_};
+    my $b = $tbl_char_plain->{$_};
     $out =~ s/$a/$b/g;
   }
 }
@@ -832,16 +1196,16 @@ sub sprintf_number_statement {
 
     # start sequence
     if ($base eq 'd') {
-      $keysequence .= sprintf("\t\t; %s", $numbers->{'dec'});
+      $keysequence .= sprintf("\t\t; %s", $tbl_num_seq->{'dec'});
     }
     elsif ($base eq 'h') {
-      $keysequence .= sprintf("\t\t; %s", $numbers->{'hex'});
+      $keysequence .= sprintf("\t\t; %s", $tbl_num_seq->{'hex'});
     }
     elsif ($base eq 'o') {
-      $keysequence .= sprintf("\t\t; %s", $numbers->{'oct'});
+      $keysequence .= sprintf("\t\t; %s", $tbl_num_seq->{'oct'});
     }
     elsif ($base eq 'b') {
-      $keysequence .= sprintf("\t\t; %s", $numbers->{'bin'});
+      $keysequence .= sprintf("\t\t; %s", $tbl_num_seq->{'bin'});
     }
     else {
       $keysequence = "\t\t;";
@@ -849,24 +1213,24 @@ sub sprintf_number_statement {
 
     # sequence for mantissa and exponent
     foreach (split //, $digits) {
-      exists $numbers->{$_} and
-        $keysequence .= sprintf(" %s", $numbers->{$_} );
+      exists $tbl_num_seq->{$_} and
+        $keysequence .= sprintf(" %s", $tbl_num_seq->{$_} );
     }
     if ($sign) {
-      $keysequence .= sprintf(" %s", $numbers->{'-'} );
+      $keysequence .= sprintf(" %s", $tbl_num_seq->{'-'} );
     }
     if ($exponent) {
-      $keysequence .= sprintf(" %s", $numbers->{'e'} );
+      $keysequence .= sprintf(" %s", $tbl_num_seq->{'e'} );
       foreach (split //, $exponent) {
-        exists $numbers->{$_} and
-          $keysequence .= sprintf(" %s", $numbers->{$_} );
+        exists $tbl_num_seq->{$_} and
+          $keysequence .= sprintf(" %s", $tbl_num_seq->{$_} );
       }
     }
 
     # end sequence
     if ($base) {
-      $keysequence .= sprintf(" %s", $numbers->{$base});
-      $keysequence .= sprintf(" %s", $numbers->{'dec'});
+      $keysequence .= sprintf(" %s", $tbl_num_seq->{$base});
+      $keysequence .= sprintf(" %s", $tbl_num_seq->{'dec'});
     }
     $keysequence .= ' ENTER';
   }
@@ -902,9 +1266,10 @@ sub sprintf_complex_statement {
   defined $a and defined $b or
     print STDERR "Warn: unknown syntax for complex number '$complex'\n" and next;
 
+  $sep =~ s/e/\\231/;
   $sep =~ s/i/\\im/;
   $sep =~ s/t/\\Gh/;
-  my $seq = exists $sequences->{sep} ? $sequences->{sep} : $sep;
+  my $seq = exists $tbl_instr_seq->{sep} ? $tbl_instr_seq->{sep} : $sep;
 
   defined $shortcut and
     $keysequence = sprintf("\t\t; %s %s %s ENTER", $a, $seq, $b);
@@ -916,11 +1281,11 @@ sub sprintf_single_instruction {
   my $mnemonic = shift;
   my $keysequence = '';
 
-  exists $trigraphs->{$mnemonic} and
-    $mnemonic = $trigraphs->{$mnemonic};
+  exists $tbl_instr_3graph->{$mnemonic} and
+    $mnemonic = $tbl_instr_3graph->{$mnemonic};
 
   defined $shortcut and
-    $keysequence = sprintf("\t\t; %s", exists $sequences->{$mnemonic} ? $sequences->{$mnemonic} : $mnemonic);
+    $keysequence = sprintf("\t\t; %s", exists $tbl_instr_seq->{$mnemonic} ? $tbl_instr_seq->{$mnemonic} : $mnemonic);
 
   # special handling for ENG
   $mnemonic = 'ENG' if $mnemonic eq 'ENG\->';
@@ -933,11 +1298,11 @@ sub sprintf_address_instruction {
   my $addr = shift;
   my $keysequence = '';
 
-  exists $trigraphs->{$mnemonic} and
-    $mnemonic = $trigraphs->{$mnemonic};
+  exists $tbl_instr_3graph->{$mnemonic} and
+    $mnemonic = $tbl_instr_3graph->{$mnemonic};
 
   defined $shortcut and
-    $keysequence = sprintf("\t; %s %s", exists $sequences->{$mnemonic} ? $sequences->{$mnemonic} : $mnemonic, $addr);
+    $keysequence = sprintf("\t; %s %s", exists $tbl_instr_seq->{$mnemonic} ? $tbl_instr_seq->{$mnemonic} : $mnemonic, $addr);
   return sprintf("%s%03d\t%s %s%s\n", $lbl, ++$loc, $mnemonic, $addr, $keysequence);
 }
 
@@ -952,14 +1317,14 @@ sub sprintf_label_instruction {
   defined $response->{labels}->{$label}->{segment} or
     print STDERR "Warn: missing 'label' for instruction '$mnemonic'\n" and next;
 
-  exists $trigraphs->{$mnemonic} and
-    $mnemonic = $trigraphs->{$mnemonic};
+  exists $tbl_instr_3graph->{$mnemonic} and
+    $mnemonic = $tbl_instr_3graph->{$mnemonic};
 
   if ( $response->{labels}->{$label}->{segment} eq $seq ) {
     my $near = $response->{labels}->{$label}->{statement} + $line - $loc + 1;
     my $digits = join(' ', split(//, sprintf("%03d", $near)));
     defined $shortcut and
-      $keysequence = sprintf("\t; %s %s %s", exists $sequences->{$mnemonic} ? $sequences->{$mnemonic} : $mnemonic, $lbl, $digits);
+      $keysequence = sprintf("\t; %s %s %s", exists $tbl_instr_seq->{$mnemonic} ? $tbl_instr_seq->{$mnemonic} : $mnemonic, $lbl, $digits);
     return sprintf("%s%03d\t%s %s%03d%s\n", $lbl, ++$loc, $mnemonic, $lbl, $near, $keysequence);
   }
   else {
@@ -967,7 +1332,7 @@ sub sprintf_label_instruction {
     my $far = $response->{labels}->{$label}->{segment};
     my $near = $response->{labels}->{$label}->{statement} + 1;
     defined $shortcut and
-      $keysequence = sprintf("\t; %s ...", exists $sequences->{$mnemonic} ? $sequences->{$mnemonic} : $mnemonic);
+      $keysequence = sprintf("\t; %s ...", exists $tbl_instr_seq->{$mnemonic} ? $tbl_instr_seq->{$mnemonic} : $mnemonic);
     return sprintf("%s%03d\t%s %s+%03d%s\n", $lbl, ++$loc, $mnemonic, $far, $near, $keysequence);
   }
 }
@@ -981,8 +1346,8 @@ sub sprintf_variable_instruction {
   defined $variable or
     print STDERR "Warn: missing type 'variable' in instruction '$mnemonic'\n" and next;
 
-  exists $trigraphs->{$mnemonic} and
-    $mnemonic = $trigraphs->{$mnemonic};
+  exists $tbl_instr_3graph->{$mnemonic} and
+    $mnemonic = $tbl_instr_3graph->{$mnemonic};
 
   if ($mnemonic =~ /LBL/) {
     # set line number if instruction is 'LBL'
@@ -991,7 +1356,7 @@ sub sprintf_variable_instruction {
   }
   my $space = $variable =~ /\([IJ]\)/ ? '' : ' ';   # indirects have no space
   defined $shortcut and
-    $keysequence = sprintf("\t\t; %s %s", exists $sequences->{$mnemonic} ? $sequences->{$mnemonic} : $mnemonic, $variable);
+    $keysequence = sprintf("\t\t; %s %s", exists $tbl_instr_seq->{$mnemonic} ? $tbl_instr_seq->{$mnemonic} : $mnemonic, $variable);
   return sprintf("%s%03d\t%s%s%s%s\n", $lbl, ++$loc, $mnemonic, $space, $variable, $keysequence);
 }
 
@@ -1003,12 +1368,12 @@ sub sprintf_number_instruction {
   defined $number or
     print STDERR "Warn: missing type 'number' in instruction '$mnemonic'\n" and next;
 
-  exists $trigraphs->{$mnemonic} and
-    $mnemonic = $trigraphs->{$mnemonic};
+  exists $tbl_instr_3graph->{$mnemonic} and
+    $mnemonic = $tbl_instr_3graph->{$mnemonic};
 
   my $digits = $number < 10 ? $number : sprintf(". %d", $number % 10);
   defined $shortcut and
-    $keysequence = sprintf("\t\t; %s %s", exists $sequences->{$mnemonic} ? $sequences->{$mnemonic} : $mnemonic, $digits);
+    $keysequence = sprintf("\t\t; %s %s", exists $tbl_instr_seq->{$mnemonic} ? $tbl_instr_seq->{$mnemonic} : $mnemonic, $digits);
   return sprintf("%s%03d\t%s %s%s\n", $lbl, ++$loc, $mnemonic, $number, $keysequence);
 }
 
@@ -1021,44 +1386,74 @@ sub sprintf_equation_instruction {
   defined $equations->{$definition} or
     print STDERR "Warn: missing 'equation' for instruction '$mnemonic'\n" and next;
 
-  exists $trigraphs->{$mnemonic} and
-    $mnemonic = $trigraphs->{$mnemonic};
+  exists $tbl_instr_3graph->{$mnemonic} and
+    $mnemonic = $tbl_instr_3graph->{$mnemonic};
 
   my $equation = $equations->{$definition};
+  $equation =~ s/\//\\:-/;  # '/' => '\:-'
+  $equation =~ s/\*/\\\.x/; # '*' => '\.x'
+  $equation =~ s/\*/\\\.x/; # 'e' => '\231',
+  $equation =~ s/\*/\\\.x/; # 'i' to '\im'
+
   if ($shortcut) {
-    my $trigraph = '';
-    foreach (split //, $equation) {
-      if (/\\/ and length $trigraph == 0) {
-        $trigraph = '\\';
-        next;
+ 
+    my $state = 0;
+    my $char = '';
+    foreach (split //, $equation)
+    {
+      $char .= $_;
+      if ($state == 0) {
+        if (/\\/) {
+          $state = 1;
+          $char = '\\';
+        }
+        else {
+          my $seq = exists $tbl_char_seq->{$char} ? $tbl_char_seq->{$char} : $char;
+          $keysequence .= sprintf(" %s", $seq) if length $seq > 0;
+          $char = '';
+        }
       }
-      elsif (/\\/ and $trigraph =~ /\\/) {
-        $_ = '\\';
-        $trigraph = '';
+      elsif ($state == 1) {
+        if (/\\/) {
+          $state = 0;
+          my $seq = exists $tbl_char_seq->{$char} ? $tbl_char_seq->{$char} : $char;
+          $keysequence .= sprintf(" %s", $seq) if length $seq > 0;
+          $char = '';
+        }
+        elsif (/\d/) {
+          $state = 2;
+        }
+        else {
+          $state = 3;
+        }
       }
-      elsif (length $trigraph > 0 and length $trigraph < 3) {
-        $trigraph .= $_;
-        next if length $trigraph < 3;
+      elsif ($state == 2) {
+        if (/\d/) {
+          $state = 3;
+        }
+        else {
+          $state = 4;
+        }
       }
-      if (length $trigraph >= 3) {
-        $_ = $trigraph;
-        $trigraph = '';
-      }
-      my $seq = exists $character->{$_} ? $character->{$_} : $_;
-      if (length $seq > 0) {
-        $keysequence .= sprintf(" %s", $seq);
+      elsif ($state == 3) {
+        if (/\\/) {
+          $state = 4;
+        }
+        else {
+          $state = 0;
+          my $seq = exists $tbl_char_seq->{$char} ? $tbl_char_seq->{$char} : $char;
+          $keysequence .= sprintf(" %s", $seq) if length $seq > 0;
+          $char = '';
+        }
       }
     }
-
-    # 'RCL (I)'
-    my $regex = quotemeta '() \BS RCL I () \<. \BS \.>';
-    my $repl  = 'RCL 0';
-    $keysequence =~ s/$regex/$repl/g;
-
-    # 'RCL (J)'
-    $regex = quotemeta '() \BS RCL J () \<. \BS \.>';
-    $repl  = 'RCL .';
-    $keysequence =~ s/$regex/$repl/g;
+  
+    # optimize key sequences
+    foreach (keys %$tbl_opt_seq) {
+      my $a = quotemeta $_;
+      my $b = $tbl_opt_seq->{$_};
+      $keysequence =~ s/$a/$b/g;
+    }
 
     $ret = sprintf("; EQN%s ENTER\n", $keysequence);
   }
@@ -1082,7 +1477,7 @@ VERSION: $VERSION
 OPTIONS:
   -h, --help          Print this text
   -v, --version       Prints version
-  -a, --ascii         Output as ASCII (7-bit)
+  -p, --plain         Output as Plain text (7-bit ASCII)
   -u, --unicode       Output as Unicode (UTF-8)
   -s, --shortcut      Output shortcut keys as comment
   --debug             Show debug information on STDERR

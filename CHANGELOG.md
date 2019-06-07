@@ -6,12 +6,26 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.3.6] - 2019-06-07
+### Added
+- syntax checking for EQN
+- unicode und plantext support for EQN
+- new key sequences
+- optimization of key sequences
+
+### Changed
+- Trigraph `\h-` to `\023`
+- option `--ascii`, `-a` to `--plain`, `-p`
+
+### Fixed
+- key sequence for `\->`, `(` and `)`
+
 ## [0.3.5] - 2019-06-04
 ### Added
 - Charater-Set files to `extras`
 
 ### Changed
-- `\Mi` to `\im`
+- trigraph `\Mi` to `\im`
 - `&#x25B6;` to `&#x25BA;`
 - `&#x1F132;` to `&#x1F172;`
 - EQN character `%` and `,`
@@ -39,10 +53,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - add functions to statements
 
 ### Changed
-- `\=x` to `\x-`
-- `\=y` to `\y-`
-- `\^x` to `\x^`
-- `\^y` to `\y^`
+- trigraph `\=x` to `\x-`
+- trigraph `\=y` to `\y-`
+- trigraph `\^x` to `\x^`
+- trigraph `\^y` to `\y^`
 
 ## 0.3.1 - 2019-05-10
 ### Changed
@@ -92,5 +106,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - Initial version created
 
-[Unreleased]: https://github.com/brickpool/hp35s/compare/v0.3.5...HEAD
+[Unreleased]: https://github.com/brickpool/hp35s/compare/v0.3.6...HEAD
+[0.3.6]: https://github.com/brickpool/hp35s/compare/v0.3.5...v0.3.6
 [0.3.5]: https://github.com/brickpool/hp35s/compare/v0.3.4...v0.3.5
