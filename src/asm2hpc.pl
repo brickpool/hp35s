@@ -1285,6 +1285,8 @@ elsif ($markdown) {
     my $b = $tbl_char_markdown->{$_};
     $out =~ s/$a/$b/g;
   }
+  # add 2 spaces to end of line
+  $out =~ s/\n/  \n/gm;
 }
 # option --plain
 elsif ($plain) {
