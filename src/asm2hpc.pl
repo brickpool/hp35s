@@ -20,8 +20,10 @@ use Data::Dumper;
 # Declaration
 my $VERSION = '0.3.6';
 my $version;
+my $jumpmark;
 my $plain;
 my $unicode;
+my $markdown;
 my $shortcut;
 my $help;
 my $debug;
@@ -31,13 +33,15 @@ my $file;
 
 Getopt::Long::Configure('bundling');
 GetOptions (
-  "help"      => \$help,    "h"   => \$help,
-  "version"   => \$version, "v"   => \$version,
-  "plain"     => \$plain,   "p"   => \$plain,
-  "unicode"   => \$unicode, "u"   => \$unicode,
-  "shortcut"  => \$shortcut,"s"   => \$shortcut,
-  "debug"                         => \$debug,
-  "file=s"    => \$file,    "f=s" => \$file,
+  "help"      => \$help,      "h"   => \$help,
+  "version"   => \$version,   "v"   => \$version,
+  "jumpmark"  => \$jumpmark,  "j"   => \$jumpmark,
+  "plain"     => \$plain,     "p"   => \$plain,
+  "markdown"  => \$markdown,  "m"   => \$markdown,
+  "unicode"   => \$unicode,   "u"   => \$unicode,
+  "shortcut"  => \$shortcut,  "s"   => \$shortcut,
+  "debug"                           => \$debug,
+  "file=s"    => \$file,      "f=s" => \$file,
 );
 # Check command line arguments
 &version()    if $version;
@@ -718,6 +722,7 @@ my $tbl_opt_seq = {
   'RCL A RCL T RCL A RCL N'                         => '\+> TAN \.> \BS \BS',           # ATAN
   # 1/x
   'RCL I RCL N RCL V'                               => '1/x \.> \BS \BS',               # INV
+  'RCL A RCL L RCL O RCL G'                         => '\<+ 1/x \.> \BS \BS',           # ALOG
   # ENTER
   'RCL L RCL A RCL S RCL T \+> S,\Gs 1 \.< \BS \.>' => '\+> ENTER',                     # LASTx
   # \v/x
@@ -873,6 +878,103 @@ my $tbl_char_plain = {
   '\+>'   => 'shift',
 };
 
+# Markdown mapping
+my $tbl_char_markdown = {
+  # equ charset
+  '\^c'   => '<sup>c</sup>',
+  '\^e'   => '<sup>e</sup>',
+  '\^g'   => '<sup>g</sup>',
+  '\^h'   => '<sup>h</sup>',
+  '\^m'   => '<sup>m</sup>',
+  '\^n'   => '<sup>n</sup>',
+  '\^p'   => '<sup>p</sup>',
+  '\^r'   => '<sup>r</sup>',
+  '\^t'   => '<sup>t</sup>',
+  '\015'  => '<sup><sub>A</sub></sup>',
+  '\016'  => '<sup>&copf;</sup>',
+  '\017'  => '<sup>&Fopf;</sup>',
+  '\018'  => '<sup>&Gopf;</sup>',
+  '\^k'   => '<sup>k</sup>',
+  '\020'  => '<sup>&Ropf;</sup>',
+  '\021'  => '<sup>o</sup>',
+  '\023'  => '<sup>&hbar;</sup>',
+  '\024'  => '<sup>&topf;<sup>',
+  '\Ga'   => '&alpha;',
+  '\Gl'   => '&lambda;',
+  '\O/'   => '&Phi;',
+  '\Gg'   => '&gamma;',
+  '\oo'   => '&infin;',
+  '\Ge'   => '&epsilon;',
+  '\^-'   => '<sup>-</sup>',
+  '\092'  => 'b',
+  '\096'  => 'o',
+  '\_b'   => '<sub>b</sub>',
+  '\125'  => 's',
+  '\128'  => 'n',
+  '\:-'   => '&divide;',
+  # '/'   => '/',
+  '\.x'   => '&times;',
+  # '*'   => '*',
+  '\GS'   => '&Sigma;',
+  '\pi'   => '&pi;',
+  '\_y'   => '<sub>y</sub>',
+  '\->'   => '&rarr;',
+  '\_x'   => '<sub>x</sub>',
+  '\Gm'   => '&mu;',
+  '\145'  => '&sup2;',
+  '\^o'   => '&deg;',
+  '\157'  => '<sup>&sigma;</sup>',
+  '\Gh'   => '&theta;',
+  '\167'  => '<sup>&alpha;</sup>',
+  '\171'  => 'r',
+  '\Gs'   => '&sigma;',
+  '\x-'   => 'x&#x0304;',
+  '\y-'   => 'y&#x0304;',
+  '\x^'   => 'x&#x0302;',
+  '\y^'   => 'y&#x0302;',
+  '\179'  => 'm',
+  '\^1'   => '<sup>1</sup>',
+  '\^2'   => '<sup>2</sup>',
+  '\_w'   => '<sub>w</sub>',
+  '\^B'   => '<sup>B</sup>',
+  '\^C'   => '<sup>C</sup>',
+  '\^G'   => '<sup>G</sup>',
+  '\^N'   => '<sup>N</sup>',
+  '\^a'   => '<sup>a</sup>',
+  '\^u'   => '<sup>u</sup>',
+  '\231'  => '<sup><sub>E</sub></sup>',
+  # 'e'   => _capE,
+  '\235'  => 'h',
+  '\im'   => '&iscr;',
+  # 'i'   => _iscr,
+  '\^R'   => '<sup>R</sup>',
+  '\^V'   => '<sup>V</sup>',
+  '\^Z'   => '<sup>Z</sup>',
+  '\252'  => 'd',
+  '\;,'   => ',',
+  '\|>'   => '&#x25BA;',
+  # non equ charset
+  '\v/'   => '&radic;',
+  '\.S'   => '&int;',
+  '\<='   => '&le;',
+  '\>='   => '&ge;',
+  '\=/'   => '&ne;',
+  '\<-'   => '&larr;',
+  '\|v'   => '&darr;',
+  '\|^'   => '&uarr;',
+  '\^x'   => '<sup>x</sup>',
+  # extra
+  '\BS'   => '&#x21E6;',
+  '\CC'   => '&#x1F132;',
+  '\.<'   => '<',
+  '\.>'   => '>',
+  '\.v'   => '&or;',
+  '\.^'   => '&and;',
+  '\<+'   => '&lsh;',
+  '\+>'   => '&rsh;',
+};
+
+
 # Unicode mapping
 my $tbl_char_unicode = {
   # equ charset
@@ -973,6 +1075,7 @@ my $lbl = '0';
 my $loc = $0;
 my $out = '';
 my $response;
+my $jump_targets = {};
 
 ###############################
 # Here is the main program 
@@ -1159,6 +1262,13 @@ foreach my $seq ( @segments ) {
 
 ### print to STDOUT
 
+# option --jumpmark
+if ($jumpmark) {
+  foreach my $lbl (keys %$jump_targets) {
+    $out =~ s/^$lbl/$lbl\*/gm;
+  }
+}
+
 # option --unicode
 if ($unicode) {
   foreach (keys %$tbl_char_unicode) {
@@ -1167,6 +1277,14 @@ if ($unicode) {
     $out =~ s/$a/$b/g;
   }
   binmode(STDOUT, ":utf8");
+}
+# option --markdown
+elsif ($markdown) {
+  foreach (keys %$tbl_char_markdown) {
+    my $a = quotemeta $_;
+    my $b = $tbl_char_markdown->{$_};
+    $out =~ s/$a/$b/g;
+  }
 }
 # option --plain
 elsif ($plain) {
@@ -1301,6 +1419,7 @@ sub sprintf_address_instruction {
   exists $tbl_instr_3graph->{$mnemonic} and
     $mnemonic = $tbl_instr_3graph->{$mnemonic};
 
+  $jump_targets->{$addr} = $addr;
   defined $shortcut and
     $keysequence = sprintf("\t; %s %s", exists $tbl_instr_seq->{$mnemonic} ? $tbl_instr_seq->{$mnemonic} : $mnemonic, $addr);
   return sprintf("%s%03d\t%s %s%s\n", $lbl, ++$loc, $mnemonic, $addr, $keysequence);
@@ -1323,6 +1442,8 @@ sub sprintf_label_instruction {
   if ( $response->{labels}->{$label}->{segment} eq $seq ) {
     my $near = $response->{labels}->{$label}->{statement} + $line - $loc + 1;
     my $digits = join(' ', split(//, sprintf("%03d", $near)));
+    my $addr = sprintf("%s%03d", $lbl, $near);
+    $jump_targets->{$addr} = $addr;
     defined $shortcut and
       $keysequence = sprintf("\t; %s %s %s", exists $tbl_instr_seq->{$mnemonic} ? $tbl_instr_seq->{$mnemonic} : $mnemonic, $lbl, $digits);
     return sprintf("%s%03d\t%s %s%03d%s\n", $lbl, ++$loc, $mnemonic, $lbl, $near, $keysequence);
@@ -1477,7 +1598,9 @@ VERSION: $VERSION
 OPTIONS:
   -h, --help          Print this text
   -v, --version       Prints version
+  -j, --jumpmark      Prints an asterisk (*) at the jump target
   -p, --plain         Output as Plain text (7-bit ASCII)
+  -m, --markdown      Output as Markdown (inline HTML 5)
   -u, --unicode       Output as Unicode (UTF-8)
   -s, --shortcut      Output shortcut keys as comment
   --debug             Show debug information on STDERR

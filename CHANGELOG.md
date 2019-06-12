@@ -1,10 +1,17 @@
 # Changelog
-This CHANGELOG file is intended to help document all the details of HP35s development.
+This CHANGELOG file is intended to help document all the details of `HP35S` development.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+### Added
+- markdown output support (option `--markdown` or `-m`)
+- `*` at the jump target (option `--jumpmark` or `-j`)
+
+### Fixed
+- optimization of ALOG for EQN
 
 ## [0.3.6] - 2019-06-07
 ### Added
