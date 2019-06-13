@@ -2,7 +2,7 @@
 Y001	LBL Y
 Y002	RPN
 Y003	SF 10
-Y004	1T\->\pi 2\pi\->T 3S\->D 4D\->S
+Y004	eqn 1T\->\pi 2\pi\->T 3S\->D 4D\->S
 Y005	CF 10
 Y006	1
 Y007	x=y?
