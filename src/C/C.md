@@ -1,76 +1,76 @@
-C001	LBL C  
-C002	RPN  
-C003	CF 0  
-C004	CL&Sigma;  
-C005	SF 10  
-C006	1PAR 2SER  
-C007	CF 10  
-C008	1  
-C009	x=y?  
-C010	GTO C017  
-C011	R&darr;  
-C012	2  
-C013	x=y?  
-C014	GTO C038  
-C015	R&darr;  
-C016	STOP  
-C017	SF 10  
-C018	1R 2C 3L 4P 5I 6G 7Z  
-C019	CF 10  
-C020	x&le;0?  
-C021	GTO C017  
-C022	7  
-C023	x<y?  
-C024	GTO C017  
-C025	R&darr;  
-C026	1  
-C027	x=y?  
-C028	SF 0  
-C029	R&darr;  
-C030	3  
-C031	x=y?  
-C032	SF 0  
-C033	R&darr;  
-C034	7  
-C035	x=y?  
-C036	SF 0  
-C037	GTO C054  
-C038	SF 10  
-C039	1R 2C 3L 4P 5V 6G  
-C040	CF 10  
-C041	x&le;0?  
-C042	GTO C038  
-C043	6  
-C044	x<y?  
-C045	GTO C038  
-C046	R&darr;  
-C047	2  
-C048	x=y?  
-C049	SF 0  
-C050	R&darr;  
-C051	6  
-C052	x=y?  
-C053	SF 0  
-C054	SF 10  
-C055	&#x25BA;(I)  
-C056	CF 10  
-C057	x=0?  
-C058	GTO C067  
-C059	ENTER  
-C060	1/x  
-C061	&Sigma;+  
-C062	STO I  
-C063	R&darr;  
-C064	STO(I)  
-C065	VIEW(I)  
-C066	GTO C054  
-C067	&Sigma;x  
-C068	x&ne;0?  
-C069	1/x  
-C070	&Sigma;y  
-C071	FS? 0  
-C072	x<>y  
-C073	CF 0  
-C074	STO V  
-C075	VIEW V  
-C076	RTN  
+C001  LBL C  
+C002  RPN  
+C003  CF 0  
+C004  CL&Sigma;  
+C005  SF 10  
+C006  eqn 1PAR 2SER  
+C007  CF 10  
+C008  1  
+C009  x=y?  
+C010  GTO C017  
+C011  R&darr;  
+C012  2  
+C013  x=y?  
+C014  GTO C038  
+C015  R&darr;  
+C016  STOP  
+C017\*SF 10  
+C018  eqn 1R 2C 3L 4P 5I 6G 7Z  
+C019  CF 10  
+C020  x&le;0?  
+C021  GTO C017  
+C022  7  
+C023  x<y?  
+C024  GTO C017  
+C025  R&darr;  
+C026  1  
+C027  x=y?  
+C028  SF 0  
+C029  R&darr;  
+C030  3  
+C031  x=y?  
+C032  SF 0  
+C033  R&darr;  
+C034  7  
+C035  x=y?  
+C036  SF 0  
+C037  GTO C054  
+C038\*SF 10  
+C039  eqn 1R 2C 3L 4P 5V 6G  
+C040  CF 10  
+C041  x&le;0?  
+C042  GTO C038  
+C043  6  
+C044  x<y?  
+C045  GTO C038  
+C046  R&darr;  
+C047  2  
+C048  x=y?  
+C049  SF 0  
+C050  R&darr;  
+C051  6  
+C052  x=y?  
+C053  SF 0  
+C054\*SF 10  
+C055  eqn &#x25BA;(I)  
+C056  CF 10  
+C057  x=0?  
+C058  GTO C067  
+C059  ENTER  
+C060  1/x  
+C061  &Sigma;+  
+C062  STO I  
+C063  R&darr;  
+C064  STO(I)  
+C065  VIEW(I)  
+C066  GTO C054  
+C067\*&Sigma;x  
+C068  x&ne;0?  
+C069  1/x  
+C070  &Sigma;y  
+C071  FS? 0  
+C072  x<>y  
+C073  CF 0  
+C074  STO V  
+C075  VIEW V  
+C076  RTN  
