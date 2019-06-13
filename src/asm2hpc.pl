@@ -18,7 +18,7 @@ use Parser::HPC qw(@instructions @with_address @with_digits @with_variables @wit
 use Data::Dumper;
 
 # Declaration
-my $VERSION = '0.3.6';
+my $VERSION = '0.3.7';
 my $version;
 my $jumpmark;
 my $plain;
@@ -1236,7 +1236,7 @@ foreach my $seq ( @segments ) {
         # expression
         if ( defined $entry->{expression} ) {
           my $expression = $entry->{expression};
-          $out .= sprintf("%s%03d\t%s\n", $lbl, ++$loc, $expression);
+          $out .= sprintf("%s%03d\t%s %s\n", $lbl, ++$loc, $mnemonic, $expression);
         }
         # equation
         elsif ( defined $entry->{equation} ) {
@@ -1285,8 +1285,16 @@ elsif ($markdown) {
     my $b = $tbl_char_markdown->{$_};
     $out =~ s/$a/$b/g;
   }
-  # add 2 spaces to end of line
+  # markdown backslash escapes
+  $out =~ s/\*/\\\*/g;
+  $out =~ s/\[(.*?)\]/\\\[$1\\\]/g;
+  # replace tabulator
+  $out =~ s/(\w\d\d\d\\\*)\t/$1/gm;
+  $out =~ s/(\w\d\d\d)\t/$1  /gm;
+  # add 2 spaces to end of line for forcing new line
   $out =~ s/\n/  \n/gm;
+  ## code style
+  #$out = "<code>\n" . $out . "</code>\n"
 }
 # option --plain
 elsif ($plain) {
@@ -1580,7 +1588,7 @@ sub sprintf_equation_instruction {
 
     $ret = sprintf("; EQN%s ENTER\n", $keysequence);
   }
-  $ret .= sprintf("%s%03d\t%s\n", $lbl, ++$loc, $equation);
+  $ret .= sprintf("%s%03d\t%s %s\n", $lbl, ++$loc, $mnemonic, $equation);
   return $ret;
 }
 

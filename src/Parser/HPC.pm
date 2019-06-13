@@ -49,7 +49,6 @@ Pattern used to skip comments between tokens. Defaults to C</;.*\n+/>
 
 use constant pattern_comment    => qr/;.*\n/;
 use constant pattern_operation  => qr/[^\s\(\)]+/;
-use constant unknown_equ_chars  => qr/[#\$&:;\?\@_`\{\}]/;
 
 my @directives = (
   'DISPLAY', 'ENDS', 'END', 'EQU', 'MODEL', 'RADIX', 'SEGMENT', 'SET', '%TITLE',
@@ -746,7 +745,7 @@ sub parse_code_statement {
     else {
       if ( grep { $_ eq $mnemonic } @with_address ) {
         # instructions with an address: GTO and XEQ
-        eval { $operand = $self->token_ident } or
+        eval { $operand = $self->generic_token(label => qr/\@{0,2}\w+/, sub { $_[1] } ) } or
           $self->fail( "Illegal origin address" );
 
         $statement = {
@@ -883,7 +882,7 @@ sub parse_label {
   my $type = 'label';
   my $ident;
 
-  $ident = $self->expect( qr/\w+:/ );
+  $ident = $self->expect( qr/\@{0,2}\w+:/ );
   $self->commit;
   my $fail_pos = $self->pos - length $ident;
 

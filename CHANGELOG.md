@@ -6,9 +6,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.3.7] - 2019-06-13
 ### Added
 - markdown output support (option `--markdown` or `-m`)
-- `*` at the jump target (option `--jumpmark` or `-j`)
+- `*` for jump targets (option `--jumpmark` or `-j`), by Paul Dale
+
+### Changed
+- `@` support for labels
+- `eqn` output, by Paul Dale
 
 ### Fixed
 - optimization of ALOG for EQN
@@ -36,7 +41,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `&#x25B6;` to `&#x25BA;`
 - `&#x1F132;` to `&#x1F172;`
 - EQN character `%` and `,`
-- instruction `EQN` to `eqn`
+- rename instruction `EQN` to `eqn`, by Paul Dale
 
 ### Fixed
 - fixing output of `ENG->`
