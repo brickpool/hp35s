@@ -6,11 +6,11 @@ asm2hpc.pl --file=P/P.asm > P/P.txt
 asm2hpc.pl --file=Y/Y.asm > Y/Y.txt
 
 rem Output as Plain text (7-bit ASCII) with an asterisk at the jump target
-asm2hpc.pl --jumpmark --plain --file=C/C.asm > C/C.asc
-asm2hpc.pl --jumpmark --plain --file=J/J.asm > J/J.asc
-asm2hpc.pl --jumpmark --plain --file=O/O.asm > O/O.asc
-asm2hpc.pl --jumpmark --plain --file=P/P.asm > P/P.asc
-asm2hpc.pl --jumpmark --plain --file=Y/Y.asm > Y/Y.asc
+asm2hpc.pl --jumpmark --plain --file=C/C.asm > C/C.raw
+asm2hpc.pl --jumpmark --plain --file=J/J.asm > J/J.raw
+asm2hpc.pl --jumpmark --plain --file=O/O.asm > O/O.raw
+asm2hpc.pl --jumpmark --plain --file=P/P.asm > P/P.raw
+asm2hpc.pl --jumpmark --plain --file=Y/Y.asm > Y/Y.raw
 
 rem Output as Markdown (inline HTML 5) with an asterisk at the jump target
 asm2hpc.pl --jumpmark --markdown --file=C/C.asm > C/C.md
