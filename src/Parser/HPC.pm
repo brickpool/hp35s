@@ -171,8 +171,6 @@ our @functions = (
   '->°F', '->GAL',
   # G9
 #  'IDIV', 'INV',
-  # G10
-  'ISG',
   # G12
   'RMDR',
   # G14
