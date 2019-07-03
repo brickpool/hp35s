@@ -33,6 +33,6 @@ The output will be sent to STDOUT
 ## Example
 ```
 asm2hpc.pl --file=C/C.asm > C/C.txt
-asm2hpc.pl --plain --shortcut --file=C/C.asm > C/C.asm
+asm2hpc.pl --plain --shortcut --file=C/C.asm > C/C.raw
 asm2hpc.pl --unicode --shortcut --file=C/C.asm > C/C.35s
 ```

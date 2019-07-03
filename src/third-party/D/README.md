@@ -4,7 +4,7 @@ This program is by Paul Dale and is used here by permission.
 
 Please visit [hpmuseum.org](https://www.hpmuseum.org/software/35hacksl.htm) for more information.
 
-The original listing is stored in the file `D.asc`
+The original listing is stored in the file `D.raw`
 
 ## Assembler
 
