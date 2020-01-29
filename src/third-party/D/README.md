@@ -24,5 +24,6 @@ There are a few language differences
 Command line options
 
 ```
-asm2hpc.pl --jumpmark --shortcut --unicode --file=../other/D/D.asm > ../other/D/D.txt
+cd hp35s/src
+asm2hpc.pl --jumpmark --shortcut --unicode --file=third-party/D/D.asm > third-party/D/D.txt
 ```
