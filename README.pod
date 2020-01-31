@@ -1,0 +1,5 @@
+=head1 HP35S scientific calculator
+
+Further information can be found in the L<wiki|https://github.com/brickpool/hp35s/wiki>
+
+=cut
