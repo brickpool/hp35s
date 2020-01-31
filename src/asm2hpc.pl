@@ -5,10 +5,10 @@
 #
 # This script converts an assembler program to HP35s native program code
 #
-#######################################################################
+########################################################################
 #
 # Changelog: 
-#   http://github.com/brickpool/hp35s/CHANGELOG.md
+#   https://github.com/brickpool/hp35s/blob/master/CHANGELOG.md
 
 use strict;
 use warnings;
@@ -18,7 +18,8 @@ use Parser::HPC qw(@instructions @with_address @with_digits @with_variables @wit
 use Data::Dumper;
 
 # Declaration
-my $VERSION = '0.3.7';
+my $VERSION = 'v0.3.8';
+
 my $version;
 my $jumpmark;
 my $plain;
@@ -28,27 +29,34 @@ my $shortcut;
 my $help;
 my $debug;
 my $file;
-# the next line is only for perl debugging
-#$file = 'test.asm';
+my $encoded;
+# the next lines are only for my own test cases
+$file = 'xt\encoding.asm';
 
 Getopt::Long::Configure('bundling');
 GetOptions (
-  "help"      => \$help,      "h"   => \$help,
-  "version"   => \$version,   "v"   => \$version,
-  "jumpmark"  => \$jumpmark,  "j"   => \$jumpmark,
-  "plain"     => \$plain,     "p"   => \$plain,
-  "markdown"  => \$markdown,  "m"   => \$markdown,
-  "unicode"   => \$unicode,   "u"   => \$unicode,
-  "shortcut"  => \$shortcut,  "s"   => \$shortcut,
-  "debug"                           => \$debug,
-  "file=s"    => \$file,      "f=s" => \$file,
+  "help"        => \$help,      "h"   => \$help,
+  "version"     => \$version,   "v"   => \$version,
+  "jumpmark"    => \$jumpmark,  "j"   => \$jumpmark,
+  "plain"       => \$plain,     "p"   => \$plain,
+  "markdown"    => \$markdown,  "m"   => \$markdown,
+  "unicode"     => \$unicode,   "u"   => \$unicode,
+  "shortcut"    => \$shortcut,  "s"   => \$shortcut,
+  "encoded"     => \$encoded,   "e"   => \$encoded,
+  "debug"       => \$debug,
+  "file=s"      => \$file,      "f=s" => \$file,
 );
 # Check command line arguments
 &version()    if $version;
 &help()       if $help;
-$debug        = 0 unless defined $debug;
+$debug    = 0 unless defined $debug;
+$shortcut = 1 if defined $encoded;
 
 my $parser = Parser::HPC->new;
+
+# time constants for the macro file
+use constant TIME_PRESSED   => 40;
+use constant TIME_BTWN_KEYS => 60;
 
 # unicode eqn charset
 use constant _supc      => "\N{U+1D9C}";
@@ -118,6 +126,7 @@ use constant _vee       => "\N{U+2228}";
 use constant _wedge     => "\N{U+2227}";
 use constant _lsh       => "\N{U+21B0}";
 use constant _rsh       => "\N{U+21B1}";
+use constant _lg        => "\N{U+2276}";
 
 
 # Instruction mapping
@@ -215,6 +224,7 @@ my $tbl_instr_seq = {
   '\Gsy'    => '\+> S,\Gs 4',
   '\.SFN d' => '\<+ \.S',
   # G4
+  '\Gh'     => '\+> \Gh',
   'ABS'     => '\+> ABS',
   'ACOS'    => '\+> ACOS',
   'ACOSH'   => '\<+ HYP \+> ACOS',
@@ -263,7 +273,7 @@ my $tbl_instr_seq = {
   # G9
   '\->HMS'  => '\+> \->HMS',
   'HMS\->'  => '\<+ HMS\->',
-  '\->IN'   => '\+> \->in',
+  '\->IN'   => '\<+ \->in',
   'IDIV'    => '\<+ INTG 2',
   'INT\:-'  => '\<+ INTG 2',
   'INTG'    => '\<+ INTG 4',
@@ -276,13 +286,13 @@ my $tbl_instr_seq = {
   '\->KM'   => '\+> \->KM',
   '\->L'    => '\+> \->l',
   'LASTx'   => '\+> LASTx',
-  '\->LB'   => '\+> \->lb',
+  '\->LB'   => '\<+ \->lb',
   'LBL'     => '\+> LBL',
   'LN'      => '\+> LN',
   'LOG'     => '\<+ LOG',
   'm'       => '\<+ L.R. 4',
   # G11
-  '\->MILE' => '\+> \->MILE',
+  '\->MILE' => '\<+ \->MILE',
   'n'       => '\+> SUMS 1',
   'NAND'    => '\<+ LOGIC 5',
   'NOR'     => '\<+ LOGIC 6',
@@ -303,13 +313,13 @@ my $tbl_instr_seq = {
   'RCL-'    => 'RCL -',
   'RCL\.x'  => 'RCL \.x',
   'RCL\:-'  => 'RCL \:-',
-  'REGX'    => 'EQN \R|v 1 ENTER',
-  'REGY'    => 'EQN \R|v 2 ENTER',
-  'REGZ'    => 'EQN \R|v 3 ENTER',
-  'REGT'    => 'EQN \R|v 4 ENTER',
+  'REGX'    => 'EQN R\|v 1 ENTER',
+  'REGY'    => 'EQN R\|v 2 ENTER',
+  'REGZ'    => 'EQN R\|v 3 ENTER',
+  'REGT'    => 'EQN R\|v 4 ENTER',
   'RMDR'    => '\<+ INTG 3',
   # G13
-  'RND'     => '\<+ RND',
+  'RND'     => '\+> RND',
   'RPN'     => 'MODE 5',
   'RTN'     => '\<+ RTN',
   'R\|^'    => '\+> R\|^',
@@ -319,6 +329,7 @@ my $tbl_instr_seq = {
   'SGN'     => '\<+ INTG 1',
   # G14
   'SINH'    => '\<+ HYP SIN',
+  'SOLVE'   => '\+> SOLVE',
   'SQ'      => '\+> x\^2',
   'SQRT'    => '\v/x',
   'STO'     => '\+> STO',
@@ -340,7 +351,7 @@ my $tbl_instr_seq = {
   # G16
   'XROOT'   => '\<+ x\v/y',
   '\x-w'    => '\<+ \x-,\y- 3',
-  'x<>'     => '\<+ x<>y',
+  'x<>'     => '\<+ x\<>',
   'x\=/y?'  => '\<+ x?y 1',
   'x\<=y?'  => '\<+ x?y 2',
   'x\>=y?'  => '\<+ x?y 5',
@@ -388,7 +399,7 @@ my $tbl_num_seq = {
   'D'   => '\v/x',
   'E'   => 'y^x',
   'F'   => '1/x',
-  'e'   => 'E',
+  'e'   => 'e',
   '-'   => '+/-',
   '.'   => '.',
 };
@@ -438,7 +449,7 @@ my $tbl_char_seq = {
   ')'     => '() \BS \.>',
   '*'     => '\.x',                       # \.x
   # '+'   => '+',
-  ','     => '\<+ % \.> \.> \BS \BS \BS', # \;,
+  ','     => '\<+ ,',                     # \;,
   # '-'   => '-',
   '.'     => '',
   '/'     => '\:-',                       # \:-
@@ -495,7 +506,7 @@ my $tbl_char_seq = {
   'b'     => '\+> BASE 8',                # \092
   'c'     => '',
   'd'     => '\+> BASE 5',                # \252
-  'e'     => 'E',                         # \231
+  # 'e'     => 'e',                         # \231
   'f'     => '',
   'g'     => '',
   'h'     => '\+> BASE 6',                # \235
@@ -628,7 +639,7 @@ my $tbl_char_seq = {
   '\;('   => '',
   '\;)'   => '',
   '\230'  => '',
-  '\231'  => 'E',                           # e
+  '\231'  => 'e',                           # e
   '\232'  => '',
   '\233'  => '',
   '\^?'   => '',
@@ -875,6 +886,7 @@ my $tbl_char_plain = {
   '\.^'   => 'up',
   '\<+'   => 'ctrl',
   '\+>'   => 'shift',
+  '\<>'   => '<>'
 };
 
 # Markdown mapping
@@ -971,6 +983,7 @@ my $tbl_char_markdown = {
   '\.^'   => '&and;',
   '\<+'   => '&lsh;',
   '\+>'   => '&rsh;',
+  '\<>'   => '&lg;'
 };
 
 
@@ -1068,10 +1081,194 @@ my $tbl_char_unicode = {
   '\.^'   => _wedge,
   '\<+'   => _lsh,
   '\+>'   => _rsh,
+  '\<>'   => _lg,
+};
+
+# Macro mapping
+my $tbl_char_macro = {
+  # white keys
+  '\.<'     => '00',
+  '\.>'     => '01',
+  '\.^'     => '02',
+  '\.v'     => '03',
+  'R/S'     => '04',
+  'GTO'     => '05',
+  'XEQ'     => '06',
+  'MODE'    => '07',
+  'RCL'     => '08',
+  'R\|v'    => '09',
+  'x<>y'    => '0a',
+  '\im'     => '0b',
+  'SIN'     => '0c',
+  'COS'     => '0d',
+  'TAN'     => '0e',
+  '\v/x'    => '0f',
+  '1/x'     => '10',
+  'y\^x'    => '11',
+  'ENTER'   => '12',
+  '+/-'     => '13',
+  'e'       => '14',
+  '()'      => '15',
+  '\BS'     => '16',
+  'EQN'     => '17',
+  '7'       => '18',
+  '8'       => '19',
+  '9'       => '1a',
+  '\:-'     => '1b',
+  '\<+'     => '1c',
+  '4'       => '1d',
+  '5'       => '1e',
+  '6'       => '1f',
+  '\.x'     => '20',
+  '\+>'     => '21',
+  '1'       => '22',
+  '2'       => '23',
+  '3'       => '24',
+  '-'       => '25',
+  '\CC'     => '26',
+  '0'       => '27',
+  '.'       => '28',
+  '\GS+'    => '29',
+  '+'       => '2a',
+
+  # yellow keys
+  'DISPLAY' => '00',
+  'CONST'   => '01',
+  'FLAGS'   => '02',
+#  'MEM'     => '03',
+  'FN='     => '04',
+  'ISG'     => '05',
+  'RTN'     => '06',
+  'x?y'     => '07',
+  'x\<>'    => '08',
+  'VIEW'    => '09',
+  'INPUT'   => '0a',
+  'ARG'     => '0b',
+  'HYP'     => '0c',
+  '\pi'     => '0d',
+  'INTG'    => '0e',
+  'x\v/y'   => '0f',
+  'LOG'     => '10',
+  '10\^x'   => '11',
+#  'SHOW'    => '12',
+  '='       => '13',
+  '\<-ENG'  => '14',
+  'ENG\->'  => '15',
+#  'UNDO'    => '16'
+  '\.S'     => '17',
+  '\->\^oF' => '18',
+  'HMS\->'  => '19',
+  '\->RAD'  => '1a',
+  '%CHG'    => '1b',
+#   '\<+'     => '1c',
+  '\->lb'   => '1d',
+  '\->MILE' => '1e',
+  '\->in'   => '1f',
+  'nCr'     => '20',
+#   '\+>'     => '21',
+  'LOGIC'   => '22',
+  '\->gal'  => '23',
+  'SEED'    => '24',
+  'L.R.'    => '25',
+#   'OFF'     => '26',
+  ','       => '27',
+  '/c'      => '28',
+  '\GS-'    => '29',
+  '\x-,\y-' => '2a',
+  
+  # blue keys
+#  '\.<'     => '00',
+#  '\.>'     => '01',
+#  '\.^'     => '02',
+#  '\.v'     => '03',
+#  'PRGM'    => '04',
+  'DSE'     => '05',
+  'LBL'     => '06',
+  'x?0'     => '07',
+  'STO'     => '08',
+  'R\|^'    => '09',
+  'PSE'     => '0a',
+  '\Gh'     => '0b',
+  'ASIN'    => '0c',
+  'ACOS'    => '0d',
+  'ATAN'    => '0e',
+  'x\^2'    => '0f',
+  'LN'      => '10',
+  'e\^x'    => '11',
+  'LASTx'   => '12',
+  'ABS'     => '13',
+  'RND'     => '14',
+  '[]'      => '15',
+  'CLEAR'   => '16',
+  'SOLVE'   => '17',
+  '\->\^oC' => '18',
+  '\->HMS'  => '19',
+  '\->DEG'  => '1a',
+  '%'       => '1b',
+#  '\<+'     => '1c',
+  '\->kg'   => '1d',
+  '\->KM'   => '1e',
+  '\->cm'   => '1f',
+  'nPr'     => '20',
+#  '\+>'     => '21',
+  'BASE'    => '22',
+  '\->l'    => '23',
+  'RAND'    => '24',
+  'SUMS'    => '25',
+#  'ON'      => '26',
+  'SPACE'   => '27',
+#  'FDISP'   => '28',
+  '!'       => '29',
+  'S,\Gs'   => '2a',
+
+  # red keys
+#  '\.<'     => '00',
+#  '\.>'     => '01',
+#  '\.^'     => '02',
+#  '\.v'     => '03',
+  'A'       => '04',
+  'B'       => '05',
+  'C'       => '06',
+  'D'       => '07',
+#  'RCL'     => '08',
+  'E'       => '09',
+  'F'       => '0a',
+  'G'       => '0b',
+  'H'       => '0c',
+  'I'       => '0d',
+  'J'       => '0e',
+  'K'       => '0f',
+  'L'       => '10',
+  'M'       => '11',
+#  'ENTER'   => '12',
+  'N'       => '13',
+  'O'       => '14',
+  'P'       => '15',
+#  '\BS'     => '16',
+  'Q'       => '17',
+  'R'       => '18',
+  'S'       => '19',
+  'T'       => '1a',
+#  '\:-'     => '1b',
+#  '\<+'     => '1c',
+  'U'       => '1d',
+  'V'       => '1e',
+  'W'       => '1f',
+#  '\.x'     => '20',
+#  '\+>'     => '21',
+  'X'       => '22',
+  'Y'       => '23',
+  'Z'       => '24',
+#  '; -'     => '25',
+#  '\CC'     => '26',
+  '(I)'     => '27',
+  '(J)'     => '28',
+#  '\GS+'    => '29',
+#  '+'       => '2a',
 };
 
 my $lbl = '0';
-my $loc = $0;
+my $loc = 0;
 my $out = '';
 my $response;
 my $jump_targets = {};
@@ -1079,8 +1276,9 @@ my $jump_targets = {};
 ###############################
 # Here is the main program 
 
+# option --file
 if (defined $file) {
-  open(STDIN, "< $file") or die "Can't open $file : $!";
+  open(STDIN, '<', $file) or die "Can't open $file : $!";;
 }
 
 ### read the stdin and get the response
@@ -1096,14 +1294,14 @@ foreach my $seg ( @segments ) {
   next if $response->{segments}->{$seg}->{type} ne 'data';
 
   defined $response->{segments}->{$seg}->{definitions} or
-    print STDERR "Warn: no definitions for segment '$seg'\n" and next;
+    warn "no definitions for segment '$seg'\n" and next;
 
   my $definitions = $response->{segments}->{$seg}->{definitions};
 
   foreach my $definition ( keys %$definitions ) {
     next if $definitions->{$definition}->{type} ne 'equation';
     defined $definitions->{$definition}->{value} or
-      print STDERR "Warn: missing 'value' for definition '$definition'\n" and next;
+      warn "missing 'value' for definition '$definition'\n" and next;
 
     my $equation = $definitions->{$definition}->{value};
     $equations->{$definition} = $equation;
@@ -1156,7 +1354,7 @@ foreach my $seq ( @segments ) {
       push @stack, $value;  # t, z, y, [v]
     }
     else {
-      print STDERR "Warn: unknow register $reg\n";
+      warn "unknow register $reg\n";
     }
   }
 
@@ -1188,7 +1386,7 @@ foreach my $seq ( @segments ) {
   for ( my $line = 0; $line < scalar @$statements; $line++ ) {
     my ($statement, $entry) = each %{ @$statements[$line] };
     defined $entry->{type} or
-      print STDERR "Warn: missing 'type' in statement '$statement'\n" and next;
+      warn "missing 'type' in statement '$statement'\n" and next;
 
     if ($entry->{type} =~ /decimal|binary|octal|hex/) {
       $out .= sprintf_number_statement( $statement );
@@ -1217,7 +1415,7 @@ foreach my $seq ( @segments ) {
         }
         # unknown operand
         else {
-          print STDERR "Warn: missing type 'address' or 'label' in instruction '$mnemonic'\n";
+          warn "missing type 'address' or 'label' in instruction '$mnemonic'\n";
           next;
         }
       }
@@ -1243,18 +1441,18 @@ foreach my $seq ( @segments ) {
         }
         # unknown operand
         else {
-          print STDERR "Warn: missing type 'expression' or 'equation' in instruction '$mnemonic'\n";
+          warn "missing type 'expression' or 'equation' in instruction '$mnemonic'\n";
           next;
         }
       }
       # unknown instruction
       else {
-        print STDERR "Warn: unknown instruction '$mnemonic'\n";
+        warn "unknown instruction '$mnemonic'\n";
       }
     }
     # unknown statement
     else {
-      print STDERR "Warn: unknown statement '$statement'\n";
+      warn "unknown statement '$statement'\n";
     }
   }
 }
@@ -1268,8 +1466,67 @@ if ($jumpmark) {
   }
 }
 
+# option --encoded
+if ($encoded) {
+  my @lines = $out =~ /^(.*)$/mg;
+  $out = '';
+  foreach (@lines) {
+    next if /^$/;
+    # use only the key sequences
+    my $code = my $keyseq = '';
+    if (/^(.*?);\s*(.*?)$/) {
+      $code = $1;
+      $keyseq = $2;
+    }
+    elsif (/^(.+)$/) {
+      $code = $1;
+    }
+    # map key sequences to hex
+    my @enc = ();
+    foreach my $key (split /\s+/, $keyseq) {
+      if (defined $tbl_char_macro->{$key}) {
+        push @enc, $tbl_char_macro->{$key};
+      }
+      else {
+        warn "ASCII Encoding error.\n";
+      }
+    }
+    unshift(@enc, ';') if @enc;
+    # create new out
+    $out.= $code . join(' ', @enc) . "\n";
+  }
+  unless ($debug) {
+    my $str = $out;
+    # use only the key sequences
+    $str =~ s/^.*?(?:;\s+|\n)//mg;
+    # delete all white spaces
+    $str =~ s/\s+//g;
+    # convert to binary
+    $str =~ s/(..)/chr(hex($1))/ge;
+    # wrap after 60 char's
+    $str =~ s/(.{60})/$1\n/g;
+    # Uuencode the binary string
+    my $uubuf = pack 'u', $str;
+    $out = "begin 644 keycodes.txt\n" .
+      $uubuf .
+      chr(96) . "\n" .
+      'end';
+  }
+  #unless ($debug) {
+  #  # use only the key sequences
+  #  $out =~ s/^.*?(?:;\s+|\n)//mg;
+  #  # delete all white spaces
+  #  $out =~ s/\s+//g;
+  #  # wrap after 64 char's
+  #  $out =~ s/(.{64})/$1\n/g;
+  #  # delete last '\n'
+  #  chomp $out;
+  #  # create header and quote the ASCII Encoding
+  #  $out = qq{%%HP: T(3)A(D)F(.);\n"} . uc $out . qq{"\n};
+  #}
+}
 # option --unicode
-if ($unicode) {
+elsif ($unicode) {
   foreach (keys %$tbl_char_unicode) {
     my $a = quotemeta $_;
     my $b = $tbl_char_unicode->{$_};
@@ -1304,11 +1561,10 @@ elsif ($plain) {
   }
 }
 else {
-  print STDOUT '%%HP: T(3)A(D)F(.);', "\n";
+  $out = qq{%%HP: T(3)A(D)F(.);\n} . $out;
 }
 
 print STDOUT $out;
-
 
 ###############################
 # Here are the subs 
@@ -1372,15 +1628,40 @@ sub sprintf_vector_statement {
   $vector =~ /\[(\S+)\]/;
   my ($a, $b, $c) = split /,/, $1;
   defined $a and defined $b or
-    print STDERR "Warn: unknown syntax for vector number '$vector'\n" and next;
+    warn "unknown syntax for vector number '$vector'\n" and return '';
 
   if ($shortcut) {
-    if (defined $c) {
-      $keysequence = sprintf("\t\t; %s \<+ , %s \<+ , %s ENTER", $a, $b, $c);
-    } else {
-      $keysequence = sprintf("\t\t; %s \<+ , %s ENTER", $a, $b);
+    my @numbers = defined $c ? ($a, $b, $c) : ($a, $b);
+
+    # start sequence
+    $keysequence .= "\t\t; \\+> []";
+    my $i = 0;
+    foreach my $number (@numbers) {
+      my ($sign, $digits, $exponent) = $number =~ /^(\-?)([\.\d]+)(?:e(\-?[\.\d]+))?$/;
+
+      # seperator
+      $keysequence .= ' \<+ ,' if $i++;
+
+      # sequence for mantissa and exponent
+      foreach (split //, $digits) {
+        exists $tbl_num_seq->{$_} and
+          $keysequence .= sprintf(" %s", $tbl_num_seq->{$_} );
+      }
+      if ($sign) {
+        $keysequence .= sprintf(" %s", $tbl_num_seq->{'-'} );
+      }
+      if ($exponent) {
+        $keysequence .= sprintf(" %s", $tbl_num_seq->{'e'} );
+        foreach (split //, $exponent) {
+          exists $tbl_num_seq->{$_} and
+            $keysequence .= sprintf(" %s", $tbl_num_seq->{$_} );
+        }
+      }
     }
+    # end sequence
+    $keysequence .= ' ENTER';
   }
+
   return sprintf("%s%03d\t%s%s\n", $lbl, ++$loc, $vector, $keysequence);
 }
 
@@ -1391,15 +1672,43 @@ sub sprintf_complex_statement {
 
   my ($a, $sep, $b) = split /([it])/, $complex;
   defined $a and defined $b or
-    print STDERR "Warn: unknown syntax for complex number '$complex'\n" and next;
+    warn "unknown syntax for complex number '$complex'\n" and return '';
 
-  $sep =~ s/e/\\231/;
   $sep =~ s/i/\\im/;
   $sep =~ s/t/\\Gh/;
-  my $seq = exists $tbl_instr_seq->{sep} ? $tbl_instr_seq->{sep} : $sep;
 
-  defined $shortcut and
-    $keysequence = sprintf("\t\t; %s %s %s ENTER", $a, $seq, $b);
+  if ($shortcut) {
+    my @numbers = ($a, $b);
+
+    # start sequence
+    $keysequence = "\t\t;";
+    my $i = 0;
+    foreach my $number (@numbers) {
+      my ($sign, $digits, $exponent) = $number =~ /^(\-?)([\.\d]+)(?:e(\-?[\.\d]+))?$/;
+
+      # seperator
+      $keysequence .= sprintf(" %s", exists $tbl_instr_seq->{$sep} ? $tbl_instr_seq->{$sep} : $sep) if $i++;
+
+      # sequence for mantissa and exponent
+      foreach (split //, $digits) {
+        exists $tbl_num_seq->{$_} and
+          $keysequence .= sprintf(" %s", $tbl_num_seq->{$_} );
+      }
+      if ($sign) {
+        $keysequence .= sprintf(" %s", $tbl_num_seq->{'-'} );
+      }
+      if ($exponent) {
+        $keysequence .= sprintf(" %s", $tbl_num_seq->{'e'} );
+        foreach (split //, $exponent) {
+          exists $tbl_num_seq->{$_} and
+            $keysequence .= sprintf(" %s", $tbl_num_seq->{$_} );
+        }
+      }
+    }
+    # end sequence
+    $keysequence .= ' ENTER';
+  }
+
   return sprintf("%s%03d\t%s%s%s%s\n", $lbl, ++$loc, $a, $sep, $b, $keysequence);
 }
 
@@ -1443,7 +1752,7 @@ sub sprintf_label_instruction {
   my $keysequence = '';
   
   defined $response->{labels}->{$label}->{segment} or
-    print STDERR "Warn: missing 'label' for instruction '$mnemonic'\n" and next;
+    warn "missing 'label' for instruction '$mnemonic'\n" and return '';
 
   exists $tbl_instr_3graph->{$mnemonic} and
     $mnemonic = $tbl_instr_3graph->{$mnemonic};
@@ -1458,7 +1767,7 @@ sub sprintf_label_instruction {
     return sprintf("%s%03d\t%s %s%03d%s\n", $lbl, ++$loc, $mnemonic, $lbl, $near, $keysequence);
   }
   else {
-    print STDERR "Warn: far 'label' not supported yet\n";
+    warn "far 'label' not supported yet\n";
     my $far = $response->{labels}->{$label}->{segment};
     my $near = $response->{labels}->{$label}->{statement} + 1;
     defined $shortcut and
@@ -1474,7 +1783,7 @@ sub sprintf_variable_instruction {
   my $keysequence = '';
 
   defined $variable or
-    print STDERR "Warn: missing type 'variable' in instruction '$mnemonic'\n" and next;
+    warn "missing type 'variable' in instruction '$mnemonic'\n" and return '';
 
   exists $tbl_instr_3graph->{$mnemonic} and
     $mnemonic = $tbl_instr_3graph->{$mnemonic};
@@ -1496,7 +1805,7 @@ sub sprintf_number_instruction {
   my $keysequence = '';
 
   defined $number or
-    print STDERR "Warn: missing type 'number' in instruction '$mnemonic'\n" and next;
+    warn "missing type 'number' in instruction '$mnemonic'\n" and return '';
 
   exists $tbl_instr_3graph->{$mnemonic} and
     $mnemonic = $tbl_instr_3graph->{$mnemonic};
@@ -1514,16 +1823,16 @@ sub sprintf_equation_instruction {
   my $ret = '';
 
   defined $equations->{$definition} or
-    print STDERR "Warn: missing 'equation' for instruction '$mnemonic'\n" and next;
+    warn "missing 'equation' for instruction '$mnemonic'\n" and return '';
 
   exists $tbl_instr_3graph->{$mnemonic} and
     $mnemonic = $tbl_instr_3graph->{$mnemonic};
 
   my $equation = $equations->{$definition};
-  $equation =~ s/\//\\:-/;  # '/' => '\:-'
-  $equation =~ s/\*/\\\.x/; # '*' => '\.x'
-  $equation =~ s/\*/\\\.x/; # 'e' => '\231',
-  $equation =~ s/\*/\\\.x/; # 'i' to '\im'
+  $equation =~ s/(?<!\\O)\//\\:-/;  # '/' => '\:-'
+  $equation =~ s/\*/\\\.x/;         # '*' => '\.x'
+#  $equation =~ s/e/\\231/;         # 'e' => '\231'
+#  $equation =~ s/i/\\im/;          # 'i' to '\im'
 
   if ($shortcut) {
  
@@ -1612,6 +1921,7 @@ OPTIONS:
   -m, --markdown      Output as Markdown (inline HTML 5)
   -u, --unicode       Output as Unicode (UTF-8)
   -s, --shortcut      Output shortcut keys as comment
+  -e, --encoded       Output encoded key codes (Uuencoding)
   --debug             Show debug information on STDERR
 
   --file=<asm-file>:

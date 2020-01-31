@@ -17,4 +17,4 @@ _gsdata_/
 /extras/Character-Set.pptx
 
 # Ignore test files
-/src/test.asm
+/src/xt/*.*

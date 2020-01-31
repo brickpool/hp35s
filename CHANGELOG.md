@@ -6,6 +6,28 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.3.8] - 2020-01-31
+### Added
+- key code output support (option `--encoded` or `-e`) Uu encoded format
+- key sequence support for complex and vector statement's
+
+### Changed
+- File extensions from `*.asc` to `*.raw`
+
+### Fixed
+- del `ISG` from `@functions`
+- line numbering: `$loc = $0;` => `$loc = 0;`
+- retuning from sub's `sprintf_*`: `next;` => `return '';`
+- key `\R|v` => `R\|v` for `REGX`, `REGY`, `REGZ` and `REGT`
+- key exp `E` => `e`, char `E` => `RCL E` and hex `E` => `y^x`
+- key `->LB` => `\<+ \->lb`
+- key `->MILE` => `\<+ \->MILE`
+- key `->IN` => `\+> \->in`
+- key `10^x` => `\<+ 10\^x`
+- key `,` => `\<+ ,`
+- key `SOLVE` => `\+> SOLVE`
+- key `RND` => `\+> RND`
+
 ## [0.3.7] - 2019-06-13
 ### Added
 - markdown output support (option `--markdown` or `-m`)
@@ -118,7 +140,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - Initial version created
 
-[Unreleased]: https://github.com/brickpool/hp35s/compare/v0.3.7...HEAD
+[Unreleased]: https://github.com/brickpool/hp35s/compare/v0.3.8...HEAD
+[0.3.8]: https://github.com/brickpool/hp35s/compare/v0.3.7...v0.3.8
 [0.3.7]: https://github.com/brickpool/hp35s/compare/v0.3.6...v0.3.7
 [0.3.6]: https://github.com/brickpool/hp35s/compare/v0.3.5...v0.3.6
 [0.3.5]: https://github.com/brickpool/hp35s/compare/v0.3.4...v0.3.5
