@@ -6,10 +6,32 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.3.9] - 2020-02-07
+### Added
+- keystrokes support for clear programs (option `--clear` or `-c`)
+- key code support `PRGM` => `04`
+- new `macro` directory with macros (`*.mac`) for the HP emulation software
+- new `tool` directory for OS indepedent tools
+- add some new emulation files `*.ep`
+
+### Changed
+- Update text in `README.pod`
+- Update checksum in `*.asm`
+- Update `src\generate.cmd`
+- Update _switch case_ syntax in perl source files
+- Update emulation file `ee.ep` (`ee` => `electric enginering`)
+- Uu encodes output format for option `--encoded` or `-e`
+
+### Fixed
+- key `10^x` => `\<+ 10\^x` (secound try)
+- key `ALOG` => `\<+ 10\^x`
+- key code `y\^x` => `0x10`
+- key code `1/x` => `0x11`
+
 ## [0.3.8] - 2020-01-31
 ### Added
 - key code output support (option `--encoded` or `-e`) Uu encoded format
-- key sequence support for complex and vector statement's
+- keystrokes support for complex and vector statement's
 
 ### Changed
 - File extensions from `*.asc` to `*.raw`
@@ -44,15 +66,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - syntax checking for EQN
 - unicode und plantext support for EQN
-- new key sequences
-- optimization of key sequences
+- new keystrokes
+- optimization of keystrokes
 
 ### Changed
 - Trigraph `\h-` to `\023`
 - option `--ascii`, `-a` to `--plain`, `-p`
 
 ### Fixed
-- key sequence for `\->`, `(` and `)`
+- keystrokes for `\->`, `(` and `)`
 
 ## [0.3.5] - 2019-06-04
 ### Added
@@ -82,7 +104,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## 0.3.2 - 2019-05-15
 ### Added
-- adding trigraphs to key sequences
+- adding trigraphs to keystrokes
 - output can be trigraph, ascii-text or unicode
 - add functions to statements
 
@@ -97,11 +119,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - test for unknown characters at EQU
 
 ### Fixed
-- fixing key sequences for CF, FIX, ... and EQN
+- fixing keystrokes for CF, FIX, ... and EQN
 
 ## 0.3.0 - 2019-05-09
 ### Added
-- key sequences (option `--shortcut` or `-s`)
+- keystrokes (option `--shortcut` or `-s`)
 
 ### Fixed
 - bugfix <-ENG
@@ -140,7 +162,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - Initial version created
 
-[Unreleased]: https://github.com/brickpool/hp35s/compare/v0.3.8...HEAD
+[Unreleased]: https://github.com/brickpool/hp35s/compare/v0.3.9...HEAD
+[0.3.9]: https://github.com/brickpool/hp35s/compare/v0.3.8...v0.3.9
 [0.3.8]: https://github.com/brickpool/hp35s/compare/v0.3.7...v0.3.8
 [0.3.7]: https://github.com/brickpool/hp35s/compare/v0.3.6...v0.3.7
 [0.3.6]: https://github.com/brickpool/hp35s/compare/v0.3.5...v0.3.6

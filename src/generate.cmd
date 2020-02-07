@@ -25,3 +25,12 @@ asm2hpc.pl --jumpmark --shortcut --unicode --file=J/J.asm > J/J.35s
 asm2hpc.pl --jumpmark --shortcut --unicode --file=O/O.asm > O/O.35s
 asm2hpc.pl --jumpmark --shortcut --unicode --file=P/P.asm > P/P.35s
 asm2hpc.pl --jumpmark --shortcut --unicode --file=Y/Y.asm > Y/Y.35s
+
+rem Output keystrokes as ASCII encoded string. Uu decode to target *.mac
+asm2hpc.pl -e -f C/C.asm | tools\uudecode.pl
+asm2hpc.pl -e -f J/J.asm | tools\uudecode.pl
+asm2hpc.pl -e -f O/O.asm | tools\uudecode.pl
+asm2hpc.pl -e -f P/P.asm | tools\uudecode.pl
+asm2hpc.pl -e -f Y/Y.asm | tools\uudecode.pl
+xcopy *.mac %APPDATA%\Hewlett-Packard\hp35s\Macros\
+move *.mac ../macros

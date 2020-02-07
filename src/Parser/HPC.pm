@@ -427,26 +427,31 @@ sub parse_segment
   }
     
   # call specific segment type
-  if ( $type =~ /DATA/i ) {
-    $result = $self->scope_of(
-      undef,
-      sub { $self->parse_data_block( $name ) },
-      qr/ENDS/i
-    );
-  }
-  elsif ( $type =~ /CODE/i ) {
-    $result = $self->scope_of(
-      undef,
-      sub { $self->parse_code_block( $name ) },
-      qr/ENDS/i
-    );
-  }
-  elsif ( $type =~ /STACK/i ) {
-    $result = $self->scope_of(
-      undef,
-      sub { $self->parse_stack_block( $name ) },
-      qr/ENDS/i
-    );
+  SWITCH: for ($type) {
+    /DATA/i && do {
+      $result = $self->scope_of(
+        undef,
+        sub { $self->parse_data_block( $name ) },
+        qr/ENDS/i
+      );
+      last;
+    };
+    /CODE/i && do {
+      $result = $self->scope_of(
+        undef,
+        sub { $self->parse_code_block( $name ) },
+        qr/ENDS/i
+      );
+      last;
+    };
+    /STACK/i && do {
+      $result = $self->scope_of(
+        undef,
+        sub { $self->parse_stack_block( $name ) },
+        qr/ENDS/i
+      );
+      last;
+    };
   }
 
   if ( $name ) {
@@ -546,66 +551,72 @@ sub parse_data_statement {
   # test if value has unknown character
   $fail_pos = $self->pos - length($value);
 
-  # input | normal(0) | start(1) | middle(2) | end(3)  | unknown(4)
-  # ----- | --------- | -------- | --------- | ------- | ----------
-  # `\`   | start     | normal   | unknown   | unknown | -
-  # `\d`  | -         | middle   | end       | normal  | -
-  # `\D`  | -         | end      | unknown   | normal  | -
-  my $state = 0;
+  # input | normal  | start  | middle    | end     | unknown
+  # ----- | ------- | ------ | --------- | ------- | -------
+  # `\`   | start   | normal | unknown   | unknown | -
+  # `\d`  | -       | middle | end       | normal  | -
+  # `\D`  | -       | end    | unknown   | normal  | -
+  my $state = 'normal';
   my $char = '';
   foreach (split //, $value)
   {
     $char .= $_;
-    if ($state == 0) {
-      if (/\\/) {
-        $state = 1;
-        $char = '\\';
+    SWITCH: {
+      $state =~ /normal/ && do {
+        if (/\\/) {
+          $state = 'start';
+          $char = '\\';
+        }
+        else {
+          exists $character->{$char} or
+            $self->fail_from( $fail_pos - length($char), "Unknown character" );
+          $char = '';
+        }
+        last;
+      };
+      $state =~ /start/ && do {
+        if (/\\/) {
+          $state = 'normal';
+          exists $character->{$char} or
+            $self->fail_from( $fail_pos - 1, "Invalid character" );
+          $char = '';
+        }
+        elsif (/\d/) {
+          $state = 'middle';
+        }
+        else {
+          $state = 'end';
+        }
+        last;
+      };
+      $state =~ /middle/ && do {
+        if (/\d/) {
+          $state = 'end';
+        }
+        else {
+          $state = 'unknown';
+        }
+        last;
+      };
+      $state =~ /end/ && do {
+        if (/\\/) {
+          $state = 'unknown';
+        }
+        else {
+          $state = 'normal';
+          exists $character->{$char} or
+            $self->fail_from( $fail_pos - length($char), "Unknown character sequence" );
+          $char = '';
+        }
+        last;
+      };
+      DEFAULT: {
+        $self->fail_from( $fail_pos - length($char), "Invalid character sequence" );
       }
-      else {
-        exists $character->{$char} or
-          $self->fail_from( $fail_pos - length($char), "Unknown character" );
-        $char = '';
-      }
-    }
-    elsif ($state == 1) {
-      if (/\\/) {
-        $state = 0;
-        exists $character->{$char} or
-          $self->fail_from( $fail_pos - 1, "Invalid character" );
-        $char = '';
-      }
-      elsif (/\d/) {
-        $state = 2;
-      }
-      else {
-        $state = 3;
-      }
-    }
-    elsif ($state == 2) {
-      if (/\d/) {
-        $state = 3;
-      }
-      else {
-        $state = 4;
-      }
-    }
-    elsif ($state == 3) {
-      if (/\\/) {
-        $state = 4;
-      }
-      else {
-        $state = 0;
-        exists $character->{$char} or
-          $self->fail_from( $fail_pos - length($char), "Unknown character sequence" );
-        $char = '';
-      }
-    }
-    else {
-      $self->fail_from( $fail_pos - length($char), "Invalid character sequence" );
     }
     $fail_pos++;
   }
-  $state == 0 or
+  $state =~ /normal/ or
     $self->fail_from( $fail_pos - length($char) - 1, "Argument mismatch" );
 
   # create new entry
