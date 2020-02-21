@@ -25,5 +25,6 @@ Command line options
 
 ```
 cd hp35s/src
-asm2hpc.pl --jumpmark --shortcut --unicode --file=third-party/D/D.asm > third-party/D/D.txt
+
+asm2hpc.pl --jumpmark --shortcut --unicode --file=third-party/D/D.asm > third-party/D/D.35s
 ```

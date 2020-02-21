@@ -1,0 +1,765 @@
+; 🄲 ↱ PRGM
+D001	LBL D		; ↱ LBL D
+D002	ALL		; ↰ DISPLAY 4
+D003	XEQ D702	; XEQ D 7 0 2
+D004	SF 10		; ↰ FLAGS 1 . 0
+D005	XEQ D639	; XEQ D 6 3 9
+D006	STO M		; ↱ STO M
+D007	XEQ D639	; XEQ D 6 3 9
+D008	STO N		; ↱ STO N
+D009	XEQ D639	; XEQ D 6 3 9
+D010	STO O		; ↱ STO O
+D011*	XEQ D063	; XEQ D 0 6 3
+D012	RCL H		; RCL H
+D013	x≥y?		; ↰ x?y 5
+D014	GTO D110	; GTO D 1 1 0
+D015	XEQ D057	; XEQ D 0 5 7
+D016	x≤y?		; ↰ x?y 2
+D017	GTO D081	; GTO D 0 8 1
+D018	RCL K		; RCL K
+D019	XEQ D057	; XEQ D 0 5 7
+D020	XEQ D069	; XEQ D 0 6 9
+D021	RCL H		; RCL H
+D022	yˣ		; yˣ
+D023	×		; ×
+D024	XEQ D063	; XEQ D 0 6 3
+D025	-		; -
+D026	x≥y?		; ↰ x?y 5
+D027	GTO D110	; GTO D 1 1 0
+D028	GTO D088	; GTO D 0 8 8
+D029*	RANDOM		; ↱ RAND
+D030	×		; ×
+D031	INTG		; ↰ INTG 4
+D032	XEQ D071	; XEQ D 0 7 1
+D033	+		; +
+D034	RTN		; ↰ RTN
+D035*	STO A		; ↱ STO A
+D036	CF 10		; ↰ FLAGS 2 . 0
+; EQN R↓ 2 × ↱ RAND ENTER
+D037*	eqn REGY×RAND
+D038	INTG		; ↰ INTG 4
+D039	+		; +
+D040	DSE A		; ↱ DSE A
+D041	GTO D037	; GTO D 0 3 7
+D042	SF 10		; ↰ FLAGS 1 . 0
+D043	x<>y		; x<>y
+D044	R↓		; R↓
+D045	RTN		; ↰ RTN
+D046*	XEQ D633	; XEQ D 6 3 3
+D047	XEQ D035	; XEQ D 0 3 5
+D048	+		; +
+D049	RTN		; ↰ RTN
+D050*	XEQ D069	; XEQ D 0 6 9
+D051	XEQ D029	; XEQ D 0 2 9
+D052	XEQ D071	; XEQ D 0 7 1
+D053	-		; -
+D054	RTN		; ↰ RTN
+D055*	XEQ D063	; XEQ D 0 6 3
+D056	GTO D029	; GTO D 0 2 9
+D057*	10		; 1 0 ENTER
+D058	RTN		; ↰ RTN
+D059*	3		; 3 ENTER
+D060	RTN		; ↰ RTN
+D061*	100		; 1 0 0 ENTER
+D062	RTN		; ↰ RTN
+D063*	20		; 2 0 ENTER
+D064	RTN		; ↰ RTN
+D065*	8		; 8 ENTER
+D066	RTN		; ↰ RTN
+D067*	4		; 4 ENTER
+D068	RTN		; ↰ RTN
+D069*	2		; 2 ENTER
+D070	RTN		; ↰ RTN
+D071*	1		; 1 ENTER
+D072	RTN		; ↰ RTN
+D073*	0.5		; 0 . 5 ENTER
+D074	RTN		; ↰ RTN
+D075*	XEQ D069	; XEQ D 0 6 9
+D076	+		; +
+D077	RTN		; ↰ RTN
+D078*	XEQ D069	; XEQ D 0 6 9
+D079	-		; -
+D080	RTN		; ↰ RTN
+D081*	RCL K		; RCL K
+D082	-9		; 9 +/- ENTER
+D083	RCL+ H		; RCL + H
+D084	10220		; 1 0 2 2 0 ENTER
+D085	×		; ×
+D086	x≥y?		; ↰ x?y 5
+D087	GTO D110	; GTO D 1 1 0
+D088*	XEQ D067	; XEQ D 0 6 7
+D089	XEQ D029	; XEQ D 0 2 9
+D090	XEQ D065	; XEQ D 0 6 5
+D091	+		; +
+D092	RCL O		; RCL O
+D093	XEQ D059	; XEQ D 0 5 9
+D094	÷		; ÷
+D095	+		; +
+D096	IP		; ↰ INTG 6
+D097	x≤0?		; ↱ x?0 2
+D098	XEQ D071	; XEQ D 0 7 1
+D099	STO+ I		; ↱ STO + I
+D100	STO+ J		; ↱ STO + J
+D101	XEQ D071	; XEQ D 0 7 1
+D102	STO+ H		; ↱ STO + H
+D103	STO+ L		; ↱ STO + L
+D104	XEQ D050	; XEQ D 0 5 0
+D105	STO+ M		; ↱ STO + M
+D106	XEQ D050	; XEQ D 0 5 0
+D107	STO+ N		; ↱ STO + N
+D108	XEQ D050	; XEQ D 0 5 0
+D109	STO+ O		; ↱ STO + O
+D110*	RCL H		; RCL H
+D111	XEQ D623	; XEQ D 6 2 3
+D112	RCL K		; RCL K
+D113	XEQ D608	; XEQ D 6 0 8
+D114	RCL J		; RCL J
+D115	XEQ D613	; XEQ D 6 1 3
+D116	RCL L		; RCL L
+D117	XEQ D628	; XEQ D 6 2 8
+D118	FS? 4		; ↰ FLAGS 3 4
+D119	GTO D693	; GTO D 6 9 3
+D120	XEQ D065	; XEQ D 0 6 5
+D121	XEQ D067	; XEQ D 0 6 7
+D122	×		; ×
+D123	XEQ D059	; XEQ D 0 5 9
+D124	XEQ D071	; XEQ D 0 7 1
+D125	RCL+ H		; RCL + H
+D126	×		; ×
+D127	x>y?		; ↰ x?y 4
+D128	x<>y		; x<>y
+D129	XEQ D029	; XEQ D 0 2 9
+D130	STO E		; ↱ STO E
+D131	XEQ D067	; XEQ D 0 6 7
+D132	x²		; ↱ x²
+D133	x<y?		; ↰ x?y 3
+D134	GTO D199	; GTO D 1 9 9
+D135	x=y?		; ↰ x?y 6
+D136	GTO D369	; GTO D 3 6 9
+D137	XEQ D065	; XEQ D 0 6 5
+D138	-		; -
+D139	x<y?		; ↰ x?y 3
+D140	GTO D171	; GTO D 1 7 1
+D141	x=y?		; ↰ x?y 6
+D142	GTO D357	; GTO D 3 5 7
+D143	XEQ D067	; XEQ D 0 6 7
+D144	-		; -
+D145	x<y?		; ↰ x?y 3
+D146	GTO D160	; GTO D 1 6 0
+D147	x=y?		; ↰ x?y 6
+D148	GTO D267	; GTO D 2 6 7
+D149	XEQ D078	; XEQ D 0 7 8
+D150	x<y?		; ↰ x?y 3
+D151	GTO D279	; GTO D 2 7 9
+D152	x>y?		; ↰ x?y 4
+D153	GTO D261	; GTO D 2 6 1
+; EQN RCL K RCL O RCL B RCL O RCL L RCL D ENTER
+D154	eqn KOBOLD
+D155	PSE		; ↱ PSE
+D156	[1,4,1]		; ↱ [] 1 ↰ , 4 ↰ , 1 ENTER
+D157	[1,6,-1]		; ↱ [] 1 ↰ , 6 ↰ , 1 +/- ENTER
+D158	[1,0,13]		; ↱ [] 1 ↰ , 0 ↰ , 1 3 ENTER
+D159	GTO D399	; GTO D 3 9 9
+D160*	XEQ D075	; XEQ D 0 7 5
+D161	x<y?		; ↰ x?y 3
+D162	GTO D285	; GTO D 2 8 5
+D163	x>y?		; ↰ x?y 4
+D164	GTO D273	; GTO D 2 7 3
+; EQN RCL O RCL R RCL C ENTER
+D165	eqn ORC
+D166	PSE		; ↱ PSE
+D167	[1,12,4]		; ↱ [] 1 ↰ , 1 2 ↰ , 4 ENTER
+D168	[1,8,3]		; ↱ [] 1 ↰ , 8 ↰ , 3 ENTER
+D169	[1,3,17]		; ↱ [] 1 ↰ , 3 ↰ , 1 7 ENTER
+D170	GTO D399	; GTO D 3 9 9
+D171*	XEQ D067	; XEQ D 0 6 7
+D172	+		; +
+D173	x>y?		; ↰ x?y 4
+D174	GTO D188	; GTO D 1 8 8
+D175	x=y?		; ↰ x?y 6
+D176	GTO D315	; GTO D 3 1 5
+D177	XEQ D075	; XEQ D 0 7 5
+D178	x<y?		; ↰ x?y 3
+D179	GTO D339	; GTO D 3 3 9
+D180	x>y?		; ↰ x?y 4
+D181	GTO D327	; GTO D 3 2 7
+; EQN RCL G RCL N RCL O RCL L RCL L ENTER
+D182	eqn GNOLL
+D183	PSE		; ↱ PSE
+D184	[4,10,4]		; ↱ [] 4 ↰ , 1 0 ↰ , 4 ENTER
+D185	[1,10,1]		; ↱ [] 1 ↰ , 1 0 ↰ , 1 ENTER
+D186	[1,6,17]		; ↱ [] 1 ↰ , 6 ↰ , 1 7 ENTER
+D187	GTO D399	; GTO D 3 9 9
+D188*	XEQ D078	; XEQ D 0 7 8
+D189	x<y?		; ↰ x?y 3
+D190	GTO D297	; GTO D 2 9 7
+D191	x>y?		; ↰ x?y 4
+D192	GTO D291	; GTO D 2 9 1
+; EQN RCL G RCL I RCL A RCL N RCL T ↱ SPACE RCL L RCL E RCL E RCL C RCL H ENTER
+D193	eqn GIANT LEECH
+D194	PSE		; ↱ PSE
+D195	[2,8,4]		; ↱ [] 2 ↰ , 8 ↰ , 4 ENTER
+D196	[1,8,4]		; ↱ [] 1 ↰ , 8 ↰ , 4 ENTER
+D197	[1,6,11]		; ↱ [] 1 ↰ , 6 ↰ , 1 1 ENTER
+D198	GTO D399	; GTO D 3 9 9
+D199*	XEQ D065	; XEQ D 0 6 5
+D200	+		; +
+D201	x<y?		; ↰ x?y 3
+D202	GTO D233	; GTO D 2 3 3
+D203	x=y?		; ↰ x?y 6
+D204	GTO D321	; GTO D 3 2 1
+D205	XEQ D067	; XEQ D 0 6 7
+D206	-		; -
+D207	x<y?		; ↰ x?y 3
+D208	GTO D222	; GTO D 2 2 2
+D209	x=y?		; ↰ x?y 6
+D210	GTO D375	; GTO D 3 7 5
+D211	XEQ D078	; XEQ D 0 7 8
+D212	x<y?		; ↰ x?y 3
+D213	GTO D363	; GTO D 3 6 3
+D214	x>y?		; ↰ x?y 4
+D215	GTO D351	; GTO D 3 5 1
+; EQN RCL B RCL U RCL G RCL B RCL E RCL A RCL R ENTER
+D216	eqn BUGBEAR
+D217	PSE		; ↱ PSE
+D218	[6,8,15]		; ↱ [] 6 ↰ , 8 ↰ , 1 5 ENTER
+D219	[1,6,4]		; ↱ [] 1 ↰ , 6 ↰ , 4 ENTER
+D220	[4,9,20]		; ↱ [] 4 ↰ , 9 ↰ , 2 0 ENTER
+D221	GTO D399	; GTO D 3 9 9
+D222*	XEQ D075	; XEQ D 0 7 5
+D223	x<y?		; ↰ x?y 3
+D224	GTO D309	; GTO D 3 0 9
+D225	x>y?		; ↰ x?y 4
+D226	GTO D303	; GTO D 3 0 3
+; EQN RCL G RCL I RCL A RCL N RCL T ENTER
+D227	eqn GIANT
+D228	PSE		; ↱ PSE
+D229	[6,12,30]		; ↱ [] 6 ↰ , 1 2 ↰ , 3 0 ENTER
+D230	[2,10,12]		; ↱ [] 2 ↰ , 1 0 ↰ , 1 2 ENTER
+D231	[1,12,23]		; ↱ [] 1 ↰ , 1 2 ↰ , 2 3 ENTER
+D232	GTO D399	; GTO D 3 9 9
+D233*	XEQ D067	; XEQ D 0 6 7
+D234	+		; +
+D235	x>y?		; ↰ x?y 4
+D236	GTO D250	; GTO D 2 5 0
+D237	x=y?		; ↰ x?y 6
+D238	GTO D381	; GTO D 3 8 1
+D239	XEQ D075	; XEQ D 0 7 5
+D240	x<y?		; ↰ x?y 3
+D241	GTO D393	; GTO D 3 9 3
+D242	x>y?		; ↰ x?y 4
+D243	GTO D345	; GTO D 3 4 5
+; EQN RCL T RCL I TAN > ⇦ ⇦ ENTER
+D244	eqn TITAN
+D245	PSE		; ↱ PSE
+D246	[16,10,50]		; ↱ [] 1 6 ↰ , 1 0 ↰ , 5 0 ENTER
+D247	[2,16,20]		; ↱ [] 2 ↰ , 1 6 ↰ , 2 0 ENTER
+D248	[1,22,25]		; ↱ [] 1 ↰ , 2 2 ↰ , 2 5 ENTER
+D249	GTO D399	; GTO D 3 9 9
+D250*	XEQ D078	; XEQ D 0 7 8
+D251	x<y?		; ↰ x?y 3
+D252	GTO D333	; GTO D 3 3 3
+D253	x>y?		; ↰ x?y 4
+D254	GTO D387	; GTO D 3 8 7
+; EQN RCL E RCL N RCL T ENTER
+D255	eqn ENT
+D256	PSE		; ↱ PSE
+D257	[9,10,40]		; ↱ [] 9 ↰ , 1 0 ↰ , 4 0 ENTER
+D258	[2,6,10]		; ↱ [] 2 ↰ , 6 ↰ , 1 0 ENTER
+D259	[2,15,25]		; ↱ [] 2 ↰ , 1 5 ↰ , 2 5 ENTER
+D260	GTO D399	; GTO D 3 9 9
+; EQN RCL G RCL I RCL A RCL N RCL T ↱ SPACE RCL B RCL A RCL T ENTER
+D261*	eqn GIANT BAT
+D262	PSE		; ↱ PSE
+D263	[1,2,0]		; ↱ [] 1 ↰ , 2 ↰ , 0 ENTER
+D264	[1,4,0]		; ↱ [] 1 ↰ , 4 ↰ , 0 ENTER
+D265	[1,0,12]		; ↱ [] 1 ↰ , 0 ↰ , 1 2 ENTER
+D266	GTO D399	; GTO D 3 9 9
+; EQN RCL G RCL O RCL B RCL L RCL I RCL N ENTER
+D267*	eqn GOBLIN
+D268	PSE		; ↱ PSE
+D269	[1,8,0]		; ↱ [] 1 ↰ , 8 ↰ , 0 ENTER
+D270	[1,8,0]		; ↱ [] 1 ↰ , 8 ↰ , 0 ENTER
+D271	[1,2,15]		; ↱ [] 1 ↰ , 2 ↰ , 1 5 ENTER
+D272	GTO D399	; GTO D 3 9 9
+; EQN RCL S RCL K RCL E RCL L RCL E RCL T RCL O RCL N ENTER
+D273*	eqn SKELETON
+D274	PSE		; ↱ PSE
+D275	[1,8,2]		; ↱ [] 1 ↰ , 8 ↰ , 2 ENTER
+D276	[1,8,0]		; ↱ [] 1 ↰ , 8 ↰ , 0 ENTER
+D277	[2,1,18]		; ↱ [] 2 ↰ , 1 ↰ , 1 8 ENTER
+D278	GTO D399	; GTO D 3 9 9
+; EQN RCL G RCL I RCL A RCL N RCL T ↱ SPACE RCL R RCL A RCL T ENTER
+D279*	eqn GIANT RAT
+D280	PSE		; ↱ PSE
+D281	[1,6,0]		; ↱ [] 1 ↰ , 6 ↰ , 0 ENTER
+D282	[1,6,0]		; ↱ [] 1 ↰ , 6 ↰ , 0 ENTER
+D283	[1,1,13]		; ↱ [] 1 ↰ , 1 ↰ , 1 3 ENTER
+D284	GTO D399	; GTO D 3 9 9
+; EQN RCL D RCL W RCL A RCL R RCL F ENTER
+D285*	eqn DWARF
+D286	PSE		; ↱ PSE
+D287	[2,8,0]		; ↱ [] 2 ↰ , 8 ↰ , 0 ENTER
+D288	[1,10,1]		; ↱ [] 1 ↰ , 1 0 ↰ , 1 ENTER
+D289	[1,2,20]		; ↱ [] 1 ↰ , 2 ↰ , 2 0 ENTER
+D290	GTO D399	; GTO D 3 9 9
+; EQN RCL G RCL I RCL A RCL N RCL T ↱ SPACE RCL S RCL P RCL I RCL D RCL E RCL R ENTER
+D291*	eqn GIANT SPIDER
+D292	PSE		; ↱ PSE
+D293	[2,8,4]		; ↱ [] 2 ↰ , 8 ↰ , 4 ENTER
+D294	[1,10,8]		; ↱ [] 1 ↰ , 1 0 ↰ , 8 ENTER
+D295	[1,4,17]		; ↱ [] 1 ↰ , 4 ↰ , 1 7 ENTER
+D296	GTO D399	; GTO D 3 9 9
+; EQN RCL Z RCL O RCL M RCL B RCL I RCL E ENTER
+D297*	eqn ZOMBIE
+D298	PSE		; ↱ PSE
+D299	[3,8,0]		; ↱ [] 3 ↰ , 8 ↰ , 0 ENTER
+D300	[1,6,2]		; ↱ [] 1 ↰ , 6 ↰ , 2 ENTER
+D301	[2,5,8]		; ↱ [] 2 ↰ , 5 ↰ , 8 ENTER
+D302	GTO D399	; GTO D 3 9 9
+; EQN RCL G RCL H RCL O RCL S RCL T ENTER
+D303*	eqn GHOST
+D304	PSE		; ↱ PSE
+D305	[10,8,50]		; ↱ [] 1 0 ↰ , 8 ↰ , 5 0 ENTER
+D306	[2,4,-1]		; ↱ [] 2 ↰ , 4 ↰ , 1 +/- ENTER
+D307	[2,16,30]		; ↱ [] 2 ↰ , 1 6 ↰ , 3 0 ENTER
+D308	GTO D399	; GTO D 3 9 9
+; EQN RCL D RCL A RCL E RCL M RCL O RCL N ENTER
+D309*	eqn DAEMON
+D310	PSE		; ↱ PSE
+D311	[8,8,20]		; ↱ [] 8 ↰ , 8 ↰ , 2 0 ENTER
+D312	[1,8,2]		; ↱ [] 1 ↰ , 8 ↰ , 2 ENTER
+D313	[2,11,26]		; ↱ [] 2 ↰ , 1 1 ↰ , 2 6 ENTER
+D314	GTO D399	; GTO D 3 9 9
+; EQN RCL G RCL N RCL O RCL M RCL E ENTER
+D315*	eqn GNOME
+D316	PSE		; ↱ PSE
+D317	[3,10,0]		; ↱ [] 3 ↰ , 1 0 ↰ , 0 ENTER
+D318	[1,8,1]		; ↱ [] 1 ↰ , 8 ↰ , 1 ENTER
+D319	[1,7,18]		; ↱ [] 1 ↰ , 7 ↰ , 1 8 ENTER
+D320	GTO D399	; GTO D 3 9 9
+; EQN RCL B RCL A RCL S RCL I RCL L RCL I RCL S RCL K ENTER
+D321*	eqn BASILISK
+D322	PSE		; ↱ PSE
+D323	[6,8,4]		; ↱ [] 6 ↰ , 8 ↰ , 4 ENTER
+D324	[2,10,10]		; ↱ [] 2 ↰ , 1 0 ↰ , 1 0 ENTER
+D325	[1,13,24]		; ↱ [] 1 ↰ , 1 3 ↰ , 2 4 ENTER
+D326	GTO D399	; GTO D 3 9 9
+; EQN RCL S RCL L RCL I RCL M RCL E ENTER
+D327*	eqn SLIME
+D328	PSE		; ↱ PSE
+D329	[5,10,20]		; ↱ [] 5 ↰ , 1 0 ↰ , 2 0 ENTER
+D330	[1,4,0]		; ↱ [] 1 ↰ , 4 ↰ , 0 ENTER
+D331	[4,8,12]		; ↱ [] 4 ↰ , 8 ↰ , 1 2 ENTER
+D332	GTO D399	; GTO D 3 9 9
+; EQN RCL D RCL E RCL V RCL I RCL L ENTER
+D333*	eqn DEVIL
+D334	PSE		; ↱ PSE
+D335	[10,8,30]		; ↱ [] 1 0 ↰ , 8 ↰ , 3 0 ENTER
+D336	[1,10,5]		; ↱ [] 1 ↰ , 1 0 ↰ , 5 ENTER
+D337	[2,14,24]		; ↱ [] 2 ↰ , 1 4 ↰ , 2 4 ENTER
+D338	GTO D399	; GTO D 3 9 9
+; EQN RCL B RCL A RCL R RCL B RCL A RCL R RCL I RCL A RCL N ENTER
+D339*	eqn BARBARIAN
+D340	PSE		; ↱ PSE
+D341	[4,12,16]		; ↱ [] 4 ↰ , 1 2 ↰ , 1 6 ENTER
+D342	[1,10,2]		; ↱ [] 1 ↰ , 1 0 ↰ , 2 ENTER
+D343	[1,7,13]		; ↱ [] 1 ↰ , 7 ↰ , 1 3 ENTER
+D344	GTO D399	; GTO D 3 9 9
+; EQN RCL V RCL A RCL M RCL P RCL I RCL R RCL E ENTER
+D345*	eqn VAMPIRE
+D346	PSE		; ↱ PSE
+D347	[8,10,10]		; ↱ [] 8 ↰ , 1 0 ↰ , 1 0 ENTER
+D348	[2,12,8]		; ↱ [] 2 ↰ , 1 2 ↰ , 8 ENTER
+D349	[1,15,24]		; ↱ [] 1 ↰ , 1 5 ↰ , 2 4 ENTER
+D350	GTO D399	; GTO D 3 9 9
+; EQN RCL O RCL O RCL Z RCL E ENTER
+D351*	eqn OOZE
+D352	PSE		; ↱ PSE
+D353	[12,10,30]		; ↱ [] 1 2 ↰ , 1 0 ↰ , 3 0 ENTER
+D354	[1,6,0]		; ↱ [] 1 ↰ , 6 ↰ , 0 ENTER
+D355	[5,9,14]		; ↱ [] 5 ↰ , 9 ↰ , 1 4 ENTER
+D356	GTO D399	; GTO D 3 9 9
+; EQN RCL M RCL O RCL L RCL D ↱ SPACE RCL M RCL O RCL N RCL S RCL T RCL E RCL R ENTER
+D357*	eqn MOLD MONSTER
+D358	PSE		; ↱ PSE
+D359	[2,8,0]		; ↱ [] 2 ↰ , 8 ↰ , 0 ENTER
+D360	[1,2,0]		; ↱ [] 1 ↰ , 2 ↰ , 0 ENTER
+D361	[3,3,10]		; ↱ [] 3 ↰ , 3 ↰ , 1 0 ENTER
+D362	GTO D399	; GTO D 3 9 9
+; EQN RCL O RCL G RCL R RCL E ENTER
+D363*	eqn OGRE
+D364	PSE		; ↱ PSE
+D365	[5,12,10]		; ↱ [] 5 ↰ , 1 2 ↰ , 1 0 ENTER
+D366	[2,8,8]		; ↱ [] 2 ↰ , 8 ↰ , 8 ENTER
+D367	[1,10,21]		; ↱ [] 1 ↰ , 1 0 ↰ , 2 1 ENTER
+D368	GTO D399	; GTO D 3 9 9
+; EQN RCL G RCL I RCL A RCL N RCL T ↱ SPACE RCL S RCL N RCL A RCL K RCL E ENTER
+D369*	eqn GIANT SNAKE
+D370	PSE		; ↱ PSE
+D371	[4,8,8]		; ↱ [] 4 ↰ , 8 ↰ , 8 ENTER
+D372	[2,8,4]		; ↱ [] 2 ↰ , 8 ↰ , 4 ENTER
+D373	[1,5,15]		; ↱ [] 1 ↰ , 5 ↰ , 1 5 ENTER
+D374	GTO D399	; GTO D 3 9 9
+; EQN RCL T RCL R RCL O RCL L RCL L ENTER
+D375*	eqn TROLL
+D376	PSE		; ↱ PSE
+D377	[6,10,40]		; ↱ [] 6 ↰ , 1 0 ↰ , 4 0 ENTER
+D378	[1,6,6]		; ↱ [] 1 ↰ , 6 ↰ , 6 ENTER
+D379	[2,9,22]		; ↱ [] 2 ↰ , 9 ↰ , 2 2 ENTER
+D380	GTO D399	; GTO D 3 9 9
+; EQN RCL E RCL L RCL E RCL M RCL E RCL N RCL T RCL A RCL L ENTER
+D381*	eqn ELEMENTAL
+D382	PSE		; ↱ PSE
+D383	[10,12,30]		; ↱ [] 1 0 ↰ , 1 2 ↰ , 3 0 ENTER
+D384	[1,12,10]		; ↱ [] 1 ↰ , 1 2 ↰ , 1 0 ENTER
+D385	[2,16,17]		; ↱ [] 2 ↰ , 1 6 ↰ , 1 7 ENTER
+D386	GTO D399	; GTO D 3 9 9
+; EQN RCL W RCL Y RCL V RCL E RCL R RCL N ENTER
+D387*	eqn WYVERN
+D388	PSE		; ↱ PSE
+D389	[7,12,16]		; ↱ [] 7 ↰ , 1 2 ↰ , 1 6 ENTER
+D390	[1,8,8]		; ↱ [] 1 ↰ , 8 ↰ , 8 ENTER
+D391	[2,14,28]		; ↱ [] 2 ↰ , 1 4 ↰ , 2 8 ENTER
+D392	GTO D399	; GTO D 3 9 9
+; EQN RCL D RCL R RCL A RCL G RCL O RCL N ENTER
+D393*	eqn DRAGON
+D394	PSE		; ↱ PSE
+D395	[24,20,100]		; ↱ [] 2 4 ↰ , 2 0 ↰ , 1 0 0 ENTER
+D396	[1,20,30]		; ↱ [] 1 ↰ , 2 0 ↰ , 3 0 ENTER
+D397	[2,30,29]		; ↱ [] 2 ↰ , 3 0 ↰ , 2 9 ENTER
+D398	SF 4		; ↰ FLAGS 1 4
+D399*	STO B		; ↱ STO B
+D400	R↓		; R↓
+D401	STO C		; ↱ STO C
+D402	R↓		; R↓
+D403	XEQ D046	; XEQ D 0 4 6
+D404	STO D		; ↱ STO D
+D405	STO P		; ↱ STO P
+D406	RCL E		; RCL E
+D407	XEQ D059	; XEQ D 0 5 9
+D408	÷		; ÷
+D409	+/-		; +/-
+D410	INTG		; ↰ INTG 4
+D411	ABS		; ↱ ABS
+D412	STO E		; ↱ STO E
+D413	RCL B		; RCL B
+D414	XEQ D633	; XEQ D 6 3 3
+D415	STO B		; ↱ STO B
+D416	R↓		; R↓
+D417	STO F		; ↱ STO F
+D418	R↓		; R↓
+D419	STO G		; ↱ STO G
+D420	GTO D428	; GTO D 4 2 8
+D421*	CF 4		; ↰ FLAGS 2 4
+; EQN RCL G RCL O RCL T ↱ SPACE RCL A RCL W RCL A RCL Y ENTER
+D422*	eqn GOT AWAY
+D423	PSE		; ↱ PSE
+D424	GTO D593	; GTO D 5 9 3
+D425*	RCL J		; RCL J
+D426	x≤0?		; ↱ x?0 2
+D427	GTO D690	; GTO D 6 9 0
+; EQN 0 ↰ = RCL A RCL T RCL K ↱ SPACE 1 ↰ = RCL F RCL L RCL E RCL E ENTER
+D428*	eqn 0=ATK 1=FLEE
+D429	PSE		; ↱ PSE
+D430	CLSTK		; ↱ CLEAR 5
+D431	STOP		; R/S
+D432	x=0?		; ↱ x?0 6
+D433	GTO D449	; GTO D 4 4 9
+D434	FS? 4		; ↰ FLAGS 3 4
+D435	GTO D421	; GTO D 4 2 1
+D436	XEQ D057	; XEQ D 0 5 7
+D437	RCL× E		; RCL × E
+D438	XEQ D069	; XEQ D 0 6 9
+D439	RCL× N		; RCL × N
+D440	-		; -
+D441	RCL+ H		; RCL + H
+D442	XEQ D061	; XEQ D 0 6 1
+D443	÷		; ÷
+D444	RANDOM		; ↱ RAND
+D445	x≥y?		; ↰ x?y 5
+D446	GTO D422	; GTO D 4 2 2
+; EQN RCL C RCL A RCL U RCL G RCL H RCL T ↱ SPACE RCL Y RCL O RCL U ↱ ! ENTER
+D447	eqn CAUGHT YOU!
+D448	PSE		; ↱ PSE
+D449*	RCL L		; RCL L
+D450	x=0?		; ↱ x?0 6
+D451	GTO D458	; GTO D 4 5 8
+; EQN 0 ↰ = RCL S RCL W RCL D ↱ SPACE 1 ↰ = RCL S RCL P RCL E RCL L RCL L ENTER
+D452	eqn 0=SWD 1=SPELL
+D453	PSE		; ↱ PSE
+D454	CLSTK		; ↱ CLEAR 5
+D455	STOP		; R/S
+D456	x≠0?		; ↱ x?0 1
+D457	GTO D524	; GTO D 5 2 4
+D458*	XEQ D055	; XEQ D 0 5 5
+D459	RCL H		; RCL H
+D460	XEQ D069	; XEQ D 0 6 9
+D461	÷		; ÷
+D462	+		; +
+D463	RCL M		; RCL M
+D464	XEQ D067	; XEQ D 0 6 7
+D465	÷		; ÷
+D466	+		; +
+D467	IP		; ↰ INTG 6
+D468	FS? 1		; ↰ FLAGS 3 1
+D469	XEQ D506	; XEQ D 5 0 6
+D470	RCL G		; RCL G
+D471	x>y?		; ↰ x?y 4
+D472	GTO D489	; GTO D 4 8 9
+; EQN RCL H RCL I RCL T ENTER
+D473	eqn HIT
+D474	PSE		; ↱ PSE
+D475	XEQ D065	; XEQ D 0 6 5
+D476	XEQ D029	; XEQ D 0 2 9
+D477	RCL M		; RCL M
+D478	XEQ D067	; XEQ D 0 6 7
+D479	÷		; ÷
+D480	+		; +
+D481	2.5		; 2 . 5 ENTER
+D482	-		; -
+D483	IP		; ↰ INTG 6
+D484	FS? 1		; ↰ FLAGS 3 1
+D485	XEQ D509	; XEQ D 5 0 9
+D486	x≤0?		; ↱ x?0 2
+D487	XEQ D071	; XEQ D 0 7 1
+D488	GTO D533	; GTO D 5 3 3
+; EQN RCL M RCL I RCL S RCL S RCL E RCL D ENTER
+D489*	eqn MISSED
+D490	PSE		; ↱ PSE
+D491	GTO D535	; GTO D 5 3 5
+D492*	XEQ D069	; XEQ D 0 6 9
+D493	÷		; ÷
+D494	XEQ D073	; XEQ D 0 7 3
+D495	+		; +
+D496	IP		; ↰ INTG 6
+D497	x≤0?		; ↱ x?0 2
+D498	GTO D071	; GTO D 0 7 1
+D499	RTN		; ↰ RTN
+D500*	0.9		; 0 . 9 ENTER
+D501	×		; ×
+D502	RTN		; ↰ RTN
+D503*	XEQ D067	; XEQ D 0 6 7
+D504	-		; -
+D505	RTN		; ↰ RTN
+D506*	XEQ D067	; XEQ D 0 6 7
+D507	+		; +
+D508	RTN		; ↰ RTN
+D509*	XEQ D057	; XEQ D 0 5 7
+D510	XEQ D029	; XEQ D 0 2 9
+D511	+		; +
+D512	XEQ D065	; XEQ D 0 6 5
+D513	+		; +
+D514	FS? 4		; ↰ FLAGS 3 4
+D515	GTO D517	; GTO D 5 1 7
+D516	RTN		; ↰ RTN
+D517*	XEQ D063	; XEQ D 0 6 3
+D518	XEQ D069	; XEQ D 0 6 9
+D519	XEQ D029	; XEQ D 0 2 9
+D520	+		; +
+D521	XEQ D057	; XEQ D 0 5 7
+D522	+		; +
+D523	RTN		; ↰ RTN
+D524*	XEQ D071	; XEQ D 0 7 1
+D525	STO- L		; ↱ STO - L
+; EQN RCL Z RCL O RCL T ↱ ! ENTER
+D526	eqn ZOT!
+D527	PSE		; ↱ PSE
+D528	XEQ D067	; XEQ D 0 6 7
+D529	XEQ D069	; XEQ D 0 6 9
+D530	+		; +
+D531	RCL H		; RCL H
+D532	XEQ D035	; XEQ D 0 3 5
+D533*	STO- D		; ↱ STO - D
+D534	XEQ D613	; XEQ D 6 1 3
+D535*	RCL D		; RCL D
+D536	x≤0?		; ↱ x?0 2
+D537	GTO D568	; GTO D 5 6 8
+D538	RCL B		; RCL B
+D539	FS? 3		; ↰ FLAGS 3 3
+D540	XEQ D492	; XEQ D 4 9 2
+D541	STO Q		; ↱ STO Q
+D542*	XEQ D055	; XEQ D 0 5 5
+D543	RCL+ F		; RCL + F
+D544	RCL N		; RCL N
+D545	XEQ D067	; XEQ D 0 6 7
+D546	÷		; ÷
+D547	-		; -
+D548	XEQ D057	; XEQ D 0 5 7
+D549	-		; -
+D550	FS? 2		; ↰ FLAGS 3 2
+D551	XEQ D503	; XEQ D 5 0 3
+D552	x<0?		; ↱ x?0 3
+D553	GTO D565	; GTO D 5 6 5
+D554	RCL C		; RCL C
+D555	XEQ D046	; XEQ D 0 4 6
+D556	FS? 0		; ↰ FLAGS 3 0
+D557	XEQ D500	; XEQ D 5 0 0
+D558	INTG		; ↰ INTG 4
+D559	x≤0?		; ↱ x?0 2
+D560	XEQ D071	; XEQ D 0 7 1
+D561	STO- J		; ↱ STO - J
+; EQN RCL O RCL U RCL C RCL H ↱ ! ENTER
+D562	eqn OUCH!
+D563	PSE		; ↱ PSE
+D564	XEQ D613	; XEQ D 6 1 3
+D565*	DSE Q		; ↱ DSE Q
+D566	GTO D542	; GTO D 5 4 2
+D567	GTO D425	; GTO D 4 2 5
+; EQN RCL K RCL I RCL L RCL L RCL E RCL D ↱ ! ENTER
+D568*	eqn KILLED!
+D569	PSE		; ↱ PSE
+D570	XEQ D067	; XEQ D 0 6 7
+D571	XEQ D069	; XEQ D 0 6 9
+D572	RCL E		; RCL E
+D573	yˣ		; yˣ
+D574	RCL× P		; RCL × P
+D575	RCL× B		; RCL × B
+D576	STO+ K		; ↱ STO + K
+D577	XEQ D608	; XEQ D 6 0 8
+D578	XEQ D059	; XEQ D 0 5 9
+D579	RCL E		; RCL E
+D580	yˣ		; yˣ
+D581	XEQ D029	; XEQ D 0 2 9
+D582	STO+ R		; ↱ STO + R
+D583	XEQ D057	; XEQ D 0 5 7
+D584	÷		; ÷
+D585	IP		; ↰ INTG 6
+D586	STO+ K		; ↱ STO + K
+D587	XEQ D618	; XEQ D 6 1 8
+D588	RANDOM		; ↱ RAND
+D589	0.1		; 0 . 1 ENTER
+D590	RCL× E		; RCL × E
+D591	x>y?		; ↰ x?y 4
+D592	XEQ D645	; XEQ D 6 4 5
+D593*	XEQ D057	; XEQ D 0 5 7
+D594	1/x		; 1/x
+D595	RANDOM		; ↱ RAND
+D596	x≥y?		; ↰ x?y 5
+D597	GTO D011	; GTO D 0 1 1
+; EQN RCL H RCL E RCL A RCL L ENTER
+D598	eqn HEAL
+D599	PSE		; ↱ PSE
+D600	RCL I		; RCL I
+D601	STO J		; ↱ STO J
+D602	RANDOM		; ↱ RAND
+D603	0.3		; 0 . 3 ENTER
+D604	+		; +
+D605	IP		; ↰ INTG 6
+D606	STO+ L		; ↱ STO + L
+D607	GTO D011	; GTO D 0 1 1
+D608*	x<> E		; ↰ x≶ E
+D609	VIEW E		; ↰ VIEW E
+D610	PSE		; ↱ PSE
+D611	x<> E		; ↰ x≶ E
+D612	RTN		; ↰ RTN
+D613*	x<> H		; ↰ x≶ H
+D614	VIEW H		; ↰ VIEW H
+D615	PSE		; ↱ PSE
+D616	x<> H		; ↰ x≶ H
+D617	RTN		; ↰ RTN
+D618*	x<> G		; ↰ x≶ G
+D619	VIEW G		; ↰ VIEW G
+D620	PSE		; ↱ PSE
+D621	x<> G		; ↰ x≶ G
+D622	RTN		; ↰ RTN
+D623*	x<> L		; ↰ x≶ L
+D624	VIEW L		; ↰ VIEW L
+D625	PSE		; ↱ PSE
+D626	x<> L		; ↰ x≶ L
+D627	RTN		; ↰ RTN
+D628*	x<> S		; ↰ x≶ S
+D629	VIEW S		; ↰ VIEW S
+D630	PSE		; ↱ PSE
+D631	x<> S		; ↰ x≶ S
+D632	RTN		; ↰ RTN
+D633*	CF 10		; ↰ FLAGS 2 . 0
+; EQN ↰ [] > ⇦ 0 ↰ , 0 ↰ , 1 ↰ [] ⇦ > × R↓ 1 ENTER
+D634	eqn [0,0,1]×REGX
+; EQN ↰ [] > ⇦ 0 ↰ , 1 ↰ , 0 ↰ [] ⇦ > × R↓ 2 ENTER
+D635	eqn [0,1,0]×REGY
+; EQN ↰ [] > ⇦ 1 ↰ , 0 ↰ , 0 ↰ [] ⇦ > × R↓ 3 ENTER
+D636	eqn [1,0,0]×REGZ
+D637	SF 10		; ↰ FLAGS 1 . 0
+D638	RTN		; ↰ RTN
+D639*	XEQ D063	; XEQ D 0 6 3
+D640	RANDOM		; ↱ RAND
+D641	√x		; √x
+D642	×		; ×
+D643	IP		; ↰ INTG 6
+D644	RTN		; ↰ RTN
+D645*	XEQ D069	; XEQ D 0 6 9
+D646	XEQ D067	; XEQ D 0 6 7
+D647	XEQ D029	; XEQ D 0 2 9
+D648	XEQ D071	; XEQ D 0 7 1
+D649	-		; -
+D650	x=0?		; ↱ x?0 6
+D651	GTO D666	; GTO D 6 6 6
+D652	x<y?		; ↰ x?y 3
+D653	GTO D673	; GTO D 6 7 3
+D654	x=y?		; ↰ x?y 6
+D655	GTO D680	; GTO D 6 8 0
+D656	FS? 3		; ↰ FLAGS 3 3
+D657	RTN		; ↰ RTN
+D658	SF 3		; ↰ FLAGS 1 3
+; EQN RCL M RCL A RCL G RCL I RCL C ↱ SPACE RCL H RCL E RCL L RCL M RCL E RCL T ENTER
+D659	eqn MAGIC HELMET
+D660	PSE		; ↱ PSE
+D661	XEQ D071	; XEQ D 0 7 1
+D662*	1e3		; 1 e 3 ENTER
+D663	×		; ×
+D664	STO+ R		; ↱ STO + R
+D665	RTN		; ↰ RTN
+D666*	FS? 0		; ↰ FLAGS 3 0
+D667	RTN		; ↰ RTN
+D668	SF 0		; ↰ FLAGS 1 0
+; EQN RCL M RCL A RCL G RCL I RCL C ↱ SPACE RCL S RCL H RCL I RCL E RCL L RCL D ENTER
+D669	eqn MAGIC SHIELD
+D670	PSE		; ↱ PSE
+D671	XEQ D069	; XEQ D 0 6 9
+D672	GTO D662	; GTO D 6 6 2
+D673*	FS? 1		; ↰ FLAGS 3 1
+D674	RTN		; ↰ RTN
+D675	SF 1		; ↰ FLAGS 1 1
+; EQN RCL M RCL A RCL G RCL I RCL C ↱ SPACE RCL S RCL W RCL O RCL R RCL D ENTER
+D676	eqn MAGIC SWORD
+D677	PSE		; ↱ PSE
+D678	XEQ D057	; XEQ D 0 5 7
+D679	GTO D662	; GTO D 6 6 2
+D680*	FS? 2		; ↰ FLAGS 3 2
+D681	RTN		; ↰ RTN
+D682	SF 2		; ↰ FLAGS 1 2
+; EQN RCL M RCL A RCL G RCL I RCL C ↱ SPACE RCL A RCL R RCL M RCL O RCL U RCL R ENTER
+D683	eqn MAGIC ARMOUR
+D684	PSE		; ↱ PSE
+D685	XEQ D067	; XEQ D 0 6 7
+D686	GTO D662	; GTO D 6 6 2
+; EQN RCL M RCL A RCL R RCL R RCL Y ↱ SPACE RCL P RCL R RCL I RCL N RCL C RCL E RCL S RCL S ENTER
+D687*	eqn MARRY PRINCESS
+D688	PSE		; ↱ PSE
+D689	RTN		; ↰ RTN
+; EQN RCL Y RCL O RCL U ↱ SPACE RCL D RCL I RCL E RCL D ↱ ! ENTER
+D690*	eqn YOU DIED!
+D691	PSE		; ↱ PSE
+D692	GTO D702	; GTO D 7 0 2
+; EQN RCL B RCL E RCL A RCL T ↱ SPACE RCL D RCL R RCL A RCL G RCL O RCL N ENTER
+D693*	eqn BEAT DRAGON
+D694	PSE		; ↱ PSE
+D695	XEQ D061	; XEQ D 0 6 1
+D696	x²		; ↱ x²
+D697	RCL R		; RCL R
+D698	x≥y?		; ↰ x?y 5
+D699	XEQ D687	; XEQ D 6 8 7
+; EQN RCL Y RCL O RCL U ↱ SPACE RCL W RCL I RCL N ↱ ! ENTER
+D700	eqn YOU WIN!
+D701	PSE		; ↱ PSE
+D702*	CLVARS		; ↱ CLEAR 2
+D703	CLSTK		; ↱ CLEAR 5
+D704	CF 0		; ↰ FLAGS 2 0
+D705	CF 1		; ↰ FLAGS 2 1
+D706	CF 2		; ↰ FLAGS 2 2
+D707	CF 3		; ↰ FLAGS 2 3
+D708	CF 4		; ↰ FLAGS 2 4
+D709	CF 10		; ↰ FLAGS 2 . 0
+D710	RTN		; ↰ RTN
+; 🄲
