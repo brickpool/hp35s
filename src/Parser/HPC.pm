@@ -656,9 +656,8 @@ sub parse_code_block {
   my $result = $self->sequence_of(
     sub {
       $self->commit;
-      push @tags, $self->any_of(
+      push @tags, $self->sequence_of(
         sub { $self->parse_label; },
-        sub { 0 },
       );
       $self->parse_code_statement;
     }
@@ -668,13 +667,13 @@ sub parse_code_block {
   
   # insert the tags into global label table
   for (my $i = 0; $i < @tags; $i++ ) {
-    my $key = $tags[$i] or
-      next;
-    # set the array index
-    $self->{_labels}->{$key} = {
-      type      => 'near',
-      segment   => $ident,
-      statement => $i,
+    foreach my $key ( @{ $tags[$i] }) {
+      # set the array index
+      $self->{_labels}->{$key} = {
+        type      => 'near',
+        segment   => $ident,
+        statement => $i,
+      }
     }
   }
 

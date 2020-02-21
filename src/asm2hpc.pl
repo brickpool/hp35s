@@ -20,7 +20,7 @@ use Encode;
 use File::Basename;
 
 # Declaration
-my $VERSION = 'v0.3.9';
+my $VERSION = 'v0.3.10';
 
 my $version;
 my $jumpmark;
@@ -54,7 +54,7 @@ GetOptions (
 &version()    if $version;
 &help()       if $help;
 $debug    = 0 unless defined $debug;
-$shortcut = defined $encoded ? 1 : 0;
+$shortcut = 1 if $encoded;
 
 my $parser = Parser::HPC->new;
 
@@ -667,7 +667,7 @@ my $tbl_char_seq = {
   '\252'  => '\+> BASE 5',                  # d
   '\;,'   => '\+> % \BS \BS \BS \BS \BS \.> \.> \BS',   # ,
   '\;.'   => '',
-  '\|>'   => 'STO \CC',
+  '\|>'   => '\+> STO \CC',
   # additional char
   '³'     => '',
   '#'     => '',
@@ -719,6 +719,8 @@ my $tbl_opt_seq = {
   '\<+ CONST \.^ 1 \BS  \<+ CONST \.^ 2 \.< \BS \.>'
                                                     => '\<+ CONST \.^ 2',               # \^C\^2
   '\<+ CONST \.^ 3 \BS \<+ CONST \.^ 3 \BS'         => '\<+ CONST \.^ 3',               # \^G\021
+  # RCL
+  '\+> STO \CC RCL'                                 => '\+> STO',                       # \|>
   # R\|v
   'RCL R RCL E RCL G RCL X'                         => 'R\|v 1',                        # REGX
   'RCL R RCL E RCL G RCL Y'                         => 'R\|v 2',                        # REGY
@@ -1263,16 +1265,16 @@ my $tbl_char_macro = {
   'X'       => '22',
   'Y'       => '23',
   'Z'       => '24',
-#  '; -'     => '25',
-#  '\CC'     => '26',
+#  '-'       => '25',
+  '\CC'     => '26',
   '(I)'     => '27',
   '(J)'     => '28',
 #  '\GS+'    => '29',
 #  '+'       => '2a',
 };
 
-my $lbl = '0';
-my $loc = 0;
+my $label = '0';  # start with label '0'
+my $lloc = 0;     # logical lines of code
 my $out = '';
 my $codename = '';
 my $response;
@@ -1384,7 +1386,7 @@ foreach my $seq ( @segments ) {
 
   # print stack
   foreach (@stack) {
-    $out .= sprintf("%s%03d\t%s\n", $lbl, ++$loc, $_);
+    $out .= sprintf("%s%03d\t%s\n", $label, ++$lloc, $_);
   }
 
   # only one stack segment is supported yet
@@ -1404,39 +1406,53 @@ foreach my $seq ( @segments ) {
 
   # get all statements
   my $statements = $response->{segments}->{$seq}->{statements};
-  for ( my $line = 0; $line < scalar @$statements; $line++ ) {
-    my ($statement, $entry) = each %{ @$statements[$line] };
+  # get 'source lines of code'
+  my $sloc = scalar @$statements;
+
+  # set line number for each statement
+  for ( my $line = 0; $line < $sloc; $line++ ) {
+    my ($statement, $entry) = %{ $statements->[$line] };
+    if ($statement eq 'LBL') {
+      $label = $entry->{variable} ;
+      $lloc = 0;
+    }
+    $entry->{line} = sprintf("%s%03d", $label, ++$lloc);
+  }
+
+  # generate output for each statement
+  for ( my $line = 0; $line < $sloc; $line++ ) {
+    my ($statement, $entry) = %{ $statements->[$line] };
     defined $entry->{type} or
       warn "missing 'type' in statement '$statement'\n" and next;
 
     SWITCH: for ($entry->{type}) {
       /decimal|binary|octal|hex/ && do {
-        $out .= sprintf_number_statement( $statement );
+        $out .= sprintf_number_statement( $entry->{line}, $statement );
         last;
       };
       /vector/ && do {
-        $out .= sprintf_vector_statement( $statement );
+        $out .= sprintf_vector_statement( $entry->{line}, $statement );
         last;
       };
       /complex/ && do {
-        $out .= sprintf_complex_statement( $statement );
+        $out .= sprintf_complex_statement( $entry->{line}, $statement );
         last;
       };
       /instruction/ && do {
         my $mnemonic = $statement;
         # instructions without an operand
         if ( grep { $_ eq $mnemonic } @instructions, @functions, @register ) {
-          $out .= sprintf_single_instruction( $mnemonic );
+          $out .= sprintf_single_instruction( $entry->{line}, $mnemonic );
         }
         # instructions with an address: GTO and XEQ
         elsif ( grep { $_ eq $mnemonic } @with_address ) {
           # absolute address
           if ( defined $entry->{address} ) {
-            $out .= sprintf_address_instruction( $mnemonic, $entry->{address} );
+            $out .= sprintf_address_instruction( $entry->{line}, $mnemonic, $entry->{address} );
           }
           # address label
           elsif ( defined $entry->{label} ) {
-            $out .= sprintf_label_instruction( $mnemonic, $entry->{label}, $seq, $line );
+            $out .= sprintf_label_instruction( $entry->{line}, $mnemonic, $entry->{label}, $seq );
           }
           # unknown operand
           else {
@@ -1446,23 +1462,22 @@ foreach my $seq ( @segments ) {
         }
         # instructions with a variable: LBL, INPUT, VIEW, STO, ...
         elsif ( grep { $_ eq $mnemonic } @with_variables, @with_indirects ) {
-          $out .= sprintf_variable_instruction( $mnemonic, $entry->{variable} );
+          $out .= sprintf_variable_instruction( $entry->{line}, $mnemonic, $entry->{variable} );
         }
         # instructions with a number: CF, FIX, ...
         elsif ( grep { $_ eq $mnemonic } @with_digits ) {
-          $out .= sprintf_number_instruction( $mnemonic, $entry->{number} );
+          $out .= sprintf_number_instruction( $entry->{line}, $mnemonic, $entry->{number} );
         }
         # instructions with an expression: EQN
         elsif ( grep { $_ eq $mnemonic } @expressions ) {
         
           # expression
           if ( defined $entry->{expression} ) {
-            my $expression = $entry->{expression};
-            $out .= sprintf("%s%03d\t%s %s\n", $lbl, ++$loc, $mnemonic, $expression);
+            $out .= sprintf_expression_instruction( $entry->{line}, $mnemonic, $entry->{expression} );
           }
           # equation
           elsif ( defined $entry->{equation} ) {
-            $out .= sprintf_equation_instruction( $mnemonic, $entry->{equation} );
+            $out .= sprintf_equation_instruction( $entry->{line}, $mnemonic, $entry->{equation} );
           }
           # unknown operand
           else {
@@ -1622,6 +1637,7 @@ print STDOUT $out;
 
 # number statement
 sub sprintf_number_statement {
+  my $line = shift;
   my $number = shift;
   my $keystrokes = '';
 
@@ -1674,11 +1690,12 @@ sub sprintf_number_statement {
     }
     $keystrokes .= ' ENTER';
   }
-  return sprintf("%s%03d\t%s%s\n", $lbl, ++$loc, $number, $keystrokes);
+  return sprintf("%s\t%s%s\n", $line, $number, $keystrokes);
 }
 
 # vector statement
 sub sprintf_vector_statement {
+  my $line = shift;
   my $vector = shift;
   my $keystrokes = '';
 
@@ -1719,11 +1736,12 @@ sub sprintf_vector_statement {
     $keystrokes .= ' ENTER';
   }
 
-  return sprintf("%s%03d\t%s%s\n", $lbl, ++$loc, $vector, $keystrokes);
+  return sprintf("%s\t%s%s\n", $line, $vector, $keystrokes);
 }
 
 # complex statement
 sub sprintf_complex_statement {
+  my $line = shift;
   my $complex = shift;
   my $keystrokes = '';
 
@@ -1766,11 +1784,12 @@ sub sprintf_complex_statement {
     $keystrokes .= ' ENTER';
   }
 
-  return sprintf("%s%03d\t%s%s%s%s\n", $lbl, ++$loc, $a, $sep, $b, $keystrokes);
+  return sprintf("%s\t%s%s%s%s\n", $line, $a, $sep, $b, $keystrokes);
 }
 
 # instructions without an operand
 sub sprintf_single_instruction {
+  my $line = shift;
   my $mnemonic = shift;
   my $keystrokes = '';
 
@@ -1782,11 +1801,12 @@ sub sprintf_single_instruction {
 
   # special handling for ENG
   $mnemonic = 'ENG' if $mnemonic eq 'ENG\->';
-  return sprintf("%s%03d\t%s%s\n", $lbl, ++$loc, $mnemonic, $keystrokes);
+  return sprintf("%s\t%s%s\n", $line, $mnemonic, $keystrokes);
 }
 
 # instructions with absolute address
 sub sprintf_address_instruction {
+  my $line = shift;
   my $mnemonic = shift;
   my $addr = shift;
   my $keystrokes = '';
@@ -1795,17 +1815,25 @@ sub sprintf_address_instruction {
     $mnemonic = $tbl_instr_3graph->{$mnemonic};
 
   $jump_targets->{$addr} = $addr;
-  defined $shortcut and
-    $keystrokes = sprintf("\t; %s %s", exists $tbl_instr_seq->{$mnemonic} ? $tbl_instr_seq->{$mnemonic} : $mnemonic, $addr);
-  return sprintf("%s%03d\t%s %s%s\n", $lbl, ++$loc, $mnemonic, $addr, $keystrokes);
+  if ($shortcut) {
+    $keystrokes = sprintf("\t; %s ",
+      exists $tbl_instr_seq->{$mnemonic}
+        ?
+      $tbl_instr_seq->{$mnemonic}
+        :
+      $mnemonic
+    );
+    $keystrokes .= join(' ', split//, $addr);
+  }
+  return sprintf("%s\t%s %s%s\n", $line, $mnemonic, $addr, $keystrokes);
 }
 
 # instructions with address label
 sub sprintf_label_instruction {
+  my $line = shift;
   my $mnemonic = shift;
   my $label = shift;
   my $seq = shift;
-  my $line = shift;
   my $keystrokes = '';
   
   defined $response->{labels}->{$label}->{segment} or
@@ -1814,14 +1842,22 @@ sub sprintf_label_instruction {
   exists $tbl_instr_3graph->{$mnemonic} and
     $mnemonic = $tbl_instr_3graph->{$mnemonic};
 
-  if ( $response->{labels}->{$label}->{segment} eq $seq ) {
-    my $near = $response->{labels}->{$label}->{statement} + $line - $loc + 1;
-    my $digits = join(' ', split(//, sprintf("%03d", $near)));
-    my $addr = sprintf("%s%03d", $lbl, $near);
+  if ( $response->{labels}->{$label}->{type} eq 'near' ) {
+    my $pos = $response->{labels}->{$label}->{statement};
+    my (undef, $entry) = % { $response->{segments}->{$seq}->{statements}->[$pos] };
+    my $addr = $entry->{line};
     $jump_targets->{$addr} = $addr;
-    defined $shortcut and
-      $keystrokes = sprintf("\t; %s %s %s", exists $tbl_instr_seq->{$mnemonic} ? $tbl_instr_seq->{$mnemonic} : $mnemonic, $lbl, $digits);
-    return sprintf("%s%03d\t%s %s%03d%s\n", $lbl, ++$loc, $mnemonic, $lbl, $near, $keystrokes);
+    if ($shortcut) {
+      $keystrokes = sprintf("\t; %s ",
+        exists $tbl_instr_seq->{$mnemonic}
+          ?
+        $tbl_instr_seq->{$mnemonic}
+          :
+        $mnemonic
+      );
+      $keystrokes .= join(' ', split//, $addr);
+    }
+    return sprintf("%s\t%s %s%s\n", $line, $mnemonic, $addr, $keystrokes);
   }
   else {
     warn "far 'label' not supported yet\n";
@@ -1829,12 +1865,13 @@ sub sprintf_label_instruction {
     my $near = $response->{labels}->{$label}->{statement} + 1;
     defined $shortcut and
       $keystrokes = sprintf("\t; %s ...", exists $tbl_instr_seq->{$mnemonic} ? $tbl_instr_seq->{$mnemonic} : $mnemonic);
-    return sprintf("%s%03d\t%s %s+%03d%s\n", $lbl, ++$loc, $mnemonic, $far, $near, $keystrokes);
+    return sprintf("%s\t%s %s+%03d%s\n", $line, $mnemonic, $far, $near, $keystrokes);
   }
 }
 
 # instructions with a variable
 sub sprintf_variable_instruction {
+  my $line = shift;
   my $mnemonic = shift;
   my $variable = shift;
   my $keystrokes = '';
@@ -1845,18 +1882,14 @@ sub sprintf_variable_instruction {
   exists $tbl_instr_3graph->{$mnemonic} and
     $mnemonic = $tbl_instr_3graph->{$mnemonic};
 
-  if ($mnemonic =~ /LBL/) {
-    # set line number if instruction is 'LBL'
-    $lbl = $variable;
-    $loc = 0;
-  }
   my $space = $variable =~ /\([IJ]\)/ ? '' : ' ';   # indirects have no space
   defined $shortcut and
     $keystrokes = sprintf("\t\t; %s %s", exists $tbl_instr_seq->{$mnemonic} ? $tbl_instr_seq->{$mnemonic} : $mnemonic, $variable);
-  return sprintf("%s%03d\t%s%s%s%s\n", $lbl, ++$loc, $mnemonic, $space, $variable, $keystrokes);
+  return sprintf("%s\t%s%s%s%s\n", $line, $mnemonic, $space, $variable, $keystrokes);
 }
 
 sub sprintf_number_instruction {
+  my $line = shift;
   my $mnemonic = shift;
   my $number = shift;
   my $keystrokes = '';
@@ -1870,22 +1903,19 @@ sub sprintf_number_instruction {
   my $digits = $number < 10 ? $number : sprintf(". %d", $number % 10);
   defined $shortcut and
     $keystrokes = sprintf("\t\t; %s %s", exists $tbl_instr_seq->{$mnemonic} ? $tbl_instr_seq->{$mnemonic} : $mnemonic, $digits);
-  return sprintf("%s%03d\t%s %s%s\n", $lbl, ++$loc, $mnemonic, $number, $keystrokes);
+  return sprintf("%s\t%s %s%s\n", $line, $mnemonic, $number, $keystrokes);
 }
 
-sub sprintf_equation_instruction {
+sub sprintf_expression_instruction {
+  my $line = shift;
   my $mnemonic = shift;
-  my $definition = shift;
+  my $equation = shift;
   my $keystrokes = '';
   my $ret = '';
-
-  defined $equations->{$definition} or
-    warn "missing 'equation' for instruction '$mnemonic'\n" and return '';
-
+  
   exists $tbl_instr_3graph->{$mnemonic} and
     $mnemonic = $tbl_instr_3graph->{$mnemonic};
 
-  my $equation = $equations->{$definition};
   $equation =~ s/(?<!\\O)\//\\:-/;  # '/' => '\:-'
   $equation =~ s/\*/\\\.x/;         # '*' => '\.x'
 #  $equation =~ s/e/\\231/;         # 'e' => '\231'
@@ -1959,8 +1989,19 @@ sub sprintf_equation_instruction {
 
     $ret = sprintf("; EQN%s ENTER\n", $keystrokes);
   }
-  $ret .= sprintf("%s%03d\t%s %s\n", $lbl, ++$loc, $mnemonic, $equation);
+  $ret .= sprintf("%s\t%s %s\n", $line, $mnemonic, $equation);
   return $ret;
+}
+            
+sub sprintf_equation_instruction {
+  my $line = shift;
+  my $mnemonic = shift;
+  my $definition = shift;
+
+  defined $equations->{$definition} or
+    warn "missing 'equation' for instruction '$mnemonic'\n" and return '';
+
+  return sprintf_expression_instruction($line, $mnemonic, $equations->{$definition});
 }
 
 sub version () {

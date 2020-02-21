@@ -1,14 +1,14 @@
 =head1 HP35S scientific calculator
 
-An assembler C<src/asm2hpc.pl> prepares the programs for HP35s. Assembler programs (C<*.asm>) benefit from the symbolic resolution of labels, named constants and extended macro functions.
+An assembler C<src/asm2hpc.pl> prepares the programs for HP35s. Assembler programs (C<*.asm>) benefit from the symbolic resolution of labels, named constants and simple macro functions.
 
 Perl (C<*.pl> or C<*.pm>) is used as the implementation language for the assembler.
 
-The I<machine code> is not directly available, a well-formatted, ready-to-use format (C<*.txt> option -p or C<*.35s> option -u) with all numbered lines, all labels and jump labels (option -j) is required.
+The I<machine code> is not directly available, a well-formatted, ready-to-use format (C<*.txt> option C<-p> or C<*.35s> option C<-u>) with all numbered lines, all labels and jump labels (option C<-j>) is required.
 
-The associated key commands can optionally be output as a comment by the assembler (option -s).
+The associated key commands can optionally be output as a comment by the assembler (option C<-s>).
 
-It can be very helpful to import the source code into the emulator using macros to test the program logic (C<marco\*.mac> option -e).
+It can be very helpful to import the source code (C<*.asm>) into the emulator (C<*.ep>) using macros to test the program logic (C<marco/*.mac> option C<-e>).
 
 Further information can be found in the L<wiki|https://github.com/brickpool/hp35s/wiki>
 

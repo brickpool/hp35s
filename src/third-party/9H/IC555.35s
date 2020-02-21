@@ -1,0 +1,203 @@
+; 🄲 ↱ PRGM
+A001	LBL A		; ↱ LBL A
+A002	CF 1		; ↰ FLAGS 2 1
+A003	CF 2		; ↰ FLAGS 2 2
+A004	INPUT T		; ↰ INPUT T
+A005	x=0?		; ↱ x?0 6
+A006	SF 1		; ↰ FLAGS 1 1
+A007	INPUT R		; ↰ INPUT R
+A008	x=0?		; ↱ x?0 6
+A009	SF 2		; ↰ FLAGS 1 2
+A010	FS? 1		; ↰ FLAGS 3 1
+A011	GTO A016	; GTO A 0 1 6
+A012	FS? 2		; ↰ FLAGS 3 2
+A013	GTO A015	; GTO A 0 1 5
+A014	GTO A017	; GTO A 0 1 7
+A015*	CLx		; ↱ CLEAR 1
+A016*	INPUT C		; ↰ INPUT C
+A017*	1.1		; 1 . 1 ENTER
+A018	×		; ×
+A019	FS? 1		; ↰ FLAGS 3 1
+A020	GTO A029	; GTO A 0 2 9
+A021	÷		; ÷
+A022	FS? 2		; ↰ FLAGS 3 2
+A023	GTO A026	; GTO A 0 2 6
+A024	-3		; 3 +/- ENTER
+A025	GTO A032	; GTO A 0 3 2
+A026*	CF 2		; ↰ FLAGS 2 2
+A027	-18		; 1 8 +/- ENTER
+A028	GTO A032	; GTO A 0 3 2
+A029*	CF 1		; ↰ FLAGS 2 1
+A030	×		; ×
+A031	-20		; 2 0 +/- ENTER
+A032*	STO I		; ↱ STO I
+A033	R↓		; R↓
+A034	ENG 3		; ↰ DISPLAY 3 3
+A035	STO(I)		; ↱ STO (I)
+A036	VIEW(I)		; ↰ VIEW (I)
+A037	ALL		; ↰ DISPLAY 4
+A038	FIX 4		; ↰ DISPLAY 1 4
+A039	CF 1		; ↰ FLAGS 2 1
+A040	CF 2		; ↰ FLAGS 2 2
+A041	RTN		; ↰ RTN
+B001	LBL B		; ↱ LBL B
+B002	0		; 0 ENTER
+B003	STO F		; ↱ STO F
+B004	STO P		; ↱ STO P
+B005	STO A		; ↱ STO A
+B006	STO C		; ↱ STO C
+B007	STO D		; ↱ STO D
+B008	CLx		; ↱ CLEAR 1
+B009	0.693		; 0 . 6 9 3 ENTER
+B010	STO T		; ↱ STO T
+B011	CF 0		; ↰ FLAGS 2 0
+B012	CF 1		; ↰ FLAGS 2 1
+B013	CF 2		; ↰ FLAGS 2 2
+B014	CF 3		; ↰ FLAGS 2 3
+B015	CF 4		; ↰ FLAGS 2 4
+B016	SF 10		; ↰ FLAGS 1 . 0
+; EQN RCL F RCL R RCL E RCL Q ↱ STO F ENTER
+B017	eqn FREQ►F
+B018	PSE		; ↱ PSE
+B019	CF 10		; ↰ FLAGS 2 . 0
+B020	INPUT F		; ↰ INPUT F
+B021	x=0?		; ↱ x?0 6
+B022	SF 1		; ↰ FLAGS 1 1
+B023	SF 10		; ↰ FLAGS 1 . 0
+; EQN RCL T + ↱ STO P ENTER
+B024	eqn T+►P
+B025	PSE		; ↱ PSE
+B026	CF 10		; ↰ FLAGS 2 . 0
+B027	INPUT P		; ↰ INPUT P
+B028	SF 2		; ↰ FLAGS 1 2
+B029	x=0?		; ↱ x?0 6
+B030	GTO B042	; GTO B 0 4 2
+B031	CF 2		; ↰ FLAGS 2 2
+B032	STO M		; ↱ STO M
+B033	SF 10		; ↰ FLAGS 1 . 0
+; EQN RCL T - ↱ STO M ENTER
+B034	eqn T-►M
+B035	PSE		; ↱ PSE
+B036	CF 10		; ↰ FLAGS 2 . 0
+B037	INPUT M		; ↰ INPUT M
+B038	x=y?		; ↰ x?y 6
+B039	SF 0		; ↰ FLAGS 1 0
+B040	x≥y?		; ↰ x?y 5
+B041	SF 4		; ↰ FLAGS 1 4
+B042*	SF 10		; ↰ FLAGS 1 . 0
+; EQN RCL R 1 ↱ STO A ENTER
+B043	eqn R1►A
+B044	PSE		; ↱ PSE
+B045	CF 10		; ↰ FLAGS 2 . 0
+B046	INPUT A		; ↰ INPUT A
+B047	SF 3		; ↰ FLAGS 1 3
+B048	x=0?		; ↱ x?0 6
+B049	GTO B072	; GTO B 0 7 2
+B050	CF 3		; ↰ FLAGS 2 3
+B051	STO B		; ↱ STO B
+B052	FS? 0		; ↰ FLAGS 3 0
+B053	GTO B072	; GTO B 0 7 2
+B054	SF 10		; ↰ FLAGS 1 . 0
+; EQN RCL R 2 ↱ STO B ENTER
+B055	eqn R2►B
+B056	PSE		; ↱ PSE
+B057	CF 10		; ↰ FLAGS 2 . 0
+B058	INPUT B		; ↰ INPUT B
+B059	FS? 4		; ↰ FLAGS 3 4
+B060	GTO B072	; GTO B 0 7 2
+B061	SF 10		; ↰ FLAGS 1 . 0
+B062	0		; 0 ENTER
+; EQN RCL R 2 + RCL D ↱ SPACE RCL P RCL U RCL S RCL H ↱ SPACE RCL Y ENTER
+B063	eqn R2+D PUSH Y
+B064	CF 10		; ↰ FLAGS 2 . 0
+B065	2		; 2 ENTER
+B066	-		; -
+B067	x≠0?		; ↱ x?0 1
+B068	GTO B071	; GTO B 0 7 1
+B069	SF 4		; ↰ FLAGS 1 4
+B070	R↓		; R↓
+B071*	R↓		; R↓
+B072*	INPUT C		; ↰ INPUT C
+B073	x=0?		; ↱ x?0 6
+B074	GTO D029	; GTO D 0 2 9
+B075	FS? 3		; ↰ FLAGS 3 3
+B076	GTO D018	; GTO D 0 1 8
+B077	FS? 2		; ↰ FLAGS 3 2
+B078	GTO D002	; GTO D 0 0 2
+B079	FS? 1		; ↰ FLAGS 3 1
+B080	GTO D002	; GTO D 0 0 2
+B081	SF 10		; ↰ FLAGS 1 . 0
+; EQN RCL D RCL A RCL T RCL A ↱ SPACE RCL E RCL R RCL R RCL O RCL R ENTER
+B082	eqn DATA ERROR
+B083	CF 10		; ↰ FLAGS 2 . 0
+B084	STOP		; R/S
+B085	RTN		; ↰ RTN
+D001	LBL D		; ↱ LBL D
+D002*	STO× T		; ↱ STO × T
+D003	RCL T		; RCL T
+D004	RCL× B		; RCL × B
+D005	STO M		; ↱ STO M
+D006	RCL T		; RCL T
+D007	RCL A		; RCL A
+D008	FS? 4		; ↰ FLAGS 3 4
+D009	GTO D011	; GTO D 0 1 1
+D010	RCL+ B		; RCL + B
+D011*	×		; ×
+D012	STO P		; ↱ STO P
+D013	+		; +
+D014	STO T		; ↱ STO T
+D015	1/x		; 1/x
+D016	STO F		; ↱ STO F
+D017	GTO D045	; GTO D 0 4 5
+D018*	STO× T		; ↱ STO × T
+D019	RCL M		; RCL M
+D020	RCL÷ T		; RCL ÷ T
+D021	STO B		; ↱ STO B
+D022	RCL P		; RCL P
+D023	FS? 4		; ↰ FLAGS 3 4
+D024	GTO D026	; GTO D 0 2 6
+D025	RCL- M		; RCL - M
+D026*	RCL÷ T		; RCL ÷ T
+D027	STO A		; ↱ STO A
+D028	GTO D055	; GTO D 0 5 5
+D029*	x<>y		; x<>y
+D030	FS? 4		; ↰ FLAGS 3 4
+D031	x<>y		; x<>y
+D032	RCL+ B		; RCL + B
+D033	RCL+ A		; RCL + A
+D034	RCL× T		; RCL × T
+D035	RCL P		; RCL P
+D036	RCL+ M		; RCL + M
+D037	1/x		; 1/x
+D038	FS? 1		; ↰ FLAGS 3 1
+D039	STO F		; ↱ STO F
+D040	R↓		; R↓
+D041	RCL× F		; RCL × F
+D042	1/x		; 1/x
+D043	STO C		; ↱ STO C
+D044	GTO D059	; GTO D 0 5 9
+D045*	ENG 3		; ↰ DISPLAY 3 3
+D046	FS? 1		; ↰ FLAGS 3 1
+D047	VIEW F		; ↰ VIEW F
+D048	FS? 1		; ↰ FLAGS 3 1
+D049	GTO D052	; GTO D 0 5 2
+D050	VIEW T		; ↰ VIEW T
+D051	GTO D061	; GTO D 0 6 1
+D052*	VIEW P		; ↰ VIEW P
+D053	VIEW M		; ↰ VIEW M
+D054	GTO D061	; GTO D 0 6 1
+D055*	ENG 3		; ↰ DISPLAY 3 3
+D056	VIEW A		; ↰ VIEW A
+D057	VIEW B		; ↰ VIEW B
+D058	GTO D061	; GTO D 0 6 1
+D059*	ENG 3		; ↰ DISPLAY 3 3
+D060	VIEW C		; ↰ VIEW C
+D061*	ALL		; ↰ DISPLAY 4
+D062	FIX 4		; ↰ DISPLAY 1 4
+D063	CF 0		; ↰ FLAGS 2 0
+D064	CF 1		; ↰ FLAGS 2 1
+D065	CF 2		; ↰ FLAGS 2 2
+D066	CF 3		; ↰ FLAGS 2 3
+D067	CF 4		; ↰ FLAGS 2 4
+D068	RTN		; ↰ RTN
+; 🄲

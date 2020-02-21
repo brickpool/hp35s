@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.3.10] - 2020-02-19
+### Added
+- keystrokes support for expressions => `eqn 'TEXT'`
+
+### Fixed
+- key code `\CC` => `0x26`
+- keystroke `\|>` => `\+> STO \CC`
+- cross-program jump labels
+- successive jump labels (Parser `HPC.pm`)
+- option `--shortcut` or `-s`
+
 ## [0.3.9] - 2020-02-07
 ### Added
 - keystrokes support for clear programs (option `--clear` or `-c`)
@@ -162,7 +173,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - Initial version created
 
-[Unreleased]: https://github.com/brickpool/hp35s/compare/v0.3.9...HEAD
+[Unreleased]: https://github.com/brickpool/hp35s/compare/v0.3.10...HEAD
+[0.3.10]: https://github.com/brickpool/hp35s/compare/v0.3.9...v0.3.10
 [0.3.9]: https://github.com/brickpool/hp35s/compare/v0.3.8...v0.3.9
 [0.3.8]: https://github.com/brickpool/hp35s/compare/v0.3.7...v0.3.8
 [0.3.7]: https://github.com/brickpool/hp35s/compare/v0.3.6...v0.3.7

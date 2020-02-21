@@ -32,5 +32,5 @@ asm2hpc.pl -e -f J/J.asm | tools\uudecode.pl
 asm2hpc.pl -e -f O/O.asm | tools\uudecode.pl
 asm2hpc.pl -e -f P/P.asm | tools\uudecode.pl
 asm2hpc.pl -e -f Y/Y.asm | tools\uudecode.pl
-xcopy *.mac %APPDATA%\Hewlett-Packard\hp35s\Macros\
+xcopy *.mac %APPDATA%\Hewlett-Packard\hp35s\Macros\ /Y
 move *.mac ../macros
