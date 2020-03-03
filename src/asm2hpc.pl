@@ -20,7 +20,7 @@ use Encode;
 use File::Basename;
 
 # Declaration
-my $VERSION = 'v0.3.10';
+my $VERSION = 'v0.3.11';
 
 my $version;
 my $jumpmark;
@@ -500,9 +500,9 @@ my $tbl_char_seq = {
   'X'     => 'RCL X',
   'Y'     => 'RCL Y',
   'Z'     => 'RCL Z',
-  '['     => '\<+ [] \.> \BS',
+  '['     => '\+> [] \.> \BS',
   '\092'  => '\+> BASE 8',                # b
-  ']'     => '\<+ [] \BS \.>',
+  ']'     => '\+> [] \BS \.>',
   '^'     => 'y^x',
   '_'     => '',
   '\096'  => '\+> BASE 7',                # o
@@ -746,7 +746,7 @@ my $tbl_opt_seq = {
   'RCL X RCL R RCL O RCL O RCL T'                   => '\<+ x\v/y \.> \.> \BS \BS',     # XROOT
   # ()
   '() \.> \BS () \BS \.>'                           => '() \.>',                        # ()
-  '\<+ [] \.> \BS \<+ [] \BS \.>'                   => '\<+ [] \.>',                    # []
+  '\+> [] \.> \BS \+> [] \BS \.>'                   => '\+> [] \.>',                    # []
   # 7
   '\+> \->l \.> \BS \BS \BS \<+ ->\^oF \.> \BS \BS \BS \.< \BS \.> RCL F'
                                                     => '\<+ \->\^oF \.> \BS \BS',       # \->\^oF
@@ -1520,7 +1520,7 @@ if ($encoded) {
   $out = '';
   foreach (@lines) {
     next if /^$/;
-    # use only the key sequences
+    # use only the key strokes
     my $code = my $str = '';
     if (/^(.*?);\s*(.*?)$/) {
       $code = $1;
@@ -1529,7 +1529,7 @@ if ($encoded) {
     elsif (/^(.+)$/) {
       $code = $1;
     }
-    # map key sequences to hex
+    # map key strokes to hex
     my @enc = ();
     foreach my $key (split /\s+/, $str) {
       if (defined $tbl_char_macro->{$key}) {
@@ -1554,7 +1554,7 @@ if ($encoded) {
       my $filename = lc $codename;
       $out = "begin 644 $filename.mac\n";
     }
-    # use only the key sequences
+    # use only the key strokes
     $str =~ s/^.*?(?:;\s+|\n)//mg;
     # extending the key codes, in macro key pressed and released
     my $t = 0;
@@ -1577,7 +1577,7 @@ if ($encoded) {
   #  my $str = $out;
   #  # create header
   #  $out = "%%HP: T(3)A(D)F(.);\n";
-  #  # use only the key sequences
+  #  # use only the key strokes
   #  $str =~ s/^.*?(?:;\s+|\n)//mg;
   #  # delete all white spaces
   #  $str =~ s/\s+//g;
@@ -1980,12 +1980,17 @@ sub sprintf_expression_instruction {
       }
     }
 
-    # optimize key sequences
+    # optimize key strokes
     foreach (keys %$tbl_opt_seq) {
       my $a = quotemeta $_;
       my $b = $tbl_opt_seq->{$_};
       $keystrokes =~ s/$a/$b/g;
     }
+    # special case for '[]'
+    my ($a1, $a2) = map quotemeta, ' \+> [] \.> \BS', ' \+> [] \BS \.>';
+    while ($keystrokes =~ /^(.*?)$a1(.*?)$a2(.*?)$/) {
+      $keystrokes = $1.' \+> []'.$2.' \.>'.$3;
+    };
 
     $ret = sprintf("; EQN%s ENTER\n", $keystrokes);
   }

@@ -65,9 +65,9 @@ Prüfsummen:
 
 Quellenangabe:
 --------------
-Diese Text wurde aus Abschnitt 9H der nicht für kommerziellen Verwendung gedachten _Kopie_ "[Eine Programmsammlung für den HP-41](https://www.mh-aerotools.de/hp/heldermann/Eine%20Programmsammlung%20fuer%20den%20HP-41.pdf)" entnommen. Die _Kopie_ wurde mit freundlicher Genehmigung des (Heldermann Verlags)[http://www.heldermann.de/] bereitgestellt. Sie wurde von [Martin Hepperle](https://www.mh-aerotools.de/airfoils/footer_german.htm) im Jahr 2014 angefertigt.
+Diese Text wurde aus Abschnitt 9H der nicht für kommerziellen Verwendung gedachten _Kopie_ "[Eine Programmsammlung für den HP-41](https://www.mh-aerotools.de/hp/heldermann/Eine%20Programmsammlung%20fuer%20den%20HP-41.pdf)" entnommen. Die _Kopie_ wurde mit freundlicher Genehmigung des [Heldermann Verlags](http://www.heldermann.de/) bereitgestellt. Sie wurde von [Martin Hepperle](https://www.mh-aerotools.de/airfoils/footer_german.htm) im Jahr 2014 angefertigt.
 
-- Titel: Eine Programmsammlung für den HP-41
-- Kapitel: Peripherie-Bauteile des IC NE-555
-- Copyright: 1989, Heldermann Verlag
-- Autor: Burkhard Oerttel
+- **Titel**: Eine Programmsammlung für den HP-41
+- **Kapitel**: Peripherie-Bauteile des IC NE-555
+- **Copyright**: 1989, Heldermann Verlag
+- **Autor**: Burkhard Oerttel

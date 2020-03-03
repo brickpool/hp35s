@@ -6,9 +6,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.3.11] - 2020-03-02
+### Added
+- keystroke optimization for vector expressions => ` eqn '[A,B]'`
+
+### Fixed
+- keystroke `[` => `\+> [] \.> \BS`
+- keystroke `]` => `\+> [] \BS \.>`
+
 ## [0.3.10] - 2020-02-19
 ### Added
-- keystrokes support for expressions => `eqn 'TEXT'`
+- keystroke support for expressions => `eqn 'TEXT'`
 
 ### Fixed
 - key code `\CC` => `0x26`
@@ -137,11 +145,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - keystrokes (option `--shortcut` or `-s`)
 
 ### Fixed
-- bugfix <-ENG
+- bugfix `<-ENG`
 
 ## 0.2.2 - 2019-05-08
 ### Added
-- support r &theta; a
+- support 'r &theta; a'
 
 ## 0.2.1 - 2019-05-07
 ### Fixed
@@ -159,7 +167,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - use of Parser::HPC
 
 ### Fixed
-- bugfix GTO add parser (Parser::HPC)
+- bugfix GTO in Parser::HPC
 
 ## 0.1.2 - 2019-04-29
 ### Changed
@@ -173,7 +181,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - Initial version created
 
-[Unreleased]: https://github.com/brickpool/hp35s/compare/v0.3.10...HEAD
+[Unreleased]: https://github.com/brickpool/hp35s/compare/v0.3.11...HEAD
+[0.3.11]: https://github.com/brickpool/hp35s/compare/v0.3.10...v0.3.11
 [0.3.10]: https://github.com/brickpool/hp35s/compare/v0.3.9...v0.3.10
 [0.3.9]: https://github.com/brickpool/hp35s/compare/v0.3.8...v0.3.9
 [0.3.8]: https://github.com/brickpool/hp35s/compare/v0.3.7...v0.3.8

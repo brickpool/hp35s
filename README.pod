@@ -8,7 +8,7 @@ The I<machine code> is not directly available, a well-formatted, ready-to-use fo
 
 The associated key commands can optionally be output as a comment by the assembler (option C<-s>).
 
-It can be very helpful to import the source code (C<*.asm>) into the emulator (C<*.ep>) using macros to test the program logic (C<marco/*.mac> option C<-e>).
+It can be very helpful to import the source code (C<*.asm>) into the emulator (C<*.ep>) using macros to test the program logic (C<marcos/*.mac> option C<-e>).
 
 Further information can be found in the L<wiki|https://github.com/brickpool/hp35s/wiki>
 
