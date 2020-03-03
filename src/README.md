@@ -10,7 +10,7 @@ asm2hpc.pl --help
 USAGE:
   c:> type <asm-file> | perl asm2hpc.pl [options] 1> outfile.35s 2> outfile.err
 
-VERSION: 0.3.9
+VERSION: v0.3.11
   Web: http://www.brickpool.de/
 
 OPTIONS:

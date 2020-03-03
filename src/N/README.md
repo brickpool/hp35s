@@ -2,7 +2,7 @@ General purpose single bipolar timers
 =====================================
 This program is inspired by a third party program _"Peripherie-Bauteile des IC NE-555"_, which was design for the _HP41C_ by Burkhard Oerttel.
 
-The _NE555_ monolithic timing circuit producing time delays or oscillation. Further information on component _NE555_ can be found in the [datasheet](https://www.st.com/resource/en/datasheet/CD00000479.pdf) or in [Wikipedia](https://en.wikipedia.org/wiki/555_timer_IC).
+The _NE555_ monolithic timing circuit producing time delays or oscillation. Further information on component _NE555_ can be found in the [datasheet](https://www.st.com/resource/en/datasheet/CD00000479.pdf) or at [Wikipedia](https://en.wikipedia.org/wiki/555_timer_IC).
 
 The following variables are used for both operating modes.
 
@@ -10,10 +10,10 @@ The following variables are used for both operating modes.
 - (0): Constant ln(3)
 - (1): Constant ln(2)
 
-### Load Prg I
+### Load Prg N
 
 ```
-XEQ I ENTER
+XEQ N ENTER
 ```
 
 ### Run
