@@ -1,0 +1,104 @@
+; 🄲 ↱ PRGM
+C001	LBL C		; ↱ LBL C
+C002	INPUT L		; ↰ INPUT L
+C003	RND		; ↱ RND
+C004	STO N		; ↱ STO N
+C005*	INPUT G		; ↰ INPUT G
+C006	RCL L		; RCL L
+C007	STO X		; ↱ STO X
+C008	10ˣ		; ↰ 10ˣ
+C009	STO÷ G		; ↱ STO ÷ G
+C010	0		; 0 ENTER
+C011	STO S		; ↱ STO S
+C012	STO T		; ↱ STO T
+C013	STO U		; ↱ STO U
+C014	STO V		; ↱ STO V
+C015	RCL N		; RCL N
+C016	STO M		; ↱ STO M
+C017*	10		; 1 0 ENTER
+C018	STO× M		; ↱ STO × M
+C019	STO× G		; ↱ STO × G
+C020	RCL M		; RCL M
+C021	IP		; ↰ INTG 6
+C022	STO A		; ↱ STO A
+C023	RCL M		; RCL M
+C024	FP		; ↰ INTG 5
+C025	STO M		; ↱ STO M
+C026	RCL G		; RCL G
+C027	IP		; ↰ INTG 6
+C028	STO B		; ↱ STO B
+C029	RCL G		; RCL G
+C030	FP		; ↰ INTG 5
+C031	STO G		; ↱ STO G
+C032	RCL A		; RCL A
+C033	RCL B		; RCL B
+C034	x=y?		; ↰ x?y 6
+C035	GTO C043	; GTO C 0 4 3
+C036	STO+ U		; ↱ STO + U
+C037	R↓		; R↓
+C038	STO+ V		; ↱ STO + V
+C039	10		; 1 0 ENTER
+C040	STO÷ V		; ↱ STO ÷ V
+C041	STO÷ U		; ↱ STO ÷ U
+C042	GTO C045	; GTO C 0 4 5
+C043*	1		; 1 ENTER
+C044	STO+ S		; ↱ STO + S
+C045*	DSE X		; ↱ DSE X
+C046	GTO C017	; GTO C 0 1 7
+C047	RCL U		; RCL U
+C048	STO G		; ↱ STO G
+C049	RCL L		; RCL L
+C050	RCL S		; RCL S
+C051	-		; -
+C052	STO X		; ↱ STO X
+C053	x=0?		; ↱ x?0 6
+C054	GTO C101	; GTO C 1 0 1
+C055*	RCL V		; RCL V
+C056	STO M		; ↱ STO M
+C057	0		; 0 ENTER
+C058	STO V		; ↱ STO V
+C059	10		; 1 0 ENTER
+C060	STO× G		; ↱ STO × G
+C061	RCL G		; RCL G
+C062	IP		; ↰ INTG 6
+C063	STO B		; ↱ STO B
+C064	RCL G		; RCL G
+C065	FP		; ↰ INTG 5
+C066	STO G		; ↱ STO G
+C067	RCL L		; RCL L
+C068	RCL S		; RCL S
+C069	-		; -
+C070	RCL T		; RCL T
+C071	-		; -
+C072	STO Y		; ↱ STO Y
+C073*	10		; 1 0 ENTER
+C074	STO× M		; ↱ STO × M
+C075	RCL M		; RCL M
+C076	IP		; ↰ INTG 6
+C077	STO A		; ↱ STO A
+C078	RCL M		; RCL M
+C079	FP		; ↰ INTG 5
+C080	STO M		; ↱ STO M
+C081	RCL B		; RCL B
+C082	RCL A		; RCL A
+C083	x=y?		; ↰ x?y 6
+C084	GTO C089	; GTO C 0 8 9
+C085	STO+ V		; ↱ STO + V
+C086	10		; 1 0 ENTER
+C087	STO÷ V		; ↱ STO ÷ V
+C088	GTO C093	; GTO C 0 9 3
+C089*	1		; 1 ENTER
+C090	STO+ T		; ↱ STO + T
+C091	+/-		; +/-
+C092	STO B		; ↱ STO B
+C093*	DSE Y		; ↱ DSE Y
+C094	GTO C073	; GTO C 0 7 3
+C095	DSE X		; ↱ DSE X
+C096	GTO C055	; GTO C 0 5 5
+C097	RCL T		; RCL T
+C098	10		; 1 0 ENTER
+C099	÷		; ÷
+C100	STO+ S		; ↱ STO + S
+C101*	VIEW S		; ↰ VIEW S
+C102	GTO C005	; GTO C 0 0 5
+; 🄲
