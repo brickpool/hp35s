@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - keystroke optimization for jump to `LBL` => `GTO A` or `XEQ A`
 
+### Fixed
+- keystroke `RCL 0` => `RCL (I)`
+- keystroke `RCL .` => `RCL (J)`
+
 ## [0.3.11] - 2020-03-02
 ### Added
 - keystroke optimization for vector expressions => `eqn '[A,B]'`

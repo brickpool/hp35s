@@ -674,11 +674,11 @@ D630	PSE		; ↱ PSE
 D631	x<> S		; ↰ x≶ S
 D632	RTN		; ↰ RTN
 D633*	CF 10		; ↰ FLAGS 2 . 0
-; EQN ↰ [] > ⇦ 0 ↰ , 0 ↰ , 1 ↰ [] ⇦ > × R↓ 1 ENTER
+; EQN ↱ [] 0 ↰ , 0 ↰ , 1 > × R↓ 1 ENTER
 D634	eqn [0,0,1]×REGX
-; EQN ↰ [] > ⇦ 0 ↰ , 1 ↰ , 0 ↰ [] ⇦ > × R↓ 2 ENTER
+; EQN ↱ [] 0 ↰ , 1 ↰ , 0 > × R↓ 2 ENTER
 D635	eqn [0,1,0]×REGY
-; EQN ↰ [] > ⇦ 1 ↰ , 0 ↰ , 0 ↰ [] ⇦ > × R↓ 3 ENTER
+; EQN ↱ [] 1 ↰ , 0 ↰ , 0 > × R↓ 3 ENTER
 D636	eqn [1,0,0]×REGZ
 D637	SF 10		; ↰ FLAGS 1 . 0
 D638	RTN		; ↰ RTN

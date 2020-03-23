@@ -144,7 +144,7 @@ E142	R↓		; R↓
 E143	STO P		; ↱ STO P
 E144	RCL R		; RCL R
 E145	STO Q		; ↱ STO Q
-; EQN ↱ [] RCL S × RCL X ↰ , RCL . ↰ , RCL P > ENTER
+; EQN ↱ [] RCL S × RCL X ↰ , RCL (J) ↰ , RCL P > ENTER
 E146	eqn [S×X,(J),P]
 E147	STO R		; ↱ STO R
 E148	PSE		; ↱ PSE
