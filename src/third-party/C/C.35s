@@ -1,7 +1,7 @@
 ; 🄲 ↱ PRGM
 C001	LBL C		; ↱ LBL C
 C002	INPUT L		; ↰ INPUT L
-C003	RND		; ↱ RND
+C003	RANDOM		; ↱ RAND
 C004	STO N		; ↱ STO N
 C005*	INPUT G		; ↰ INPUT G
 C006	RCL L		; RCL L
