@@ -1,3 +1,4 @@
+; 🄲 ↱ PRGM
 M001	LBL M		; ↱ LBL M
 M002	XEQ M015	; XEQ M 0 1 5
 M003*	XEQ M033	; XEQ M 0 3 3
@@ -45,8 +46,10 @@ M044	x<>y		; x<>y
 M045	x≤y?		; ↰ x?y 2
 M046	GTO M050	; GTO M 0 5 0
 M047	GTO M052	; GTO M 0 5 2
+; EQN RCL P RCL L RCL A RCL Y RCL E RCL R ↱ SPACE 1 ↱ SPACE RCL W RCL O RCL N ENTER
 M048*	eqn PLAYER 1 WON
 M049	GTO M051	; GTO M 0 5 1
+; EQN RCL P RCL L RCL A RCL Y RCL E RCL R ↱ SPACE 2 ↱ SPACE RCL W RCL O RCL N ENTER
 M050*	eqn PLAYER 2 WON
 M051*	SF 3		; ↰ FLAGS 1 3
 M052*	CF 10		; ↰ FLAGS 2 . 0
@@ -134,7 +137,7 @@ M133	SF 4		; ↰ FLAGS 1 4
 M134*	RCL I		; RCL I
 M135	RTN		; ↰ RTN
 M136*	0		; 0 ENTER
-M137	x<>(I)		; ↰ x<>y (I)
+M137	x<>(I)		; ↰ x≶ (I)
 M138	STO J		; ↱ STO J
 M139*	1		; 1 ENTER
 M140	RCL I		; RCL I
@@ -186,7 +189,7 @@ M185	R↓		; R↓
 M186	x>y?		; ↰ x?y 4
 M187	RTN		; ↰ RTN
 M188*	CLx		; ↱ CLEAR 1
-M189	x<>(I)		; ↰ x<>y (I)
+M189	x<>(I)		; ↰ x≶ (I)
 M190	STO+(J)		; ↱ STO + (J)
 M191	CLx		; ↱ CLEAR 1
 M192	14		; 1 4 ENTER
@@ -194,7 +197,7 @@ M193	x<>y		; x<>y
 M194	-		; -
 M195	STO I		; ↱ STO I
 M196	0		; 0 ENTER
-M197	x<>(I)		; ↰ x<>y (I)
+M197	x<>(I)		; ↰ x≶ (I)
 M198	STO+(J)		; ↱ STO + (J)
 M199	RTN		; ↰ RTN
 M200*	7		; 7 ENTER
@@ -219,3 +222,4 @@ M218	CF 4		; ↰ FLAGS 2 4
 M219	FIX 4		; ↰ DISPLAY 1 4
 M220	DEG		; MODE 1
 M221	RTN		; ↰ RTN
+; 🄲
