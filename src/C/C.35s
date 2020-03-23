@@ -1,3 +1,4 @@
+; 🄲 ↱ PRGM
 C001	LBL C		; ↱ LBL C
 C002	RPN		; MODE 5
 C003	CF 0		; ↰ FLAGS 2 0
@@ -55,7 +56,7 @@ C051	6		; 6 ENTER
 C052	x=y?		; ↰ x?y 6
 C053	SF 0		; ↰ FLAGS 1 0
 C054*	SF 10		; ↰ FLAGS 1 . 0
-; EQN STO 🄲 RCL 0 ENTER
+; EQN ↱ STO 🄲 RCL (I) ENTER
 C055	eqn ►(I)
 C056	CF 10		; ↰ FLAGS 2 . 0
 C057	x=0?		; ↱ x?0 6
@@ -78,3 +79,4 @@ C073	CF 0		; ↰ FLAGS 2 0
 C074	STO V		; ↱ STO V
 C075	VIEW V		; ↰ VIEW V
 C076	RTN		; ↰ RTN
+; 🄲

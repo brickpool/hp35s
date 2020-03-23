@@ -1,5 +1,4 @@
 %%HP: T(3)A(D)F(.);
-; \CC \+> PRGM
 N001	LBL N
 N002	RPN
 N003	CL\GS
@@ -226,4 +225,3 @@ B099	1/x
 B100	STO C
 B101	VIEW C
 B102	RTN
-; \CC

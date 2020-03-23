@@ -1,3 +1,4 @@
+; 🄲 ↱ PRGM
 P001	LBL P		; ↱ LBL P
 P002	RPN		; MODE 5
 P003	SF 10		; ↰ FLAGS 1 . 0
@@ -77,3 +78,4 @@ P075	RCL× P		; RCL × P
 P076*	STO R		; ↱ STO R
 P077	VIEW R		; ↰ VIEW R
 P078	RTN		; ↰ RTN
+; 🄲
