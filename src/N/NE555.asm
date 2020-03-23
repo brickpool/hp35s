@@ -1,4 +1,4 @@
-; NE555 - General purpose single bipolar timer IC
+; General purpose single bipolar timer IC NE555
 MODEL P35S
 
 SEGMENT NE555 CODE

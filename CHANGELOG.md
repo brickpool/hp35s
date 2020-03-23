@@ -6,9 +6,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+- keystroke optimization for jump to `LBL` => `GTO A` or `XEQ A`
+
 ## [0.3.11] - 2020-03-02
 ### Added
-- keystroke optimization for vector expressions => ` eqn '[A,B]'`
+- keystroke optimization for vector expressions => `eqn '[A,B]'`
 
 ### Fixed
 - keystroke `[` => `\+> [] \.> \BS`
@@ -182,7 +185,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Initial version created
 
 [Unreleased]: https://github.com/brickpool/hp35s/compare/v0.3.11...HEAD
-[0.3.11]: https://github.com/brickpool/hp35s/compare/v0.3.10...v0.3.11
 [0.3.10]: https://github.com/brickpool/hp35s/compare/v0.3.9...v0.3.10
 [0.3.9]: https://github.com/brickpool/hp35s/compare/v0.3.8...v0.3.9
 [0.3.8]: https://github.com/brickpool/hp35s/compare/v0.3.7...v0.3.8

@@ -1317,7 +1317,7 @@ foreach my $seg ( @segments ) {
 
 # clear program
 CLEAR: {
-  $out .= '; \+> CLEAR 3 \.< ENTER'.$/ if $clear;
+  $out .= '; \+> CLEAR 3 \.< ENTER'.$/ if $shortcut && $clear;
 }
 
 ### first handle the stack segment
@@ -1346,11 +1346,13 @@ foreach my $seq ( @segments ) {
     # t, z, y, x
     SWITCH: for ($reg) {
       /REGT/ && do {
-        push @stack, $value;  # x, t, z, [v]
+                              # t, z, y, x
+        push @stack, $value;  # z, y, x, [v]
         push @stack, 'Rv';    # [v], z, y, x
         last;
       };
       /REGZ/ && do {
+                              # t, z, y, x
         push @stack, 'R^';    # z, y, x, t
         push @stack, $value;  # y, x, t, [v]
         push @stack, 'Rv';    # [v], y, x, t
@@ -1358,6 +1360,7 @@ foreach my $seq ( @segments ) {
         last;
       };
       /REGY/ && do {
+                              # t, z, y, x
         push @stack, 'Rv';    # x, t, z, y
         push @stack, 'Rv';    # y, x, t, z
         push @stack, $value;  # x, t, z, [v]
@@ -1365,6 +1368,7 @@ foreach my $seq ( @segments ) {
         last;
       };
       /REGX/ && do {
+                              # t, z, y, x
         push @stack, 'Rv';    # x, t, z, y
         push @stack, $value;  # t, z, y, [v]
         last;
@@ -1395,7 +1399,7 @@ foreach my $seq ( @segments ) {
 
 # start programing
 PRGM: {
-  $out .= '; \CC \+> PRGM'.$/;
+  $out .= '; \CC \+> PRGM'.$/ if $shortcut;
 }
 
 ### now handle all code segments
@@ -1501,7 +1505,7 @@ foreach my $seq ( @segments ) {
 
 # stop programing
 STOP: {
-  $out .= '; \CC'.$/;
+  $out .= '; \CC'.$/ if $shortcut;
 }
 
 ### print to STDOUT
@@ -1825,6 +1829,8 @@ sub sprintf_address_instruction {
     );
     $keystrokes .= join(' ', split//, $addr);
   }
+  # optimization for first addr (e.g. 'A 0 0 1' -> 'A ENTER')
+  $keystrokes =~ s/([A-Z]) 0 0 1/$1 ENTER/;
   return sprintf("%s\t%s %s%s\n", $line, $mnemonic, $addr, $keystrokes);
 }
 
@@ -1856,6 +1862,8 @@ sub sprintf_label_instruction {
         $mnemonic
       );
       $keystrokes .= join(' ', split//, $addr);
+      # optimization for first addr (e.g. 'A 0 0 1' -> 'A ENTER')
+      $keystrokes =~ s/([A-Z]) 0 0 1/$1 ENTER/;
     }
     return sprintf("%s\t%s %s%s\n", $line, $mnemonic, $addr, $keystrokes);
   }

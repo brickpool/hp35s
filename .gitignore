@@ -13,8 +13,14 @@ _gsdata_/
 /extras/CBT
 /extras/docs
 /extras/Emulator
+/extras/HP Learning Modules
+/extras/Inside
 /extras/Character-Set.tgn
 /extras/Character-Set.pptx
 
 # Ignore test files
 /src/xt/*.*
+/src/*.mac
+
+# Ignore 3rd-party files
+/src/third-party/C4
