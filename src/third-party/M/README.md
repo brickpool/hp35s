@@ -4,8 +4,6 @@ This program is by Dan B. and is used here by permission.
 
 Please visit [Dan's GitHub Pages](https://brianddk.github.io/2016/05/hp-42s-mancala/) for more information.
 
-The original listing is stored in the file `mancala.asm`
-
 ## Header
 
 ```
@@ -80,7 +78,9 @@ The original listing is stored in the file `mancala.asm`
 ;   'RAD'   - Player2's turn when 'RAD' is displayed
 ```
 
-## Assembler
+## Listing
+
+The original listing is stored in the file `mancala.asm`.
 
 There are a few language differences to the original listing
 

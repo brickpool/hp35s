@@ -82,6 +82,7 @@ For an oscillator, the frequency and the duty cycle are controlled with two exte
 
 The following flags and additional variables are used:
 
+- 0: direct call of program `B`
 - 4: Diode parallel R2
 - F: Frequency oscillation f
 - A: Resistance R1
