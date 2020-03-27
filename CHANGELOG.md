@@ -6,7 +6,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.3.12] - 2020-03-27
 ### Added
+- support of the 41 physics built-in constants (CONST Menu)
 - keystroke optimization for jump to `LBL` => `GTO A` or `XEQ A`
 
 ### Fixed

@@ -14,13 +14,23 @@ use strict;
 use warnings;
 
 use Getopt::Long;
-use Parser::HPC qw(@instructions @with_address @with_digits @with_variables @with_indirects @expressions @functions @register);
+use Parser::HPC qw(
+  @constants
+  @instructions
+  @with_address
+  @with_digits
+  @with_variables
+  @with_indirects
+  @expressions
+  @functions
+  @register
+);
 use Data::Dumper;
 use Encode;
 use File::Basename;
 
 # Declaration
-my $VERSION = 'v0.3.11';
+my $VERSION = 'v0.3.12';
 
 my $version;
 my $jumpmark;
@@ -133,6 +143,51 @@ use constant _rsh       => "\N{U+21B1}";
 use constant _lg        => "\N{U+2276}";
 
 
+# Constant mapping
+my $tbl_const_3graph = {
+  'c'   => '\016',
+  'g'   => '\^g',
+  'G'   => '\018',
+  'Vm'  => '\^V\^m',
+  'NA'  => '\^N\015',
+  'Rb'  => '\^R\oo',
+  'eV'  => '\^e\^V',
+  'me'  => '\^m\^e',
+  'mp'  => '\^m\^p',
+  'mn'  => '\^m\^n',
+  'mu'  => '\^m\Gm',
+  'k'   => '\^k',
+  'h'   => '\^h',
+  '\h-' => '\023',
+  'Ph0' => '\O/\021',
+  'a0'  => '\^a\021',
+  'e0'  => '\Ge\021',
+  'R'   => '\020',
+  'F'   => '\017',
+  'u'   => '\^u',
+  'u0'  => '\Gm\021',
+  'uB'  => '\Gm\^B',
+  'uN'  => '\Gm\^N',
+  'up'  => '\Gm\^p',
+  'ue'  => '\Gm\^e',
+  'un'  => '\Gm\^n',
+  'uu'  => '\Gm\Gm',
+  're'  => '\^r\^e',
+  'Z0'  => '\^Z\021',
+  'lc'  => '\Gl\^c',
+  'lcn' => '\Gl\^c\^n',
+  'lcp' => '\Gl\^c\^p',
+  'a'   => '\Ga',
+  'z'   => '\157',
+  't'   => '\024',
+  'atm' => '\167\^t\^m',
+  'gp'  => '\Gg\^p',
+  'C1'  => '\^C\^1',
+  'C2'  => '\^C\^2',
+  'G0'  => '\^G\021',
+  'e'   => '\^e',
+};
+
 # Instruction mapping
 my $tbl_instr_3graph = {
   # G1
@@ -210,7 +265,53 @@ my $tbl_instr_3graph = {
   'y^x'   => 'y\^x',
 };
 
-# Key sequences
+
+# Constant keystrokes
+my $tbl_const_seq = {
+  '\016'        => '\<+ CONST 1',
+  '\^g'         => '\<+ CONST 2',
+  '\018'        => '\<+ CONST 3',
+  '\^V\^m'      => '\<+ CONST 4',
+  '\^N\015'     => '\<+ CONST 5',
+  '\^R\oo'      => '\<+ CONST 6',
+  '\^e\^V'      => '\<+ CONST \.v 1',
+  '\^m\^e'      => '\<+ CONST \.v 2',
+  '\^m\^p'      => '\<+ CONST \.v 3',
+  '\^m\^n'      => '\<+ CONST \.v 4',
+  '\^m\Gm'      => '\<+ CONST \.v 5',
+  '\^k'         => '\<+ CONST \.v \.v 1',
+  '\^h'         => '\<+ CONST \.v \.v 2',
+  '\023'        => '\<+ CONST \.v \.v 3',
+  '\O/\021'     => '\<+ CONST \.v \.v 4',
+  '\^a\021'     => '\<+ CONST \.v \.v 5',
+  '\Ge\021'     => '\<+ CONST \.v \.v 6',
+  '\020'        => '\<+ CONST \.v \.v \.v 1',
+  '\017'        => '\<+ CONST \.v \.v \.v 2',
+  '\^u'         => '\<+ CONST \.v \.v \.v 3',
+  '\Gm\021'     => '\<+ CONST \.v \.v \.v 4',
+  '\Gm\^B'      => '\<+ CONST \.v \.v \.v 5',
+  '\Gm\^N'      => '\<+ CONST \.v \.v \.v 6',
+  '\Gm\^p'      => '\<+ CONST \.v \.v \.v \.v 1',
+  '\Gm\^e'      => '\<+ CONST \.v \.v \.v \.v 2',
+  '\Gm\^n'      => '\<+ CONST \.v \.v \.v \.v 3',
+  '\Gm\Gm'      => '\<+ CONST \.v \.v \.v \.v 4',
+  '\^r\^e'      => '\<+ CONST \.v \.v \.v \.v 5',
+  '\^Z\021'     => '\<+ CONST \.^ \.^ \.^ 1',
+  '\Gl\^c'      => '\<+ CONST \.^ \.^ \.^ 2',
+  '\Gl\^c\^n'   => '\<+ CONST \.^ \.^ \.^ 3',
+  '\Gl\^c\^p'   => '\<+ CONST \.^ \.^ \.^ 4',
+  '\Ga'         => '\<+ CONST \.^ \.^ 1',
+  '\157'        => '\<+ CONST \.^ \.^ 2',
+  '\024'        => '\<+ CONST \.^ \.^ 3',
+  '\167\^t\^m'  => '\<+ CONST \.^ \.^ 4',
+  '\Gg\^p'      => '\<+ CONST \.^ \.^ 5',
+  '\^C\^1'      => '\<+ CONST \.^ 1',
+  '\^C\^2'      => '\<+ CONST \.^ 2',
+  '\^G\021'     => '\<+ CONST \.^ 3',
+  '\^e'         => '\<+ CONST \.^ 4',
+};
+
+# Instruction keystrokes
 my $tbl_instr_seq = {
   # G2
   '10\^x'   => '\<+ 10\^x',
@@ -377,7 +478,7 @@ my $tbl_instr_seq = {
   '\y^'     => '\<+ L.R. 2',
 };
 
-# number sequences
+# number keystokes
 my $tbl_num_seq = {
   'dec' => '\CC \+> BASE 1 \+> PRGM',
   'hex' => '\CC \+> BASE 2 \+> PRGM',
@@ -408,7 +509,7 @@ my $tbl_num_seq = {
   '.'   => '.',
 };
 
-# EQN sequences
+# EQN keystokes
 my $tbl_char_seq = {
   # NUL
   '\^b'   => '',
@@ -676,7 +777,7 @@ my $tbl_char_seq = {
   '}'     => '',
 };
 
-# Optimize sequences
+# Optimize keystokes
 my $tbl_opt_seq = {
   # CONST
   '\<+ CONST 4 \BS \<+ CONST \.v 2 \BS'             => '\<+ CONST 4',                   # \^V\^m
@@ -702,7 +803,7 @@ my $tbl_opt_seq = {
   '\<+ CONST \.v \.v \.v 4 \BS \<+ CONST \.v \.v \.v 4 \BS'
                                                     => '\<+ CONST \.v \.v \.v \.v 4',   # \Gm\Gm
   '\<+ CONST \.v \.v \.v \.v 5 \BS \<+ CONST \.v 4 \.< \BS \.>'
-                                                    => '\<+ CONST \.v \.v \.v \.v 5',   # \^r\^n
+                                                    => '\<+ CONST \.v \.v \.v \.v 5',   # \^r\^e
   '\<+ CONST \.^ \.^ \.^ 1 \BS \<+ CONST \.^ 3 \BS' => '\<+ CONST \.^ \.^ \.^ 1',       # \^Z\021
   '\<+ CONST \.^ \.^ \.^ 2 \BS \<+ CONST \.^ \.^ 2 \.< \BS \.>'
                                                     => '\<+ CONST \.^ \.^ \.^ 2',       # \Gl\^c
@@ -1430,6 +1531,10 @@ foreach my $seq ( @segments ) {
       warn "missing 'type' in statement '$statement'\n" and next;
 
     SWITCH: for ($entry->{type}) {
+      /constant/ && do {
+        $out .= sprintf_constant_statement( $entry->{line}, $statement );
+        last;
+      };
       /decimal|binary|octal|hex/ && do {
         $out .= sprintf_number_statement( $entry->{line}, $statement );
         last;
@@ -1638,6 +1743,21 @@ print STDOUT $out;
 
 ###############################
 # Here are the subs 
+
+# constant statement
+sub sprintf_constant_statement {
+  my $line = shift;
+  my $const = shift;
+  my $keystrokes = '';
+
+  exists $tbl_const_3graph->{$const} and
+    $const = $tbl_const_3graph->{$const};
+
+  defined $shortcut and
+    $keystrokes = sprintf("\t\t; %s", exists $tbl_const_seq->{$const} ? $tbl_const_seq->{$const} : $const);
+
+  return sprintf("%s\t%s%s\n", $line, $const, $keystrokes);
+}
 
 # number statement
 sub sprintf_number_statement {

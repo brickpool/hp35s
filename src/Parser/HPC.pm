@@ -30,7 +30,17 @@ use strict;
 use warnings;
 
 use Exporter;
-our @EXPORT = qw(@instructions @with_address @with_digits @with_variables @with_indirects @expressions @functions @register);
+our @EXPORT = qw(
+  @constants
+  @instructions
+  @with_address
+  @with_digits
+  @with_variables
+  @with_indirects
+  @expressions
+  @functions
+  @register
+);
 require Parser::MGC;
 our @ISA = qw(Exporter Parser::MGC);
 
@@ -64,6 +74,50 @@ my @languages = (
 
 my @segments = (
   'DATA', 'CODE', 'STACK',
+);
+
+our @constants = (
+  'c',    # Speed of light in vacuum
+  'g',    # Standard acceleration of gravity
+  'G',    # Newtonian constant of gravitation
+  'Vm',   # Molar volume of ideal gas
+  'NA',   # Avogadro constant
+  'Rb',   # Rydberg constant
+  'eV',   # Elementary charge
+  'me',   # Electron mass
+  'mp',   # Proton mass
+  'mn',   # Neutron mass
+  'mu',   # Muon mass
+  'k',    # Boltzmann constant
+  'h',    # Planck constant
+  '\h-',  # Planck constant over 2 pi
+  'Ph0',  # Magnetic flux quantum
+  'a0',   # Bohr radius
+  'e0',   # Electric constant
+  'R',    # Molar gas constant
+  'F',    # Faraday constant
+  'u',    # Atomic mass constant
+  'u0',   # Magnetic constant
+  'uB',   # Bohr magneton
+  'uN',   # Nuclear magneton
+  'up',   # Proton magnetic moment
+  'ue',   # Electron magnetic moment
+  'un',   # Neutron magnetic moment
+  'uu',   # Muon magnetic moment
+  're',   # Classical electron radius
+  'Z0',   # Characteristic impendence of vacuum
+  'lc',   # Compton wavelength
+  'lcn',  # Neutron Compton wavelength
+  'lcp',  # Proton Compton wavelength
+  'a',    # Fine structure constant
+  'z',    # Stefan–Boltzmann constant
+  't',    # Celsius temperature
+  'atm',  # Standard atmosphere
+  'gp',   # Proton gyromagnetic ratio
+  'C1',   # First radiation constant
+  'C2',   # Second radiation constant
+  'G0',   # Conductance quantum
+  'e',    # The base number of natural logarithm
 );
 
 our @instructions = (
@@ -335,10 +389,20 @@ sub new {
   # A symbol represents a value, which can be a variable, address label, 
   # or an operand to an assembly instruction and directive
   # store predefined symbols
-  my %variables = map { $_ => 'variable' } 'A'..'Z', @register;
-  my %directives = map { $_ => 'directive' } @directives, @languages, @predefined;
-  my %opcodes  = map { $_ => 'opcode' } @instructions, @with_address, @with_digits, @with_variables, @with_indirects, @expressions, @functions;
-  $self->{_symbols} = { %variables, %directives, %opcodes };
+  my %constants   = map { $_ => 'constant'  } @constants;
+  my %variables   = map { $_ => 'variable'  } 'A'..'Z',
+                                              @register;
+  my %directives  = map { $_ => 'directive' } @directives,
+                                              @languages,
+                                              @predefined;
+  my %opcodes     = map { $_ => 'opcode'    } @instructions,
+                                              @with_address,
+                                              @with_digits,
+                                              @with_variables,
+                                              @with_indirects,
+                                              @expressions,
+                                              @functions;
+  $self->{_symbols} = { %constants, %variables, %directives, %opcodes };
 
   # Labels allow you to name the positions of specific instructions
   $self->{_labels} = undef;
@@ -707,6 +771,7 @@ sub parse_code_statement {
   my $ret = $self->any_of(
     sub {
       $mnemonic = $self->token_kw_operation(
+        @constants,
         @instructions,
         @with_address,
         @with_variables,
@@ -742,7 +807,15 @@ sub parse_code_statement {
   if ( defined $mnemonic ) {
 
     my $operand;
-    if ( grep { $_ eq $mnemonic } @instructions, @functions, @register ) {
+    if ( grep { $_ eq $mnemonic } @constants ) {
+      # constants
+      $statement = {
+        $mnemonic => {
+          type => 'constant',
+        }
+      };
+    }
+    elsif ( grep { $_ eq $mnemonic } @instructions, @functions, @register ) {
       # instructions without an operand
       $statement = {
         $mnemonic => {
