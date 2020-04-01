@@ -1,8 +1,0 @@
-J001  LBL J  
-J002  RPN  
-J003  INPUT I  
-J004  INPUT A  
-J005  &divide;  
-J006  STO J  
-J007  VIEW J  
-J008  RTN  

@@ -1,0 +1,80 @@
+=head1 NAME
+
+HP-35s Examples
+
+=head1 DESCRIPTION
+
+Some useful examples for the Assembler C<asm2hpc.pl>.
+
+The Assembler could build and work only on Windows-based systems. If it does
+not, please submit a Issue.
+
+=head1 INSTALLATION
+
+To generate the listing and macro files type the following:
+
+  dmake
+
+To install the macro files to your I<HP 35s emulator> program folder type the
+following:
+
+  dmake install
+
+For clean up:
+
+  dmake clean
+  dmake realclean
+
+=head1 DEPENDENCIES
+
+All examples requires these programs and modules:
+
+=over
+
+=item *
+
+Perl
+
+=item *
+
+Perl script C<asm2hcp.pl>
+
+=item *
+
+Perl module C<Parser::HPC.pm>
+
+=item *
+
+PC version of the HP 35s calculator Version 2012.12.10. Rev: 19048
+
+=back
+
+=head1 SEE ALSO
+
+=over
+
+=item *
+
+L<HP 35s Emulator|https://www.educalc.net/2336231.page>
+
+=back
+
+=head1 AUTHOR
+
+=over
+
+=item *
+
+2020 J. Schneider E<lt>L<http://github.com/brickpool>E<gt>
+
+=back
+
+=head1 COPYRIGHT AND LICENCE
+
+The examples for the HP35s are part of an open source project released under the
+MIT license.
+
+The third-party programs are used here by permission. Further information about
+copyright can be found in the respective README file.
+
+=cut

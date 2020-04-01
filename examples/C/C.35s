@@ -1,0 +1,86 @@
+; 🄲 ↱ PRGM
+C001	LBL C		; ↱ LBL C
+C002	RPN		; MODE 5
+C003	CF 0		; ↰ FLAGS 2 0
+C004	CLΣ		; ↱ CLEAR 4
+C005	SF 10		; ↰ FLAGS 1 . 0
+; EQN 1 RCL P RCL A RCL R ↱ SPACE 2 RCL S RCL E RCL R ENTER
+C006	eqn 1PAR 2SER
+C007	CF 10		; ↰ FLAGS 2 . 0
+C008	π		; ↰ π
+C009	SGN		; ↰ INTG 1
+C010	x=y?		; ↰ x?y 6
+C011	GTO C018	; GTO C 0 1 8
+C012	ENTER		; ENTER
+C013	+		; +
+C014	x=y?		; ↰ x?y 6
+C015	GTO C039	; GTO C 0 3 9
+C016	CLx		; ↱ CLEAR 1
+C017	STOP		; R/S
+C018	SF 10		; ↰ FLAGS 1 . 0
+; EQN 1 RCL R ↱ SPACE 2 RCL C ↱ SPACE 3 RCL L ↱ SPACE 4 RCL P ↱ SPACE 5 RCL I ↱ SPACE 6 RCL G ↱ SPACE 7 RCL Z ENTER
+C019	eqn 1R 2C 3L 4P 5I 6G 7Z
+C020	CF 10		; ↰ FLAGS 2 . 0
+C021	x≤0?		; ↱ x?0 2
+C022	GTO C018	; GTO C 0 1 8
+C023	π		; ↰ π
+C024	!		; ↱ !
+C025	IP		; ↰ INTG 6
+C026	x<y?		; ↰ x?y 3
+C027	GTO C018	; GTO C 0 1 8
+C028	x=y?		; ↰ x?y 6
+C029	SF 0		; ↰ FLAGS 1 0
+C030	R↓		; R↓
+C031	π		; ↰ π
+C032	IP		; ↰ INTG 6
+C033	x=y?		; ↰ x?y 6
+C034	SF 0		; ↰ FLAGS 1 0
+C035	SGN		; ↰ INTG 1
+C036	x=y?		; ↰ x?y 6
+C037	SF 0		; ↰ FLAGS 1 0
+C038	GTO C057	; GTO C 0 5 7
+C039	SGN		; ↰ INTG 1
+C040	SF 10		; ↰ FLAGS 1 . 0
+; EQN 1 RCL R ↱ SPACE 2 RCL C ↱ SPACE 3 RCL L ↱ SPACE 4 RCL P ↱ SPACE 5 RCL V ↱ SPACE 6 RCL G ENTER
+C041	eqn 1R 2C 3L 4P 5V 6G
+C042	CF 10		; ↰ FLAGS 2 . 0
+C043	x≤0?		; ↱ x?0 2
+C044	GTO C039	; GTO C 0 3 9
+C045	π		; ↰ π
+C046	→LB		; ↰ →lb
+C047	IP		; ↰ INTG 6
+C048	x<y?		; ↰ x?y 3
+C049	GTO C039	; GTO C 0 3 9
+C050	x=y?		; ↰ x?y 6
+C051	SF 0		; ↰ FLAGS 1 0
+C052	R↓		; R↓
+C053	ᵉ		; ↰ CONST ∧ 4
+C054	IP		; ↰ INTG 6
+C055	x=y?		; ↰ x?y 6
+C056	SF 0		; ↰ FLAGS 1 0
+C057	CLx		; ↱ CLEAR 1
+C058	SF 10		; ↰ FLAGS 1 . 0
+; EQN ↱ STO (I) ENTER
+C059	eqn ►(I)
+C060	CF 10		; ↰ FLAGS 2 . 0
+C061	x=0?		; ↱ x?0 6
+C062	GTO C071	; GTO C 0 7 1
+C063	ENTER		; ENTER
+C064	1/x		; 1/x
+C065	Σ+		; Σ+
+C066	STO I		; ↱ STO I
+C067	R↓		; R↓
+C068	STO(I)		; ↱ STO (I)
+C069	VIEW(I)		; ↰ VIEW (I)
+C070	GTO C057	; GTO C 0 5 7
+C071	Σx		; ↱ SUMS 2
+C072	x≠0?		; ↱ x?0 1
+C073	1/x		; 1/x
+C074	Σy		; ↱ SUMS 3
+C075	FS? 0		; ↰ FLAGS 3 0
+C076	x<>y		; x<>y
+C077	CF 0		; ↰ FLAGS 2 0
+C078	STO V		; ↱ STO V
+C079	VIEW V		; ↰ VIEW V
+C080	RTN		; ↰ RTN
+; 🄲
