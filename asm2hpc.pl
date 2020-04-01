@@ -30,7 +30,7 @@ use Encode;
 use File::Basename;
 
 # Declaration
-my $VERSION = 'v0.3.12';
+our $VERSION = 'v0.4.0';
 
 my $version;
 my $jumpmark;

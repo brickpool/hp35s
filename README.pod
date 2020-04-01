@@ -1,6 +1,6 @@
-=head1 HP35S scientific calculator
+=head1 HP-35s scientific calculator
 
-An assembler C<src/asm2hpc.pl> prepares the programs for HP35s. Assembler programs (C<*.asm>) benefit from the symbolic resolution of labels, named constants and simple macro functions.
+An assembler C<src/asm2hpc.pl> prepares the programs for HP-35s. Assembler programs (C<*.asm>) benefit from the symbolic resolution of labels, named constants and simple macro functions.
 
 Perl (C<*.pl> or C<*.pm>) is used as the implementation language for the assembler.
 
@@ -10,6 +10,52 @@ The associated key commands can optionally be output as a comment by the assembl
 
 It can be very helpful to import the source code (C<*.asm>) into the emulator (C<*.ep>) using macros to test the program logic (C<marcos/*.mac> option C<-e>).
 
-Further information can be found in the L<wiki|https://github.com/brickpool/hp35s/wiki>
+=head2 Install
+
+To install the HP Calculator Parser module for the Assembler type the following:
+
+  perl Makefile.PL
+  make
+  make install
+
+=head2 Usage
+
+The assembler I<directives>, I<symbols> and I<error messages> are described in the L<wiki|https://github.com/brickpool/hp35s/wiki>.
+
+The Perl script `asm2hcp.pl` converts an assembler program to HP35s native program code (Reverse Polish Notation).
+
+  asm2hpc.pl --help
+  USAGE:
+    c:> type <asm-file> | perl asm2hpc.pl [options] 1> outfile.35s 2> outfile.err
+  
+  VERSION: v0.4.0
+    Web: http://www.brickpool.de/
+  
+  OPTIONS:
+    -h, --help          Print this text
+    -v, --version       Prints version
+    -j, --jumpmark      Prints an asterisk (*) at the jump target
+    -c, --clear         Prints keystrokes to delete the program memory
+    -p, --plain         Output as Plain text (7-bit ASCII)
+    -m, --markdown      Output as Markdown (inline HTML 5)
+    -u, --unicode       Output as Unicode (UTF-8)
+    -s, --shortcut      Output shortcut keys as comment
+    -e, --encoded       Output key codes as Macros (UU Encoding)
+    --debug             Show debug information on STDERR
+  
+    --file=<asm-file>:
+      Location of asm-file (Default is STDIN)
+  
+  This script converts an assembler program to HP35s native program code
+  The output will be sent to STDOUT
+
+=head2 Examples
+
+The examples directory has a few simple examples of what you can do with the Assembler syntax.
+
+  perl -Ilib asm2hpc.pl --file=examples/C/C.asm > examples/C/C.txt
+  perl -Ilib asm2hpc.pl --plain --shortcut --file=examples/C/C.asm > examples/C/C.raw
+  perl -Ilib asm2hpc.pl --unicode --shortcut --file=examples/C/C.asm > examples/C/C.35s
+  perl -Ilib asm2hpc.pl -c -e -f examples\J\J.asm | extras\tools\uudecode.pl
 
 =cut

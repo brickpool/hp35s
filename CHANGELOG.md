@@ -6,6 +6,22 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.4.0] - 2020-04-01
+### Added
+- `Makefile.PL` for the Parser `HPC.pm`
+- `README.pod` in the example folder
+
+### Changed
+- move content from `/src/README.md` to `/README.pod`
+- Move the Assembler `asm2hpc.pl` from folder `/src` to the root folder
+- Move emulation files `*.ep` from root folder to `/AppData`
+- Rename folder `/macros` to `/AppData/Macros`
+- Rename folder `/tools` to `/extras/tools`
+- Rename folder `/src` to `/examples`
+- Rename folder `/src/Parser` to `/lib/Parser`
+- Rename folder `/src/third-party` to `/examples/3rd-party`
+- Generating `cmd` to `dmake` (`generate.cmd` to `Makefile`)
+
 ## [0.3.12] - 2020-03-27
 ### Added
 - support of the 41 physics built-in constants (CONST Menu)
@@ -190,7 +206,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - Initial version created
 
-[Unreleased]: https://github.com/brickpool/hp35s/compare/v0.3.11...HEAD
+[Unreleased]: https://github.com/brickpool/hp35s/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/brickpool/hp35s/compare/v0.4.0
+[0.3.12]: https://github.com/brickpool/hp35s/compare/v0.3.11...v0.3.12
+[0.3.11]: https://github.com/brickpool/hp35s/compare/v0.3.10...v0.3.11
 [0.3.10]: https://github.com/brickpool/hp35s/compare/v0.3.9...v0.3.10
 [0.3.9]: https://github.com/brickpool/hp35s/compare/v0.3.8...v0.3.9
 [0.3.8]: https://github.com/brickpool/hp35s/compare/v0.3.7...v0.3.8

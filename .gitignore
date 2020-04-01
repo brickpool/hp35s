@@ -4,7 +4,6 @@ _gsdata_/
 # Ignore Komodo
 *.komodoproject
 /.komodotools/
-/Komodo/
 
 # Ignore wiki directory
 /wiki/
@@ -15,12 +14,14 @@ _gsdata_/
 /extras/Emulator
 /extras/HP Learning Modules
 /extras/Inside
+/extras/Komodo
 /extras/Character-Set.tgn
 /extras/Character-Set.pptx
 
 # Ignore test files
-/src/xt/*.*
-/src/*.mac
+/xt
+/*.mac
+/examples/*.mac
 
-# Ignore 3rd-party files
-/src/third-party/C4
+# Ignore some 3rd-party folder
+/examples/3rd-party/C4
