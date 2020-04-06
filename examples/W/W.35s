@@ -1,0 +1,41 @@
+; 🄲 ↱ PRGM
+W001	LBL W		; ↱ LBL W
+W002	STO A		; ↱ STO A
+W003	R↓		; R↓
+W004	ENTER		; ENTER
+W005	1/x		; 1/x
+W006	0.5		; 0 . 5 ENTER
+W007	+		; +
+W008	IP		; ↰ INTG 6
+W009	STO- A		; ↱ STO - A
+W010	12		; 1 2 ENTER
+W011	×		; ×
+W012	+		; +
+W013	1		; 1 ENTER
+W014	+		; +
+W015	2.6		; 2 . 6 ENTER
+W016	×		; ×
+W017	IP		; ↰ INTG 6
+W018	+		; +
+W019	x<> A		; ↰ x≶ A
+W020	ENTER		; ENTER
+W021	ENTER		; ENTER
+W022	ENTER		; ENTER
+W023	1.25		; 1 . 2 5 ENTER
+W024	×		; ×
+W025	IP		; ↰ INTG 6
+W026	STO+ A		; ↱ STO + A
+W027	R↓		; R↓
+W028	100		; 1 0 0 ENTER
+W029	÷		; ÷
+W030	IP		; ↰ INTG 6
+W031	STO- A		; ↱ STO - A
+W032	R↓		; R↓
+W033	400		; 4 0 0 ENTER
+W034	÷		; ÷
+W035	IP		; ↰ INTG 6
+W036	RCL+ A		; RCL + A
+W037	7		; 7 ENTER
+W038	RMDR		; ↰ INTG 3
+W039	RTN		; ↰ RTN
+; 🄲
