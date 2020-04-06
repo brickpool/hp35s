@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- third-party program `R` to convert a Cmplex number
+- example Weekday `W`
+
+### Fixed
+- command line options in README files
+- install dir in `examples/Makefile`
 
 ## [0.4.0] - 2020-04-01
 ### Added
