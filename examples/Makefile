@@ -5,6 +5,7 @@ SOURCE += N\NE555.asm
 SOURCE += O\O.asm
 SOURCE += P\P.asm
 SOURCE += Y\Y.asm
+SOURCE += W\W.asm
 
 # Targets
 TEXT = ${SOURCE:.asm=.txt}
@@ -14,7 +15,7 @@ UNICODE = ${SOURCE:.asm=.35s}
 ENCODED = ${SOURCE:.asm=.uu}
 MACRO = ${SOURCE:.asm=.mac}
 MACRO_DIR = ..\AppData\Macros
-TARGET_DIR := ${shell echo %APPDATA%}\Roaming\Hewlett-Packard\hp35s\Macros
+TARGET_DIR := ${shell echo %APPDATA%}\Hewlett-Packard\hp35s\Macros
 
 # Tools
 SH = +
