@@ -18,10 +18,14 @@ _gsdata_/
 /extras/Character-Set.tgn
 /extras/Character-Set.pptx
 
-# Ignore test files
+# Ignore generated files
 /xt
 /*.mac
-/examples/*.mac
+/examples/**/*.mac
+/examples/**/*.md
+/examples/**/*.raw
+/examples/**/*.txt
+/examples/**/*.uu
 
 # Ignore some 3rd-party folder
 /examples/3rd-party/C4
