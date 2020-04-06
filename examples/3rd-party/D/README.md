@@ -27,7 +27,5 @@ There are a few language differences to the original listing
 Command line options
 
 ```
-cd hp35s/src
-
-asm2hpc.pl --jumpmark --shortcut --unicode --file=third-party/D/D.asm > third-party/D/D.35s
+perl -Ilib asm2hpc.pl --jumpmark --shortcut --unicode --file=examples/3rd-party/D/D.asm > examples/3rd-party/D/D.35s
 ```

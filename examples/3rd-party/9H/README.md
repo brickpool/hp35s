@@ -11,10 +11,8 @@ Bedienung:
 _"IC555"_ ist nur ein Massenspeicher-Name. Es gibt keine Marke dieses Namens. Aufruf von der Kommandozeile:
 
 ```
-cd hp35s/src
-
-asm2hpc.pl --jumpmark --file=third-party/9H/IC555.asm > third-party/9H/IC555.txt
-asm2hpc.pl --jumpmark --shortcut --unicode --file=third-party/9H/IC555.asm > third-party/9H/IC555.35s
+perl -Ilib asm2hpc.pl --jumpmark --file=examples/3rd-party/9H/IC555.asm > examples/3rd-party/9H/IC555.txt
+perl -Ilib asm2hpc.pl --jumpmark --shortcut --unicode --file=examples/3rd-party/9H/IC555.asm > examples/3rd-party/9H/IC555.35s
 ```
 
 Wenn sich das Programm im Programmspeicher befindet, kann man eine der folgenden Berechnungen durchführen.

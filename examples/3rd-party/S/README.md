@@ -37,8 +37,6 @@ L?
 ## Command line options
 
 ```
-cd hp35s/src
-
-asm2hpc.pl --jumpmark --shortcut --file=third-party/S/S.asm > third-party/S/S.txt
-asm2hpc.pl --unicode --file=third-party/S/S.asm > third-party/S/S.35s
+perl -Ilib asm2hpc.pl --jumpmark --shortcut --file=examples/3rd-party/S/S.asm > examples/3rd-party/S/S.txt
+perl -Ilib asm2hpc.pl --unicode --file=examples/3rd-party/S/S.asm > examples/3rd-party/S/S.35s
 ```

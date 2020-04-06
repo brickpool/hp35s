@@ -53,8 +53,6 @@ The following variables are used:
 Command line options
 
 ```
-cd hp35s/src
-
-asm2hpc.pl --jumpmark --shortcut --unicode --file=third-party/E24/E.asm > third-party/E24/E.35s
-asm2hpc.pl --jumpmark --plain --file=third-party\E24\E.asm > third-party\E24\E.txt
+asm2hpc.pl --jumpmark --shortcut --unicode --file=examples/3rd-party/E24/E.asm > examples/3rd-party/E24/E.35s
+asm2hpc.pl --jumpmark --plain --file=examples\3rd-party\E24\E.asm > examples\3rd-party\E24\E.txt
 ```

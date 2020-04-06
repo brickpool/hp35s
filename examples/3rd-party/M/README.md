@@ -131,8 +131,6 @@ There are a few language differences to the original listing
 Command line options
 
 ```
-cd hp35s/src
-
-asm2hpc.pl --jumpmark --file=third-party/M/M.asm > third-party/M/M.txt
-asm2hpc.pl --jumpmark --shortcut --unicode --file=third-party/M/M.asm > third-party/M/M.35s
+asm2hpc.pl --jumpmark --file=examples/3rd-party/M/M.asm > examples/3rd-party/M/M.txt
+asm2hpc.pl --jumpmark --shortcut --unicode --file=examples/3rd-party/M/M.asm > examples/3rd-party/M/M.35s
 ```
