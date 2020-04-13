@@ -8,7 +8,7 @@ information.
 
 ## Obtaining the angle and magnitude of a complex value
  
-Use the `ARG` function (`\<.`, `i`) and then `LASTx` and `ABS` (`\.>`, `+/-`)
+Use the `ARG` function (`\<+`, `i`) and then `LASTx` and `ABS` (`\+>`, `+/-`)
 function. This leaves _R_ (radial coordinate _r_) in the `REGX` register and
 _T_ (angular coordinate _theta_) in the `REGY` register.
 
