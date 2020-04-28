@@ -1,18 +1,20 @@
-R001	LBL R
-R002	ARG
-R003	LASTx
-R004	ABS
-R005	STOP
-R006	x<>y
-R007	COS
-R008	LASTx
-R009	SIN
-R010	R↓
-R011	R↓
-R012	x<>y
-R013	R↓
-R014	×
-R015	x<>y
-R016	LASTx
-R017	×
-R018	RTN
+; 🄲 ↱ PRGM
+R001	LBL R		; ↱ LBL R
+R002	ARG		; ↰ ARG
+R003	LASTx		; ↱ LASTx
+R004	ABS		; ↱ ABS
+R005	STOP		; R/S
+R006	x<>y		; x<>y
+R007	COS		; COS
+R008	LASTx		; ↱ LASTx
+R009	SIN		; SIN
+R010	R↓		; R↓
+R011	R↓		; R↓
+R012	x<>y		; x<>y
+R013	R↓		; R↓
+R014	×		; ×
+R015	x<>y		; x<>y
+R016	LASTx		; ↱ LASTx
+R017	×		; ×
+R018	RTN		; ↰ RTN
+; 🄲

@@ -39,6 +39,7 @@ Converting _R_ and _T_ to a complex number is bit more effort and used
 [de Moivre's theorem](https://en.wikipedia.org/wiki/De_Moivre's_formula):
 
 ```assembly
+DEG       ; Set degree mode
 <T> ENTER ; enter Theta (in degrees)
 ->RAD     ; convert to Radian
 \im       ; press i (imaginary number)
@@ -78,6 +79,6 @@ There are a few language differences to the original listing
 ## Command line options
 
 ```
-perl -Ilib asm2hpc.pl --jumpmark --shortcut --file=examples/3rd-party/R/R.asm > examples/3rd-party/R/R.txt
-perl -Ilib asm2hpc.pl --unicode --file=examples/3rd-party/R/R.asm > examples/3rd-party/R/R.35s
+perl -Ilib asm2hpc.pl --jumpmark --file=examples/3rd-party/R/R.asm > examples/3rd-party/R/R.txt
+perl -Ilib asm2hpc.pl --jumpmark --shortcut --unicode --file=examples/3rd-party/R/R.asm > examples/3rd-party/R/R.35s
 ```

@@ -37,6 +37,6 @@ L?
 ## Command line options
 
 ```
-perl -Ilib asm2hpc.pl --jumpmark --shortcut --file=examples/3rd-party/S/S.asm > examples/3rd-party/S/S.txt
-perl -Ilib asm2hpc.pl --unicode --file=examples/3rd-party/S/S.asm > examples/3rd-party/S/S.35s
+perl -Ilib asm2hpc.pl --jumpmark --file=examples/3rd-party/S/S.asm > examples/3rd-party/S/S.txt
+perl -Ilib asm2hpc.pl --jumpmark --shortcut --unicode --file=examples/3rd-party/S/S.asm > examples/3rd-party/S/S.35s
 ```

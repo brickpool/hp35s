@@ -5,11 +5,20 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.4.1] - 2020-04-28
 ### Added
 - example weekday `W`
+- folder `/extras/doc-images` with keystroke images
 
 ### Fixed
 - install dir in `examples/Makefile`
+- README-files in the example folder
+- Constant `pi` (`\pi` is not an instruction anymore)
+- Constant `i` (`0\im1`)
+
+### Changed
+- Constant Planck constant over 2 pi (`\h-` => `hbar`)
 
 ## [0.4.0] - 2020-04-01
 ### Added
@@ -211,8 +220,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - Initial version created
 
-[Unreleased]: https://github.com/brickpool/hp35s/compare/v0.4.0...HEAD
-[0.4.0]: https://github.com/brickpool/hp35s/compare/v0.4.0
+[Unreleased]: https://github.com/brickpool/hp35s/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/brickpool/hp35s/compare/v0.4.0...v0.4.1
+[0.4.0]: https://github.com/brickpool/hp35s/compare/v0.3.12...v0.4.0
 [0.3.12]: https://github.com/brickpool/hp35s/compare/v0.3.11...v0.3.12
 [0.3.11]: https://github.com/brickpool/hp35s/compare/v0.3.10...v0.3.11
 [0.3.10]: https://github.com/brickpool/hp35s/compare/v0.3.9...v0.3.10

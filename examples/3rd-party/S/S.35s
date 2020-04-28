@@ -1,23 +1,25 @@
-S001	LBL S
-S002	DEG
-S003	INPUT D
-S004	0.9856
-S005	×
-S006	SIN
-S007	23.45
-S008	×
-S009	INPUT L
-S010	HMS→
-S011	TAN
-S012	x<>y
-S013	TAN
-S014	×
-S015	+/-
-S016	ACOS
-S017	→RAD
-S018	24
-S019	×
-S020	π
-S021	÷
-S022	→HMS
-S023	RTN
+; 🄲 ↱ PRGM
+S001	LBL S		; ↱ LBL S
+S002	DEG		; MODE 1
+S003	INPUT D		; ↰ INPUT D
+S004	0.9856		; 0 . 9 8 5 6 ENTER
+S005	×		; ×
+S006	SIN		; SIN
+S007	23.45		; 2 3 . 4 5 ENTER
+S008	×		; ×
+S009	INPUT L		; ↰ INPUT L
+S010	HMS→		; ↰ HMS→
+S011	TAN		; TAN
+S012	x<>y		; x<>y
+S013	TAN		; TAN
+S014	×		; ×
+S015	+/-		; +/-
+S016	ACOS		; ↱ ACOS
+S017	→RAD		; ↰ →RAD
+S018	24		; 2 4 ENTER
+S019	×		; ×
+S020	π		; ↰ π
+S021	÷		; ÷
+S022	→HMS		; ↱ →HMS
+S023	RTN		; ↰ RTN
+; 🄲

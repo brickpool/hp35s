@@ -30,7 +30,7 @@ use Encode;
 use File::Basename;
 
 # Declaration
-our $VERSION = 'v0.4.0';
+our $VERSION = 'v0.4.1';
 
 my $version;
 my $jumpmark;
@@ -145,6 +145,8 @@ use constant _lg        => "\N{U+2276}";
 
 # Constant mapping
 my $tbl_const_3graph = {
+  'i'   => '\im',
+  'pi'  => '\pi',
   'c'   => '\016',
   'g'   => '\^g',
   'G'   => '\018',
@@ -195,7 +197,6 @@ my $tbl_instr_3graph = {
   '/'     => '\:-',
   # G2
   '10^x'  => '10\^x',
-  'pi'    => '\pi',
   'Z+'    => '\GS+',
   'Z-'    => '\GS-',
   # G3
@@ -268,6 +269,9 @@ my $tbl_instr_3graph = {
 
 # Constant keystrokes
 my $tbl_const_seq = {
+  # '\im'      => '\im',
+  '\pi'        => '\<+ \pi',
+
   '\016'        => '\<+ CONST 1',
   '\^g'         => '\<+ CONST 2',
   '\018'        => '\<+ CONST 3',

@@ -77,6 +77,9 @@ my @segments = (
 );
 
 our @constants = (
+  'pi',   # Pi (3.1416)
+  'i',    # Im (0.0000i1.0000)
+  
   'c',    # Speed of light in vacuum
   'g',    # Standard acceleration of gravity
   'G',    # Newtonian constant of gravitation
@@ -90,7 +93,7 @@ our @constants = (
   'mu',   # Muon mass
   'k',    # Boltzmann constant
   'h',    # Planck constant
-  '\h-',  # Planck constant over 2 pi
+  'hbar', # Planck constant over 2 pi
   'Ph0',  # Magnetic flux quantum
   'a0',   # Bohr radius
   'e0',   # Electric constant
@@ -124,7 +127,7 @@ our @instructions = (
   # G1
   '+/-', '+', '-', '*', '/',
   # G2
-  '1/x', '10^x', '%', '%CHG', 'pi', 'Z+', 'Z-',
+  '1/x', '10^x', '%', '%CHG', 'Z+', 'Z-',
   # G3
   'Zx', 'Zx^2', 'Zxy', 'Zy', 'Zy^2', 'zx', 'zy',
   # G4
