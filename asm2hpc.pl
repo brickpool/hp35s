@@ -25,12 +25,13 @@ use Parser::HPC qw(
   @functions
   @register
 );
+use POSIX;
 use Data::Dumper;
 use Encode;
 use File::Basename;
 
 # Declaration
-our $VERSION = 'v0.4.1';
+our $VERSION = 'v0.4.2';
 
 my $version;
 my $jumpmark;
@@ -1400,8 +1401,12 @@ print STDERR Dumper( $response ) if $debug;
 # sort segments in alpabetic order
 my @segments = sort keys %{ $response->{segments} };
 
+# predefined equations
+my $equations = {
+  '??date' => strftime('%Y-%m-%d', localtime),
+  '??time' => strftime('%H,%M %S', localtime),
+};
 # get all equations over all segments
-my $equations = {};
 foreach my $seg ( @segments ) {
   next if $response->{segments}->{$seg}->{type} ne 'data';
 

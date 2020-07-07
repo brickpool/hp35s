@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# (c) 2019 brickpool
+# (c) 2019, 2020 brickpool
 #     J.Schneider (http://github.com/brickpool/)
 #
 # simple recursive-descent one-pass assembler parser for HP calculators
@@ -11,8 +11,8 @@
 #   http://github.com/brickpool/hp35s/CHANGELOG.md
 #
 # ToDo:
-#   - the directive %TITLE, DISPLAY and RADIX
-#     and the symbols TIME and DATE are not implemented
+#   - the directive DISPLAY, LOCALS, NOLOCALS and RADIX and %TITLE
+#     are not implemented
 #   - only the polish notation mode is supported
 #   - Thousand separator operations are not implemented
 
@@ -59,13 +59,15 @@ Pattern used to skip comments between tokens. Defaults to C</;.*\n+/>
 
 use constant pattern_comment    => qr/;.*\n/;
 use constant pattern_operation  => qr/[^\s\(\)]+/;
+use constant pattern_ident      => qr/[[:alpha:]@_\$?][[:alnum:]@_\$?]{0,246}/;
 
 my @directives = (
-  'DISPLAY', 'ENDS', 'END', 'EQU', 'MODEL', 'RADIX', 'SEGMENT', 'SET', '%TITLE',
+  'DISPLAY', 'ENDS', 'END', 'EQU', 'LOCALS', 'NOLOCALS', 'MODEL', 'RADIX', 'SEGMENT', 'SET', '%TITLE',
 );
 
+# Pre defined text equates
 my @predefined = (
-  'DATE', 'TIME',
+  '??date', '??time',
 );
 
 my @languages = (
@@ -396,8 +398,7 @@ sub new {
   my %variables   = map { $_ => 'variable'  } 'A'..'Z',
                                               @register;
   my %directives  = map { $_ => 'directive' } @directives,
-                                              @languages,
-                                              @predefined;
+                                              @languages;
   my %opcodes     = map { $_ => 'opcode'    } @instructions,
                                               @with_address,
                                               @with_digits,
@@ -405,7 +406,8 @@ sub new {
                                               @with_indirects,
                                               @expressions,
                                               @functions;
-  $self->{_symbols} = { %constants, %variables, %directives, %opcodes };
+  my %equations  = map { $_ => 'equation'   } @predefined;
+  $self->{_symbols} = { %constants, %variables, %directives, %opcodes, %equations };
 
   # Labels allow you to name the positions of specific instructions
   $self->{_labels} = undef;
@@ -422,6 +424,11 @@ The following methods will be used to build the grammatical structure.
 sub parse {
   my $self = shift;
 
+  # %title directive
+  my $title = $self->maybe(
+    sub { $self->parse_title }
+  );
+
   # model directive
   my $language = $self->parse_model;
 
@@ -431,8 +438,8 @@ sub parse {
       $self->parse_segment;
     },
   )
-  or
-    $self->fail( "Expecting SEGMENT keyword" );
+    or
+  $self->fail( "Expecting SEGMENT keyword" );
 
   # convert the array_ref to a hash_ref
   my $ref = { };
@@ -449,23 +456,54 @@ sub parse {
     segments  => $ref,
     labels    => $self->{_labels},
   };
-  $root->{startaddr} = $start if $start;
+  $root->{title}      = $title if $title;
+  $root->{startaddr}  = $start if $start;
   return $root;
 }
 
-sub parse_model
-{
+sub parse_title {
+  my $self = shift;
+
+  # check if title is defined
+  $self->expect( qr/%TITLE\b/i );
+  $self->commit;
+  
+  # get quoted string
+  my $pos = $self->pos;
+  my $result;
+  eval { $result = $self->token_string };
+
+  # check if quoted string is present
+  defined $result
+    or
+  $self->fail("Need quoted string");
+
+  # validate quoted string (the built-in variable '@-' holds the start position)
+  $result !~ /\s*\n/
+    or
+  $self->fail_from($pos + $-[0]+1, "Missing end quote");
+  
+  # skip whitespace characters and any comments
+  $self->skip_ws;
+
+  return $result;
+}
+
+
+sub parse_model {
   my $self = shift;
 
   # check if model is defined
-  $self->maybe_expect( qr/MODEL\b/i ) or
-    $self->fail("Model must be specified first");
+  $self->maybe_expect( qr/MODEL\b/i )
+    or
+  $self->fail("Model must be specified first");
 
   # check if language is defined
   my $result;
   eval { $result = $self->token_kw_icase( @languages ) };
-  defined $result or
-    $self->fail("Missing or illegal language ID");
+  defined $result
+    or
+  $self->fail("Missing or illegal language ID");
 
   # skip whitespace characters and any comments
   $self->skip_ws;
@@ -473,8 +511,8 @@ sub parse_model
   return $result;
 }
 
-sub parse_segment
-{
+
+sub parse_segment {
   my $self = shift;
 
   my $result;
@@ -553,8 +591,8 @@ sub parse_data_block {
       $self->parse_data_statement;
     },
   )
-  or
-    return undef;
+    or
+  return undef;
 
   # convert the array_ref to a hash_ref
   my $ref = { };
@@ -612,8 +650,8 @@ sub parse_data_statement {
     sub { $self->token_string },
     sub { 0 },
   )
-  or
-    $self->fail( "Need expression" );
+    or
+  $self->fail( "Need expression" );
 
   # test if value has unknown character
   $fail_pos = $self->pos - length($value);
@@ -729,8 +767,8 @@ sub parse_code_block {
       $self->parse_code_statement;
     }
   )
-  or
-    return undef;
+    or
+  return undef;
   
   # insert the tags into global label table
   for (my $i = 0; $i < @tags; $i++ ) {
@@ -799,8 +837,9 @@ sub parse_code_statement {
     sub { $decimal  = $self->generic_token(number => qr/[\-\d\.e]+d?/, sub { $_[1] } ) },
     sub { undef },
   );
-  defined $ret or
-    $self->fail( "Illegal instruction" );
+  defined $ret
+    or
+  $self->fail( "Illegal instruction" );
   
   # get current position in str for "fail_from"
   my $pos = $self->pos;
@@ -1030,8 +1069,8 @@ sub parse_stack_block
       $self->parse_stack_statement;
     },
   )
-  or
-    return undef;
+    or
+  return undef;
 
   # convert the array_ref to a hash_ref
   my $ref = { };
@@ -1067,8 +1106,9 @@ sub parse_stack_statement
 
   my $value;
   eval { $value = $self->token_number };
-  defined $value or
-    $self->fail( "Need expression" );
+  defined $value
+    or
+  $self->fail( "Need expression" );
 
   # create new entry
   my $entry = {
@@ -1090,8 +1130,9 @@ sub parse_end
     $self->fail( "Unexpected end of file (no END directive)" );
   
   # error, if statements outside of any segment
-  $self->maybe_expect( qr/END\b/i ) or
-    $self->fail( "Code or data emission to undeclared segment" );
+  $self->maybe_expect( qr/END\b/i )
+    or
+  $self->fail( "Code or data emission to undeclared segment" );
   
   # determine all current labels
   my @labels = ();
@@ -1128,11 +1169,13 @@ sub token_kw_icase
 
   my $pos = pos $self->{str};
 
-  defined( my $kw = $self->token_ident ) or
-    return undef;
+  defined( my $kw = $self->token_ident )
+    or
+  return undef;
 
-  grep { /^$kw$/i } @acceptable or
-    pos($self->{str}) = $pos, $self->fail( "Expected any of ".join( ", ", @acceptable ) );
+  grep { /^$kw$/i } @acceptable
+    or
+  pos($self->{str}) = $pos, $self->fail( "Expected any of ".join( ", ", @acceptable ) );
 
   return $kw;
 }
@@ -1153,11 +1196,13 @@ sub token_kw_operation
 
   my $pos = pos $self->{str};
   
-  defined( my $kw = $self->generic_token( operation => pattern_operation, ) ) or
-    return undef;
+  defined( my $kw = $self->generic_token( operation => pattern_operation, ) )
+    or
+  return undef;
 
-  grep { $_ eq $kw } @acceptable or
-    pos($self->{str}) = $pos, $self->fail( "Expected any of ".join( ", ", @acceptable ) );
+  grep { $_ eq $kw } @acceptable
+    or
+  pos($self->{str}) = $pos, $self->fail( "Expected any of ".join( ", ", @acceptable ) );
 
   return $kw;
 }
@@ -1180,8 +1225,9 @@ sub token_string
   my $pos = pos $self->{str};
 
   $self->skip_ws;
-  $self->{str} =~ m/\G($self->{patterns}{string_delim})/gc or
-     $self->fail( "Expected string delimiter" );
+  $self->{str} =~ m/\G($self->{patterns}{string_delim})/gc
+    or
+  $self->fail( "Expected string delimiter" );
 
   my $delim = $1;
 
@@ -1210,16 +1256,19 @@ sub _find_before
   my $self    = shift;
   my $substr  = reverse shift;
 
-  exists $self->{reverse_str} or
-    $self->{reverse_str} = reverse $self->{str};
+  exists $self->{reverse_str}
+    or
+  $self->{reverse_str} = reverse $self->{str};
   
-  exists $self->{length} or
-    $self->{length} = length $self->{str};
+  exists $self->{length}
+    or
+  $self->{length} = length $self->{str};
 
   my $pos = $self->{length} - $self->pos;
   my $idx = index $self->{reverse_str}, $substr, $pos;
 
-  return $idx > 0
+  return
+    $idx > 0
       ?
     $self->{length} - $idx - length $substr
       :

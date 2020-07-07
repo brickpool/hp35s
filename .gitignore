@@ -10,16 +10,18 @@ _gsdata_/
 
 # Ignore extras
 /extras/CBT
+/extras/Character-Set.tgn
+/extras/Character-Set.pptx
 /extras/docs
 /extras/Emulator
 /extras/Fonts
 /extras/HP Learning Modules
 /extras/Inside
 /extras/Komodo
-/extras/Character-Set.tgn
-/extras/Character-Set.pptx
+/extras/ZSS
 
 # Ignore generated files
+/t
 /xt
 /*.mac
 /examples/**/*.mac
