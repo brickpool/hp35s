@@ -1,0 +1,91 @@
+; 🄲 ↱ PRGM
+B001	LBL B		; ↱ LBL B
+B002	STO C		; ↱ STO C
+B003	1		; 1 ENTER
+B004	x>y?		; ↰ x?y 4
+B005	RTN		; ↰ RTN
+B006	STO X		; ↱ STO X
+B007	RCL+ X		; RCL + X
+B008	x≤y?		; ↰ x?y 2
+B009	GTO B013	; GTO B 0 1 3
+B010	1/x		; 1/x
+B011	+/-		; +/-
+B012	RTN		; ↰ RTN
+B013*	x≠y?		; ↰ x?y 1
+B014	GTO B018	; GTO B 0 1 8
+B015	6		; 6 ENTER
+B016	1/x		; 1/x
+B017	RTN		; ↰ RTN
+B018*	RMDR		; ↰ INTG 3
+B019	0		; 0 ENTER
+B020	x≠y?		; ↰ x?y 1
+B021	RTN		; ↰ RTN
+B022	4		; 4 ENTER
+B023	RCL C		; RCL C
+B024	x≠y?		; ↰ x?y 1
+B025	GTO B030	; GTO B 0 3 0
+B026	30		; 3 0 ENTER
+B027	1/x		; 1/x
+B028	+/-		; +/-
+B029	RTN		; ↰ RTN
+B030*	6		; 6 ENTER
+B031	x≠y?		; ↰ x?y 1
+B032	GTO B036	; GTO B 0 3 6
+B033	42		; 4 2 ENTER
+B034	1/x		; 1/x
+B035	RTN		; ↰ RTN
+B036*	x<>y		; x<>y
+B037	FIX 9		; ↰ DISPLAY 1 9
+B038	XEQ B062	; XEQ B 0 6 2
+B039	STO X		; ↱ STO X
+B040	RCL+ X		; RCL + X
+B041	1		; 1 ENTER
+B042	+/-		; +/-
+B043	RCL C		; RCL C
+B044	2		; 2 ENTER
+B045	÷		; ÷
+B046	yˣ		; yˣ
+B047	×		; ×
+B048	+/-		; +/-
+B049	π		; ↰ π
+B050	STO X		; ↱ STO X
+B051	RCL+ X		; RCL + X
+B052	1e-9		; 1 e +/- 9 ENTER
+B053	-		; -
+B054	RCL C		; RCL C
+B055	yˣ		; yˣ
+B056	÷		; ÷
+B057*	RCL C		; RCL C
+B058	×		; ×
+B059	DSE C		; ↱ DSE C
+B060	GTO B057	; GTO B 0 5 7
+B061	RTN		; ↰ RTN
+B062*	+/-		; +/-
+B063	STO B		; ↱ STO B
+B064	1		; 1 ENTER
+B065	STO A		; ↱ STO A
+B066	ENTER		; ENTER
+B067*	CLx		; ↱ CLEAR 1
+B068	!		; ↱ !
+B069	RCL A		; RCL A
+B070	+		; +
+B071	STO A		; ↱ STO A
+B072	RCL B		; RCL B
+B073	yˣ		; yˣ
+B074	-		; -
+B075	+/-		; +/-
+B076	LASTx		; ↱ LASTx
+B077	RND		; ↱ RND
+B078	x≠0?		; ↱ x?0 1
+B079	GTO B067	; GTO B 0 6 7
+B080	!		; ↱ !
+B081	2		; 2 ENTER
+B082	RCL B		; RCL B
+B083	yˣ		; yˣ
+B084	STO X		; ↱ STO X
+B085	RCL+ X		; RCL + X
+B086	-		; -
+B087	÷		; ÷
+B088	ABS		; ↱ ABS
+B089	RTN		; ↰ RTN
+; 🄲

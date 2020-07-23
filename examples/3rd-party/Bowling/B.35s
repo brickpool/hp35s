@@ -1,0 +1,464 @@
+; 🄲 ↱ PRGM
+B001	LBL B		; ↱ LBL B
+B002	SF 10		; ↰ FLAGS 1 . 0
+; EQN RCL B RCL O RCL W RCL L ENTER
+B003	eqn BOWL
+B004	PSE		; ↱ PSE
+B005	CF 10		; ↰ FLAGS 2 . 0
+B006	ALL		; ↰ DISPLAY 4
+B007	100		; 1 0 0 ENTER
+B008	STO A		; ↱ STO A
+B009	3		; 3 ENTER
+B010	×		; ×
+B011	STO C		; ↱ STO C
+B012	15		; 1 5 ENTER
+B013	+		; +
+B014	STO I		; ↱ STO I
+B015	1		; 1 ENTER
+B016	STO+ I		; ↱ STO + I
+B017	+/-		; +/-
+B018	STO(I)		; ↱ STO (I)
+B019	SF 10		; ↰ FLAGS 1 . 0
+; EQN RCL N RCL U RCL M ↱ SPACE RCL O RCL F ↱ SPACE RCL P RCL L RCL A RCL Y RCL E RCL R RCL S ENTER
+B020	eqn NUM OF PLAYERS
+B021	PSE		; ↱ PSE
+B022	CF 10		; ↰ FLAGS 2 . 0
+B023	INPUT R		; ↰ INPUT R
+B024	SF 10		; ↰ FLAGS 1 . 0
+; EQN RCL O RCL N RCL E ↱ SPACE RCL M RCL O RCL M RCL E RCL N RCL T ENTER
+B025	eqn ONE MOMENT
+B026	PSE		; ↱ PSE
+B027	CF 10		; ↰ FLAGS 2 . 0
+B028	1.3		; 1 . 3 ENTER
+B029	STO I		; ↱ STO I
+B030	CLx		; ↱ CLEAR 1
+B031*	STO(I)		; ↱ STO (I)
+B032	ISG I		; ↰ ISG I
+B033	GTO B031	; GTO B 0 3 1
+B034	1		; 1 ENTER
+B035	STO F		; ↱ STO F
+B036*	1		; 1 ENTER
+B037	STO P		; ↱ STO P
+B038	0.001		; 0 . 0 0 1 ENTER
+B039	RCL× R		; RCL × R
+B040	STO+ P		; ↱ STO + P
+B041*	CLx		; ↱ CLEAR 1
+B042	STO M		; ↱ STO M
+B043	STO B		; ↱ STO B
+B044	STO Q		; ↱ STO Q
+B045	1.015		; 1 . 0 1 5 ENTER
+B046	STO I		; ↱ STO I
+B047*	RCL C		; RCL C
+B048	RCL+ I		; RCL + I
+B049	STO J		; ↱ STO J
+B050	CLx		; ↱ CLEAR 1
+B051	STO(J)		; ↱ STO (J)
+B052	ISG I		; ↰ ISG I
+B053	GTO B047	; GTO B 0 4 7
+B054*	SF 10		; ↰ FLAGS 1 . 0
+; EQN ↱ [] RCL R RCL S > ↱ SPACE RCL T RCL O ↱ SPACE RCL R RCL O RCL L RCL L ENTER
+B055	eqn [RS] TO ROLL
+B056	CF 10		; ↰ FLAGS 2 . 0
+B057	CLx		; ↱ CLEAR 1
+B058	STO K		; ↱ STO K
+B059	STO D		; ↱ STO D
+B060	1.02		; 1 . 0 2 ENTER
+B061	STO I		; ↱ STO I
+B062*	RANDOM		; ↱ RAND
+B063	100		; 1 0 0 ENTER
+B064	×		; ×
+B065	IP		; ↰ INTG 6
+B066	STO X		; ↱ STO X
+B067	1.01		; 1 . 0 1 ENTER
+B068	STO L		; ↱ STO L
+B069*	15		; 1 5 ENTER
+B070	RCL× L		; RCL × L
+B071	IP		; ↰ INTG 6
+B072	RCL X		; RCL X
+B073	x<y?		; ↰ x?y 3
+B074	GTO B077	; GTO B 0 7 7
+B075	ISG L		; ↰ ISG L
+B076	GTO B069	; GTO B 0 6 9
+B077*	15		; 1 5 ENTER
+B078	RCL× L		; RCL × L
+B079	IP		; ↰ INTG 6
+B080	RCL- X		; RCL - X
+B081	RCL+ C		; RCL + C
+B082	STO J		; ↱ STO J
+B083	1		; 1 ENTER
+B084	STO(J)		; ↱ STO (J)
+B085	ISG I		; ↰ ISG I
+B086	GTO B062	; GTO B 0 6 2
+B087	SF 10		; ↰ FLAGS 1 . 0
+B088	ALG		; MODE 4
+; EQN RCL P RCL L RCL A RCL Y RCL E RCL R ENTER
+B089	eqn PLAYER
+B090	PSE		; ↱ PSE
+B091	RCL P		; RCL P
+B092	IP		; ↰ INTG 6
+B093	PSE		; ↱ PSE
+; EQN RCL F RCL R RCL A RCL M RCL E ENTER
+B094	eqn FRAME
+B095	PSE		; ↱ PSE
+B096	RCL F		; RCL F
+B097	PSE		; ↱ PSE
+; EQN RCL B RCL A RCL L RCL L ENTER
+B098	eqn BALL
+B099	PSE		; ↱ PSE
+B100	1		; 1 ENTER
+B101	RCL+ B		; RCL + B
+B102	PSE		; ↱ PSE
+B103	RPN		; MODE 5
+B104	CF 10		; ↰ FLAGS 2 . 0
+B105	0.003		; 0 . 0 0 3 ENTER
+B106	STO I		; ↱ STO I
+B107*	1.004		; 1 . 0 0 4 ENTER
+B108	STO L		; ↱ STO L
+B109	RCL I		; RCL I
+B110	IP		; ↰ INTG 6
+B111	1e3		; 1 e 3 ENTER
+B112	÷		; ÷
+B113	STO- L		; ↱ STO - L
+B114	CLx		; ↱ CLEAR 1
+B115	STO T		; ↱ STO T
+B116*	1		; 1 ENTER
+B117	STO+ K		; ↱ STO + K
+B118	RCL C		; RCL C
+B119	RCL+ K		; RCL + K
+B120	STO J		; ↱ STO J
+B121	RCL(J)		; RCL (J)
+B122	x≠0?		; ↱ x?0 1
+B123	GTO B132	; GTO B 1 3 2
+B124	2		; 2 ENTER
+B125	RCL L		; RCL L
+B126	IP		; ↰ INTG 6
+B127	1		; 1 ENTER
+B128	-		; -
+B129	yˣ		; yˣ
+B130	STO+ T		; ↱ STO + T
+B131	GTO B132	; GTO B 1 3 2
+B132*	ISG L		; ↰ ISG L
+B133	GTO B116	; GTO B 1 1 6
+B134	SF 10		; ↰ FLAGS 1 . 0
+B135	XEQ B304	; XEQ B 3 0 4
+B136	CF 10		; ↰ FLAGS 2 . 0
+B137	ISG I		; ↰ ISG I
+B138	GTO B107	; GTO B 1 0 7
+B139	1.01		; 1 . 0 1 ENTER
+B140	STO I		; ↱ STO I
+B141*	RCL C		; RCL C
+B142	RCL+ I		; RCL + I
+B143	STO J		; ↱ STO J
+B144	RCL(J)		; RCL (J)
+B145	STO+ D		; ↱ STO + D
+B146	ISG I		; ↰ ISG I
+B147	GTO B141	; GTO B 1 4 1
+B148	RCL D		; RCL D
+B149	RCL- M		; RCL - M
+B150	x≠0?		; ↱ x?0 1
+B151	GTO B156	; GTO B 1 5 6
+B152	SF 10		; ↰ FLAGS 1 . 0
+; EQN RCL G RCL U RCL T RCL T RCL E RCL R ↱ ! ↱ ! ENTER
+B153	eqn GUTTER!!
+B154	PSE		; ↱ PSE
+B155	CF 10		; ↰ FLAGS 2 . 0
+B156*	RCL B		; RCL B
+B157	x≠0?		; ↱ x?0 1
+B158	GTO B169	; GTO B 1 6 9
+B159	10		; 1 0 ENTER
+B160	RCL D		; RCL D
+B161	x≠y?		; ↰ x?y 1
+B162	GTO B169	; GTO B 1 6 9
+B163	SF 10		; ↰ FLAGS 1 . 0
+; EQN RCL S RCL T RCL R RCL I RCL K RCL E ↱ ! ↱ ! ↱ ! ↱ ! ↱ ! ENTER
+B164	eqn STRIKE!!!!!
+B165	PSE		; ↱ PSE
+B166	CF 10		; ↰ FLAGS 2 . 0
+B167	3		; 3 ENTER
+B168	STO Q		; ↱ STO Q
+B169*	1		; 1 ENTER
+B170	RCL B		; RCL B
+B171	x≠y?		; ↰ x?y 1
+B172	GTO B183	; GTO B 1 8 3
+B173	10		; 1 0 ENTER
+B174	RCL D		; RCL D
+B175	x≠y?		; ↰ x?y 1
+B176	GTO B183	; GTO B 1 8 3
+B177	SF 10		; ↰ FLAGS 1 . 0
+; EQN RCL S RCL P RCL A RCL R RCL E ↱ ! ↱ ! ↱ ! ↱ ! ENTER
+B178	eqn SPARE!!!!
+B179	PSE		; ↱ PSE
+B180	CF 10		; ↰ FLAGS 2 . 0
+B181	2		; 2 ENTER
+B182	STO Q		; ↱ STO Q
+B183*	1		; 1 ENTER
+B184	RCL B		; RCL B
+B185	x≠y?		; ↰ x?y 1
+B186	GTO B197	; GTO B 1 9 7
+B187	10		; 1 0 ENTER
+B188	RCL D		; RCL D
+B189	x≥y?		; ↰ x?y 5
+B190	GTO B197	; GTO B 1 9 7
+B191	SF 10		; ↰ FLAGS 1 . 0
+; EQN RCL E RCL R RCL R RCL O RCL R ↱ ! ↱ ! ↱ ! ENTER
+B192	eqn ERROR!!!
+B193	PSE		; ↱ PSE
+B194	CF 10		; ↰ FLAGS 2 . 0
+B195	1		; 1 ENTER
+B196	STO Q		; ↱ STO Q
+B197*	RCL B		; RCL B
+B198	x≠0?		; ↱ x?0 1
+B199	GTO B208	; GTO B 2 0 8
+B200	10		; 1 0 ENTER
+B201	RCL D		; RCL D
+B202	x≥y?		; ↰ x?y 5
+B203	GTO B208	; GTO B 2 0 8
+B204	SF 10		; ↰ FLAGS 1 . 0
+; EQN RCL R RCL O RCL L RCL L ↱ SPACE 2 RCL N RCL D ↱ SPACE RCL B RCL A RCL L RCL L ENTER
+B205	eqn ROLL 2ND BALL
+B206	PSE		; ↱ PSE
+B207	CF 10		; ↰ FLAGS 2 . 0
+B208*	RCL A		; RCL A
+B209	RCL× B		; RCL × B
+B210	RCL F		; RCL F
+B211	RCL× P		; RCL × P
+B212	+		; +
+B213	STO J		; ↱ STO J
+B214	RCL D		; RCL D
+B215	STO(J)		; ↱ STO (J)
+B216	1		; 1 ENTER
+B217	RCL B		; RCL B
+B218	x=y?		; ↰ x?y 6
+B219	GTO B240	; GTO B 2 4 0
+B220	1		; 1 ENTER
+B221	STO B		; ↱ STO B
+B222	RCL D		; RCL D
+B223	STO M		; ↱ STO M
+B224	3		; 3 ENTER
+B225	RCL Q		; RCL Q
+B226	x=y?		; ↰ x?y 6
+B227	GTO B208	; GTO B 2 0 8
+B228	RCL A		; RCL A
+B229	RCL× B		; RCL × B
+B230	RCL F		; RCL F
+B231	RCL× P		; RCL × P
+B232	+		; +
+B233	STO J		; ↱ STO J
+B234	RCL D		; RCL D
+B235	RCL- M		; RCL - M
+B236	STO(J)		; ↱ STO (J)
+B237	RCL Q		; RCL Q
+B238	x=0?		; ↱ x?0 6
+B239	GTO B054	; GTO B 0 5 4
+B240*	RCL A		; RCL A
+B241	ENTER		; ENTER
+B242	+		; +
+B243	RCL F		; RCL F
+B244	RCL× P		; RCL × P
+B245	+		; +
+B246	STO J		; ↱ STO J
+B247	RCL Q		; RCL Q
+B248	STO(J)		; ↱ STO (J)
+B249	ISG P		; ↰ ISG P
+B250	GTO B041	; GTO B 0 4 1
+B251	1		; 1 ENTER
+B252	STO+ F		; ↱ STO + F
+B253	10		; 1 0 ENTER
+B254	RCL F		; RCL F
+B255	x≤y?		; ↰ x?y 2
+B256	GTO B036	; GTO B 0 3 6
+B257	1		; 1 ENTER
+B258	STO P		; ↱ STO P
+B259	0.001		; 0 . 0 0 1 ENTER
+B260	RCL× R		; RCL × R
+B261	STO+ P		; ↱ STO + P
+B262*	SF 10		; ↰ FLAGS 1 . 0
+; EQN RCL P RCL L RCL A RCL Y RCL E RCL R ENTER
+B263	eqn PLAYER
+B264	PSE		; ↱ PSE
+B265	RCL P		; RCL P
+B266	IP		; ↰ INTG 6
+B267	PSE		; ↱ PSE
+B268	CF 10		; ↰ FLAGS 2 . 0
+B269	1.01		; 1 . 0 1 ENTER
+B270	STO J		; ↱ STO J
+B271*	RCL J		; RCL J
+B272	RCL× P		; RCL × P
+B273	STO I		; ↱ STO I
+B274	RCL A		; RCL A
+B275	STO+ I		; ↱ STO + I
+B276	R↓		; R↓
+B277	RCL(I)		; RCL (I)
+B278	RCL A		; RCL A
+B279	STO+ I		; ↱ STO + I
+B280	R↓		; R↓
+B281	RCL(I)		; RCL (I)
+B282	RCL A		; RCL A
+B283	STO+ I		; ↱ STO + I
+B284	R↓		; R↓
+B285	RCL(I)		; RCL (I)
+B286	RCL(J)		; RCL (J)
+; EQN ↱ [] R↓ 4 ↰ , R↓ 3 ↰ , R↓ 2 > ↱ STO 🄲 RCL (J) ENTER
+B287	eqn [REGT,REGZ,REGY]►(J)
+B288	VIEW(J)		; ↰ VIEW (J)
+B289	R↓		; R↓
+B290	STO(J)		; ↱ STO (J)
+B291	ISG J		; ↰ ISG J
+B292	GTO B271	; GTO B 2 7 1
+B293	ISG P		; ↰ ISG P
+B294	GTO B262	; GTO B 2 6 2
+B295	CLx		; ↱ CLEAR 1
+B296	SF 10		; ↰ FLAGS 1 . 0
+; EQN RCL P RCL L RCL A RCL Y ↱ SPACE RCL A RCL G RCL A RCL I RCL N ↱ SPACE RCL Y ↰ = 2 ENTER
+B297	eqn PLAY AGAIN Y=2
+B298	CF 10		; ↰ FLAGS 2 . 0
+B299	2		; 2 ENTER
+B300	x=y?		; ↰ x?y 6
+B301	GTO B054	; GTO B 0 5 4
+B302	FIX 4		; ↰ DISPLAY 1 4
+B303	RTN		; ↰ RTN
+B304*	RCL I		; RCL I
+B305	IP		; ↰ INTG 6
+B306	ENTER		; ENTER
+B307	CLΣ		; ↱ CLEAR 4
+B308	x=0?		; ↱ x?0 6
+B309	GTO B367	; GTO B 3 6 7
+B310	Σ+		; Σ+
+B311	x=y?		; ↰ x?y 6
+B312	GTO B340	; GTO B 3 4 0
+B313	Σ+		; Σ+
+B314	x=y?		; ↰ x?y 6
+B315	GTO B325	; GTO B 3 2 5
+B316	RCL T		; RCL T
+B317	ENTER		; ENTER
+B318	CLΣ		; ↱ CLEAR 4
+B319	x=0?		; ↱ x?0 6
+; EQN ↱ SPACE ↱ SPACE ↱ SPACE 0 ENTER
+B320	eqn    0
+B321	Σ+		; Σ+
+B322	x=y?		; ↰ x?y 6
+; EQN ↱ SPACE ↱ SPACE ↱ SPACE + ENTER
+B323	eqn    +
+B324	RTN		; ↰ RTN
+B325*	RCL T		; RCL T
+B326	ENTER		; ENTER
+B327	CLΣ		; ↱ CLEAR 4
+B328	x=0?		; ↱ x?0 6
+; EQN ↱ SPACE ↱ SPACE 0 ↱ SPACE 0 ENTER
+B329	eqn   0 0
+B330	Σ+		; Σ+
+B331	x=y?		; ↰ x?y 6
+; EQN ↱ SPACE ↱ SPACE 0 ↱ SPACE + ENTER
+B332	eqn   0 +
+B333	Σ+		; Σ+
+B334	x=y?		; ↰ x?y 6
+; EQN ↱ SPACE ↱ SPACE + ↱ SPACE 0 ENTER
+B335	eqn   + 0
+B336	Σ+		; Σ+
+B337	x=y?		; ↰ x?y 6
+; EQN ↱ SPACE ↱ SPACE + ↱ SPACE + ENTER
+B338	eqn   + +
+B339	RTN		; ↰ RTN
+B340*	RCL T		; RCL T
+B341	ENTER		; ENTER
+B342	CLΣ		; ↱ CLEAR 4
+B343	x=0?		; ↱ x?0 6
+; EQN ↱ SPACE 0 ↱ SPACE 0 ↱ SPACE 0 ENTER
+B344	eqn  0 0 0
+B345	Σ+		; Σ+
+B346	x=y?		; ↰ x?y 6
+; EQN ↱ SPACE 0 ↱ SPACE 0 ↱ SPACE + ENTER
+B347	eqn  0 0 +
+B348	Σ+		; Σ+
+B349	x=y?		; ↰ x?y 6
+; EQN ↱ SPACE 0 ↱ SPACE + ↱ SPACE 0 ENTER
+B350	eqn  0 + 0
+B351	Σ+		; Σ+
+B352	x=y?		; ↰ x?y 6
+; EQN ↱ SPACE 0 ↱ SPACE + ↱ SPACE + ENTER
+B353	eqn  0 + +
+B354	Σ+		; Σ+
+B355	x=y?		; ↰ x?y 6
+; EQN ↱ SPACE + ↱ SPACE 0 ↱ SPACE 0 ENTER
+B356	eqn  + 0 0
+B357	Σ+		; Σ+
+B358	x=y?		; ↰ x?y 6
+; EQN ↱ SPACE + ↱ SPACE 0 ↱ SPACE + ENTER
+B359	eqn  + 0 +
+B360	Σ+		; Σ+
+B361	x=y?		; ↰ x?y 6
+; EQN ↱ SPACE + ↱ SPACE + ↱ SPACE 0 ENTER
+B362	eqn  + + 0
+B363	Σ+		; Σ+
+B364	x=y?		; ↰ x?y 6
+; EQN ↱ SPACE + ↱ SPACE + ↱ SPACE + ENTER
+B365	eqn  + + +
+B366	RTN		; ↰ RTN
+B367*	RCL T		; RCL T
+B368	ENTER		; ENTER
+B369	CLΣ		; ↱ CLEAR 4
+B370	x=0?		; ↱ x?0 6
+; EQN 0 ↱ SPACE 0 ↱ SPACE 0 ↱ SPACE 0 ENTER
+B371	eqn 0 0 0 0
+B372	Σ+		; Σ+
+B373	x=y?		; ↰ x?y 6
+; EQN 0 ↱ SPACE 0 ↱ SPACE 0 ↱ SPACE + ENTER
+B374	eqn 0 0 0 +
+B375	Σ+		; Σ+
+B376	x=y?		; ↰ x?y 6
+; EQN 0 ↱ SPACE 0 ↱ SPACE + ↱ SPACE 0 ENTER
+B377	eqn 0 0 + 0
+B378	Σ+		; Σ+
+B379	x=y?		; ↰ x?y 6
+; EQN 0 ↱ SPACE 0 ↱ SPACE + ↱ SPACE + ENTER
+B380	eqn 0 0 + +
+B381	Σ+		; Σ+
+B382	x=y?		; ↰ x?y 6
+; EQN 0 ↱ SPACE + ↱ SPACE 0 ↱ SPACE 0 ENTER
+B383	eqn 0 + 0 0
+B384	Σ+		; Σ+
+B385	x=y?		; ↰ x?y 6
+; EQN 0 ↱ SPACE + ↱ SPACE 0 ↱ SPACE + ENTER
+B386	eqn 0 + 0 +
+B387	Σ+		; Σ+
+B388	x=y?		; ↰ x?y 6
+; EQN 0 ↱ SPACE + ↱ SPACE + ↱ SPACE 0 ENTER
+B389	eqn 0 + + 0
+B390	Σ+		; Σ+
+B391	x=y?		; ↰ x?y 6
+; EQN 0 ↱ SPACE + ↱ SPACE + ↱ SPACE + ENTER
+B392	eqn 0 + + +
+B393	Σ+		; Σ+
+B394	x=y?		; ↰ x?y 6
+; EQN + ↱ SPACE 0 ↱ SPACE 0 ↱ SPACE 0 ENTER
+B395	eqn + 0 0 0
+B396	Σ+		; Σ+
+B397	x=y?		; ↰ x?y 6
+; EQN + ↱ SPACE 0 ↱ SPACE 0 ↱ SPACE + ENTER
+B398	eqn + 0 0 +
+B399	Σ+		; Σ+
+B400	x=y?		; ↰ x?y 6
+; EQN + ↱ SPACE 0 ↱ SPACE + ↱ SPACE 0 ENTER
+B401	eqn + 0 + 0
+B402	Σ+		; Σ+
+B403	x=y?		; ↰ x?y 6
+; EQN + ↱ SPACE 0 ↱ SPACE + ↱ SPACE + ENTER
+B404	eqn + 0 + +
+B405	Σ+		; Σ+
+B406	x=y?		; ↰ x?y 6
+; EQN + ↱ SPACE + ↱ SPACE 0 ↱ SPACE 0 ENTER
+B407	eqn + + 0 0
+B408	Σ+		; Σ+
+B409	x=y?		; ↰ x?y 6
+; EQN + ↱ SPACE + ↱ SPACE 0 ↱ SPACE + ENTER
+B410	eqn + + 0 +
+B411	Σ+		; Σ+
+B412	x=y?		; ↰ x?y 6
+; EQN + ↱ SPACE + ↱ SPACE + ↱ SPACE 0 ENTER
+B413	eqn + + + 0
+B414	Σ+		; Σ+
+B415	x=y?		; ↰ x?y 6
+; EQN + ↱ SPACE + ↱ SPACE + ↱ SPACE + ENTER
+B416	eqn + + + +
+B417	RTN		; ↰ RTN
+; 🄲
