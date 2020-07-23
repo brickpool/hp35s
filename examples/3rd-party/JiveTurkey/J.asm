@@ -2,7 +2,7 @@
 ; This program is from Maurice E.T. Suinnen and is used here by permission.
 ; http://ftp.whtech.com/hexbus_cc40_ti74/a-collection-of-information-on-the-ti-cc40-computer.pdf
 MODEL   P35S
-SEGMENT CODE
+SEGMENT JiveTurkey CODE
         LBL     J
         ;100 DISPLAY AT(6)"* JIVE TURKEY GAME *":PAUSE 2
         SF      10
@@ -123,8 +123,8 @@ SEGMENT CODE
         CF      1
         RTN
 INTRND:
-        eqn 'IP(RAND*IP(REGX+1/2))+1'
+        eqn     'IP(RAND*IP(REGX+1/2))+1'
         RTN
-ENDS
+ENDS JiveTurkey
 
 END
