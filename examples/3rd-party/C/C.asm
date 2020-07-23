@@ -3,7 +3,7 @@
 ; https://www.hpmuseum.org/software/35cowbul.htm
 MODEL P35S
 
-SEGMENT Cows_and_Bulls CODE
+SEGMENT CowsAndBulls CODE
 LBL C
   INPUT L
   RANDOM
@@ -116,6 +116,6 @@ LBL C
     @101:
     VIEW S
   GTO @005
-ENDS Cows_and_Bulls
+ENDS CowsAndBulls
 
 END

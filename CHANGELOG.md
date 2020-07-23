@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - install dir in `examples/Makefile`
 - README-files in the example folder
-- Constant `pi` (`\pi` is not an instruction anymore)
+- Constant `pi` (`\pi` is not an trigraph anymore)
 - Constant `i` (`0\im1`)
 
 ### Changed
