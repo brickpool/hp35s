@@ -11,7 +11,7 @@ Bedienung:
 _"IC555"_ ist nur ein Massenspeicher-Name. Es gibt keine Marke dieses Namens. Aufruf von der Kommandozeile:
 
 ```
-perl -Ilib asm2hpc.pl --jumpmark --file=examples/3rd-party/9H/IC555.asm > examples/3rd-party/9H/IC555.txt
+perl -Ilib asm2hpc.pl --jumpmark --plain --file=examples/3rd-party/9H/IC555.asm > examples/3rd-party/9H/IC555.txt
 perl -Ilib asm2hpc.pl --jumpmark --shortcut --unicode --file=examples/3rd-party/9H/IC555.asm > examples/3rd-party/9H/IC555.35s
 ```
 
