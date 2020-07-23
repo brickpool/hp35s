@@ -1,4 +1,3 @@
-%%HP: T(3)A(D)F(.);
 R001	LBL R
 R002	ARG
 R003	LASTx
@@ -8,12 +7,12 @@ R006	x<>y
 R007	COS
 R008	LASTx
 R009	SIN
-R010	R\|v
-R011	R\|v
+R010	Rv
+R011	Rv
 R012	x<>y
-R013	R\|v
-R014	\.x
+R013	Rv
+R014	*
 R015	x<>y
 R016	LASTx
-R017	\.x
+R017	*
 R018	RTN
