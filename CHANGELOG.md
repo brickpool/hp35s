@@ -5,7 +5,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.4.2] - 2020-08-14
 ### Added
+- example triangle `T`
 - predefined equate `??date` and `??time`
 
 ## [0.4.1] - 2020-04-28
@@ -222,7 +225,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - Initial version created
 
-[Unreleased]: https://github.com/brickpool/hp35s/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/brickpool/hp35s/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/brickpool/hp35s/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/brickpool/hp35s/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/brickpool/hp35s/compare/v0.3.12...v0.4.0
 [0.3.12]: https://github.com/brickpool/hp35s/compare/v0.3.11...v0.3.12

@@ -4,6 +4,7 @@ SOURCE += J\J.asm
 SOURCE += N\NE555.asm
 SOURCE += O\O.asm
 SOURCE += P\P.asm
+SOURCE += T\T.asm
 SOURCE += Y\Y.asm
 SOURCE += W\W.asm
 

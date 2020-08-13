@@ -1,0 +1,88 @@
+; 🄲 ↱ PRGM
+T001	LBL T		; ↱ LBL T
+T002	RCL U		; RCL U
+T003	SIN		; SIN
+T004	RCL Z		; RCL Z
+T005	×		; ×
+T006	RCL X		; RCL X
+T007	÷		; ÷
+T008	ASIN		; ↱ ASIN
+T009	STOP		; R/S
+T010	STO W		; ↱ STO W
+T011	RCL W		; RCL W
+T012	RCL U		; RCL U
+T013	+		; +
+T014	STO V		; ↱ STO V
+T015	GTO T020	; GTO T 0 2 0
+T016	RCL V		; RCL V
+T017	RCL U		; RCL U
+T018	+		; +
+T019	STO W		; ↱ STO W
+T020*	RCL V		; RCL V
+T021	SIN		; SIN
+T022	RCL W		; RCL W
+T023	SIN		; SIN
+T024	÷		; ÷
+T025	RCL Z		; RCL Z
+T026	×		; ×
+T027	STO Y		; ↱ STO Y
+T028*	RCL U		; RCL U
+T029	RCL Y		; RCL Y
+T030	XEQ T068	; XEQ T 0 6 8
+T031	RCL Z		; RCL Z
+T032	x<>y		; x<>y
+T033	-		; -
+T034	XEQ T079	; XEQ T 0 7 9
+T035	STO X		; ↱ STO X
+T036	x<>y		; x<>y
+T037	STO V		; ↱ STO V
+T038	RCL U		; RCL U
+T039	+		; +
+T040	COS		; COS
+T041	+/-		; +/-
+T042	ACOS		; ↱ ACOS
+T043	STO W		; ↱ STO W
+T044	SIN		; SIN
+T045	×		; ×
+T046	RCL Y		; RCL Y
+T047	×		; ×
+T048	2		; 2 ENTER
+T049	÷		; ÷
+T050	RTN		; ↰ RTN
+T051	RCL Y		; RCL Y
+T052	x²		; ↱ x²
+T053	RCL Z		; RCL Z
+T054	x²		; ↱ x²
+T055	+		; +
+T056	RCL X		; RCL X
+T057	x²		; ↱ x²
+T058	-		; -
+T059	RCL Y		; RCL Y
+T060	RCL Z		; RCL Z
+T061	×		; ×
+T062	2		; 2 ENTER
+T063	×		; ×
+T064	÷		; ÷
+T065	ACOS		; ↱ ACOS
+T066	STO U		; ↱ STO U
+T067	GTO T028	; GTO T 0 2 8
+T068*	x<>y		; x<>y
+T069	SIN		; SIN
+T070	LASTx		; ↱ LASTx
+T071	COS		; COS
+T072	R↓		; R↓
+T073	x<>y		; x<>y
+T074	×		; ×
+T075	R↑		; ↱ R↑
+T076	LASTx		; ↱ LASTx
+T077	×		; ×
+T078	RTN		; ↰ RTN
+T079*	x<>y		; x<>y
+T080	𝒾		; 𝒾
+T081	×		; ×
+T082	+		; +
+T083	ARG		; ↰ ARG
+T084	LASTx		; ↱ LASTx
+T085	ABS		; ↱ ABS
+T086	RTN		; ↰ RTN
+; 🄲

@@ -32,3 +32,4 @@ _gsdata_/
 
 # Ignore some 3rd-party folder
 /examples/3rd-party/C4
+/examples/3rd-party/Isola
