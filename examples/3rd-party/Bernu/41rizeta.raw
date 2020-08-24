@@ -1,0 +1,29 @@
+01  LBL "ZETA"
+02  CHS
+03  STO 01
+04  1
+05  STO 00
+06  ENTER^
+07  LBL 01
+08  CLX
+09  SIGN
+10  RCL 00
+11  +
+12  STO 00
+13  RCL 01
+14  Y^X
+15  -
+16  CHS
+17  LASTX
+18  RND                   the accuracy is determined by the display format.
+19  X#0?
+20  GTO 01
+21  SIGN
+22  2
+23  RCL 01
+24  Y^X
+25  ST+ X
+26  -
+27  /
+28  ABS
+29  END

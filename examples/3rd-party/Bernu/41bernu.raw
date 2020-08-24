@@ -1,0 +1,63 @@
+01  LBL "BERN"
+02  STO 02
+03  1
+04  X>Y?
+05  RTN
+06  ST+ X
+07  X<=Y?
+08  GTO 00
+09  1/X
+10  CHS
+11  RTN
+12  LBL 00
+13  X#Y?
+14  GTO 00
+15  6
+16  1/X
+17  RTN
+18  LBL 00
+19  MOD
+20  0
+21  X#Y?
+22  RTN
+23  4
+24  RCL 02
+25  X#Y?
+26  GTO 00
+27  30
+28  1/X
+29  CHS
+30  RTN
+31  LBL 00
+32  6
+33  X#Y?
+34  GTO 00
+35  42
+36  1/X
+37  RTN
+38  LBL 00
+39  X<>Y
+40  FIX 9
+41  XEQ "ZETA"
+42  ST+ X
+43  1
+44  CHS
+45  RCL 02
+46  2
+47  /
+48  Y^X
+49  *
+50  CHS
+51  PI
+52  ST+ X
+53   E-9
+54  -
+55  RCL 02
+56  Y^X
+57  /
+58  LBL 01
+59  RCL 02
+60  *
+61  DSE 02
+62  GTO 01
+63  END
