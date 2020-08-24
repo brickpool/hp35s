@@ -27,6 +27,6 @@ SEGMENT Sunlight CODE
         /
         ->HMS
         RTN
-ENDS
+ENDS    Sunlight
 
 END
