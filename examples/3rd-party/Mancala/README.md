@@ -131,6 +131,6 @@ There are a few language differences to the original listing
 Command line options
 
 ```
-perl -Ilib asm2hpc.pl --jumpmark --file=examples/3rd-party/M/M.asm > examples/3rd-party/M/M.txt
-perl -Ilib asm2hpc.pl --jumpmark --shortcut --unicode --file=examples/3rd-party/M/M.asm > examples/3rd-party/M/M.35s
+perl -Ilib asm2hpc.pl --jumpmark --file=examples/3rd-party/Mancala/M.asm > examples/3rd-party/Mancala/M.txt
+perl -Ilib asm2hpc.pl --jumpmark --shortcut --unicode --file=examples/3rd-party/Mancala/M.asm > examples/3rd-party/Mancala/M.35s
 ```

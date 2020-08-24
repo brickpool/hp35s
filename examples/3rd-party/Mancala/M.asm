@@ -2,7 +2,7 @@
 ; This program is by Dan B. (brianddk) and is used here by permission.
 ; https://brianddk.github.io/prog/mancala/mancala.asm
 MODEL P35S
-SEGMENT MANCA CODE
+SEGMENT Mancala CODE
 ;Main Mancala program
 LBL M
   XEQ init                          ; Init the game registers
@@ -284,5 +284,5 @@ cleanup:
   DEG
 RTN
 
-ENDS MANCA
+ENDS Mancala
 END
