@@ -79,6 +79,6 @@ There are a few language differences to the original listing
 ## Command line options
 
 ```
-perl -Ilib asm2hpc.pl --jumpmark --plain --file=examples/3rd-party/R/R.asm > examples/3rd-party/R/R.txt
-perl -Ilib asm2hpc.pl --jumpmark --shortcut --unicode --file=examples/3rd-party/R/R.asm > examples/3rd-party/R/R.35s
+perl -Ilib asm2hpc.pl --jumpmark --plain --file=examples/3rd-party/Rectangular/R.asm > examples/3rd-party/Rectangular/R.txt
+perl -Ilib asm2hpc.pl --jumpmark --shortcut --unicode --file=examples/3rd-party/Rectangular/R.asm > examples/3rd-party/Rectangular/R.35s
 ```
