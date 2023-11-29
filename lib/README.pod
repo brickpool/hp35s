@@ -47,13 +47,13 @@ L<metacpan|https://metacpan.org/pod/Parser::MGC>
 
 =item *
 
-2019, 2020 J. Schneider E<lt>L<http://github.com/brickpool>E<gt>
+2019-2021 J. Schneider E<lt>L<http://github.com/brickpool>E<gt>
 
 =back
 
 =head1 COPYRIGHT AND LICENCE
 
-libserialport is an open source project released under the MIT license.
+HP35s is an open source project released under the MIT license.
 
 =over
 
