@@ -15,7 +15,7 @@ The associated key strokes can optionally be output as a comment by the
 Assembler (option C<-s>).
 
 It can be very helpful to I<import> the programs by using the Emulator Macro
-funnction to test the program logic (C<AppData/Marcos/*.mac> option C<-e>).
+function to test the program logic (C<AppData/Marcos/*.mac> option C<-e>).
 
 =head2 Install
 
@@ -37,7 +37,7 @@ program code (Reverse Polish Notation).
   USAGE:
     c:> type <asm-file> | perl asm2hpc.pl [options] 1> outfile.35s 2> outfile.err
   
-  VERSION: v0.4.0
+  VERSION: v0.4.2
     Web: http://www.brickpool.de/
   
   OPTIONS:

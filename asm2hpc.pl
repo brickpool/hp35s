@@ -1,6 +1,6 @@
-#!/usr/bin/perl
+#!perl
 #
-# (c) 2019, 2020 brickpool
+# (c) 2019-2025 brickpool
 #     J.Schneider (http://github.com/brickpool/)
 #
 # This script converts an assembler program to HP35s native program code
@@ -211,7 +211,7 @@ my $tbl_instr_3graph = {
   'zy'    => '\Gsy',
   '$FN_d' => '\.SFN d',
   # G5
-  '->°C'  => '\->\^oC',
+  '->Â°C'  => '\->\^oC',
   # G6
   'CLZ'   => 'CL\GS',
   '->CM'  => '\->CM',
@@ -221,7 +221,7 @@ my $tbl_instr_3graph = {
   'ENG->' => 'ENG\->',
   'e^x'   => 'e\^x',
   # G8
-  '->°F'  => '\->\^oF',
+  '->Â°F'  => '\->\^oF',
   '->GAL' => '\->GAL',
   # G9
   '->HMS' => '\->HMS',
@@ -658,15 +658,15 @@ my $tbl_char_seq = {
   '\_y'   => '\+> S,\Gs 2 \.< \BS \.>',                 # y
   '\->'   => '\+> \->l \.> \BS \BS \BS',
   '\_x'   => '\+> S,\Gs 1 \.< \BS \.>',                 # x
-  '\Gm'   => '\<+ CONST \.v \.v \.v 4 \BS',             # µ
-  'µ'     => '\<+ CONST \.v \.v \.v 4 \BS',             # \Gm
+  '\Gm'   => '\<+ CONST \.v \.v \.v 4 \BS',             # Âµ
+  'Âµ'     => '\<+ CONST \.v \.v \.v 4 \BS',             # \Gm
   '\144'  => '',
-  '\145'  => '\+> SUM 4 \.< \BS \BS \.>',               # ²
-  '²'     => '\+> SUM 4 \.< \BS \BS \.>',               # \145
+  '\145'  => '\+> SUM 4 \.< \BS \BS \.>',               # Â²
+  'Â²'     => '\+> SUM 4 \.< \BS \BS \.>',               # \145
   '\146'  => '',
   '\147'  => '',
-  '\^o'   => '\<+ ->\^oF \.> \BS \BS \BS \.< \BS \.>',  # °
-  '°'     => '\<+ ->\^oF \.> \BS \BS \BS \.< \BS \.>',  # \^o
+  '\^o'   => '\<+ ->\^oF \.> \BS \BS \BS \.< \BS \.>',  # Â°
+  'Â°'     => '\<+ ->\^oF \.> \BS \BS \BS \.< \BS \.>',  # \^o
   '"'     => '',
   '\150'  => '',
   '\151'  => '',
@@ -775,7 +775,7 @@ my $tbl_char_seq = {
   '\;.'   => '',
   '\|>'   => '\+> STO \CC',
   # additional char
-  '³'     => '',
+  'Â³'     => '',
   '#'     => '',
   '{'     => '',
   '|'     => '',
@@ -1141,9 +1141,9 @@ my $tbl_char_unicode = {
   '\_y'   => 'y',
   '\->'   => _rarr,
   '\_x'   => 'x',
-  '\Gm'   => 'µ',
+  '\Gm'   => 'Âµ',
   '\145'  => _sup2,
-  '\^o'   => '°',
+  '\^o'   => 'Â°',
   '\157'  => _sigma,
   '\Gh'   => _theta,
   '\167'  => _supalpha,

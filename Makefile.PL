@@ -1,4 +1,4 @@
-#! perl
+#!perl
 
 use strict;
 use warnings;
@@ -23,5 +23,5 @@ WriteMakefile(
     'Exporter'            => 5.6401,
     'Parser::MGC'         => 0.16,
   },
-  LICENSE           => 'mit',
+  LICENSE             => 'mit',
 );

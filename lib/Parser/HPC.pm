@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# (c) 2019, 2020 brickpool
+# (c) 2019-2025 brickpool
 #     J.Schneider (http://github.com/brickpool/)
 #
 # simple recursive-descent one-pass assembler parser for HP calculators
@@ -115,7 +115,7 @@ our @constants = (
   'lcn',  # Neutron Compton wavelength
   'lcp',  # Proton Compton wavelength
   'a',    # Fine structure constant
-  'z',    # Stefan–Boltzmann constant
+  'z',    # Stefan-Boltzmann constant
   't',    # Celsius temperature
   'atm',  # Standard atmosphere
   'gp',   # Proton gyromagnetic ratio
@@ -183,7 +183,7 @@ our @with_digits = (
 );
 
 our @with_variables = (
-  #G9
+  # G9
   'INPUT',  # HP35s bug -> INVALID (I)
   # G10
   'LBL',
@@ -222,12 +222,12 @@ our @functions = (
 #  'ALOG',
   'ARG', 'ASIN', 'ASINH', 'ATAN',
   # G5
-  'ATANH', '->°C',
+  'ATANH', '->Â°C',
   # G6
   '->CM', 'COS', 'COSH', '->DEG',
   # G8
 #  'EXP',
-  '->°F', '->GAL',
+  '->Â°F', '->GAL',
   # G9
 #  'IDIV', 'INV',
   # G12
@@ -339,12 +339,12 @@ my $character = {
   '\->'   => '8d',  # Unit Conversion '->l'
   '\_x'   => '8e',  # Standard Deviation 'sigma x'
   'x'     => '8e',
-  '\Gm'   => '8f',  # Constant 'µµ'
-  'µ'     => '8f',
+  '\Gm'   => '8f',  # Constant 'ÂµÂµ'
+  'Âµ'     => '8f',
   '\145'  => '91',  # Summation statistics 'Sigma x^2'
-  '²'     => '91',
-  '\^o'   => '94',  # Degree '->°F'
-  '°'     => '94',
+  'Â²'     => '91',
+  '\^o'   => '94',  # Degree '->Â°F'
+  'Â°'     => '94',
   '\157'  => '9d',  # Constant 'sigma'
   '\Gh'   => '9e',  # Complex small 'theta'
   '\167'  => 'a7',  # Constant 'atm'
@@ -361,7 +361,7 @@ my $character = {
   '\^2'   => 'b9',  # Constant 'C2'
   '\_w'   => 'c1',  # Mean 'x-bar w'
   'w'     => 'c1',
-  '\^B'   => 'c5',  # Constant 'µB'
+  '\^B'   => 'c5',  # Constant 'ÂµB'
   '\^C'   => 'c6',  # Constant 'C1'
   '\^G'   => 'ca',  # Constant 'G0'
   '\^N'   => 'd1',  # Constant 'NA'
@@ -1156,7 +1156,7 @@ sub parse_end
 
 Expects to find a keyword, and consumes it. A keyword is defined as an
 identifier which is exactly one of the literal values passed in.
-This method works case insensitiv.
+This method works case insensitive.
 
 =cut
 

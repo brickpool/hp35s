@@ -1,3 +1,6 @@
+# Ignore VSCode
+.vscode/
+
 # Ignore backup directory
 _gsdata_/
 
