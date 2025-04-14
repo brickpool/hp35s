@@ -1,0 +1,63 @@
+; 🄲 ↱ PRGM
+Z001	LBL Z		; ↱ LBL Z
+Z002	RPN		; MODE 5
+Z003	SF 10		; ↰ FLAGS 1 . 0
+; EQN 1 RCL H RCL F ↱ SPACE 2 RCL S RCL W ↱ SPACE 3 RCL C RCL O ↱ SPACE 4 ↰ CONST ∧ ∧ ∧ 2 ⇦ 4 ENTER
+Z004	eqn 1HF 2SW 3CO 4λ4
+Z005	CF 10		; ↰ FLAGS 2 . 0
+Z006	1		; 1 ENTER
+Z007	x=y?		; ↰ x?y 6
+Z008	GTO Z023	; GTO Z 0 2 3
+Z009	R↓		; R↓
+Z010	2		; 2 ENTER
+Z011	x=y?		; ↰ x?y 6
+Z012	GTO Z028	; GTO Z 0 2 8
+Z013	R↓		; R↓
+Z014	3		; 3 ENTER
+Z015	x=y?		; ↰ x?y 6
+Z016	GTO Z043	; GTO Z 0 4 3
+Z017	R↓		; R↓
+Z018	4		; 4 ENTER
+Z019	x=y?		; ↰ x?y 6
+Z020	GTO Z054	; GTO Z 0 5 4
+Z021	R↓		; R↓
+Z022	STOP		; R/S
+Z023*	INPUT L		; ↰ INPUT L
+Z024	INPUT C		; ↰ INPUT C
+Z025	÷		; ÷
+Z026	√x		; √x
+Z027	GTO Z058	; GTO Z 0 5 8
+Z028*	INPUT E		; ↰ INPUT E
+Z029	INPUT A		; ↰ INPUT A
+Z030	INPUT D		; ↰ INPUT D
+Z031	÷		; ÷
+Z032	LN		; ↱ LN
+Z033	ᴢᵒ		; ↰ CONST ∧ ∧ ∧ 1
+Z034	×		; ×
+Z035	π		; ↰ π
+Z036	ENTER		; ENTER
+Z037	+		; +
+Z038	÷		; ÷
+Z039	x<>y		; x<>y
+Z040	√x		; √x
+Z041	÷		; ÷
+Z042	GTO Z058	; GTO Z 0 5 8
+Z043*	INPUT E		; ↰ INPUT E
+Z044	INPUT A		; ↰ INPUT A
+Z045	INPUT D		; ↰ INPUT D
+Z046	÷		; ÷
+Z047	ACOSH		; ↰ HYP ↱ ACOS
+Z048	120		; 1 2 0 ENTER
+Z049	×		; ×
+Z050	x<>y		; x<>y
+Z051	√x		; √x
+Z052	÷		; ÷
+Z053	GTO Z058	; GTO Z 0 5 8
+Z054*	INPUT E		; ↰ INPUT E
+Z055	INPUT A		; ↰ INPUT A
+Z056	×		; ×
+Z057	√x		; √x
+Z058*	STO Z		; ↱ STO Z
+Z059	VIEW Z		; ↰ VIEW Z
+Z060	RTN		; ↰ RTN
+; 🄲

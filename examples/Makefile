@@ -7,6 +7,7 @@ SOURCE += P\P.asm
 SOURCE += T\T.asm
 SOURCE += Y\Y.asm
 SOURCE += W\W.asm
+SOURCE += Z\Z.asm
 
 # Targets
 TEXT = ${SOURCE:.asm=.txt}
