@@ -1,36 +1,27 @@
-#!/usr/bin/perl
-#
-# (c) 2019-2025 brickpool
-#     J.Schneider (http://github.com/brickpool/)
-#
-# simple recursive-descent one-pass assembler parser for HP calculators
-#
-#######################################################################
-#
-# Changelog: 
-#   http://github.com/brickpool/hp35s/CHANGELOG.md
-#
+package Parser::HPC;
+# ABSTRACT: Simple recursive-descent 1-pass assembler parser for HP calculators
+
 # ToDo:
-#   - the directive DISPLAY, LOCALS, NOLOCALS and RADIX and %TITLE
-#     are not implemented
+#   - the directive DISPLAY, LOCALS, NOLOCALS and RADIX are not implemented
 #   - only the polish notation mode is supported
 #   - Thousand separator operations are not implemented
 
 use strict;
 use warnings;
 
+our $VERSION = 'v0.5.0';
+
 =head1 NAME
 
-C<HpcParser> - simple recursive-descent one-pass assembler parser for HP calculators
+Parser::HPC - simple recursive-descent assembler parser for HP calculators
 
 =cut
 
-package Parser::HPC;
-use strict;
-use warnings;
-
-use Exporter;
-our @EXPORT = qw(
+use Parser::MGC;
+use HP35S::Charset qw(
+  $character
+);
+use HP35S::Instructions qw(
   @constants
   @instructions
   @with_address
@@ -41,8 +32,8 @@ our @EXPORT = qw(
   @functions
   @register
 );
-require Parser::MGC;
-our @ISA = qw(Exporter Parser::MGC);
+
+use parent 'Parser::MGC';
 
 =head1 PATTERNS
 The following pattern names are recognised.
@@ -62,7 +53,8 @@ use constant pattern_operation  => qr/[^\s\(\)]+/;
 use constant pattern_ident      => qr/[[:alpha:]@_\$?][[:alnum:]@_\$?]{0,246}/;
 
 my @directives = (
-  'DISPLAY', 'ENDS', 'END', 'EQU', 'LOCALS', 'NOLOCALS', 'MODEL', 'RADIX', 'SEGMENT', 'SET', '%TITLE',
+  'DISPLAY', 'ENDS', 'END', 'EQU', 'LOCALS', 'NOLOCALS', 'MODEL', 'RADIX', 
+  'SEGMENT', 'SET', '%TITLE',
 );
 
 # Pre defined text equates
@@ -77,312 +69,6 @@ my @languages = (
 my @segments = (
   'DATA', 'CODE', 'STACK',
 );
-
-our @constants = (
-  'pi',   # Pi (3.1416)
-  'i',    # Im (0.0000i1.0000)
-  
-  'c',    # Speed of light in vacuum
-  'g',    # Standard acceleration of gravity
-  'G',    # Newtonian constant of gravitation
-  'Vm',   # Molar volume of ideal gas
-  'NA',   # Avogadro constant
-  'Rb',   # Rydberg constant
-  'eV',   # Elementary charge
-  'me',   # Electron mass
-  'mp',   # Proton mass
-  'mn',   # Neutron mass
-  'mu',   # Muon mass
-  'k',    # Boltzmann constant
-  'h',    # Planck constant
-  'hbar', # Planck constant over 2 pi
-  'Ph0',  # Magnetic flux quantum
-  'a0',   # Bohr radius
-  'e0',   # Electric constant
-  'R',    # Molar gas constant
-  'F',    # Faraday constant
-  'u',    # Atomic mass constant
-  'u0',   # Magnetic constant
-  'uB',   # Bohr magneton
-  'uN',   # Nuclear magneton
-  'up',   # Proton magnetic moment
-  'ue',   # Electron magnetic moment
-  'un',   # Neutron magnetic moment
-  'uu',   # Muon magnetic moment
-  're',   # Classical electron radius
-  'Z0',   # Characteristic impendence of vacuum
-  'lc',   # Compton wavelength
-  'lcn',  # Neutron Compton wavelength
-  'lcp',  # Proton Compton wavelength
-  'a',    # Fine structure constant
-  'z',    # Stefan-Boltzmann constant
-  't',    # Celsius temperature
-  'atm',  # Standard atmosphere
-  'gp',   # Proton gyromagnetic ratio
-  'C1',   # First radiation constant
-  'C2',   # Second radiation constant
-  'G0',   # Conductance quantum
-  'e',    # The base number of natural logarithm
-);
-
-our @instructions = (
-  # G1
-  '+/-', '+', '-', '*', '/',
-  # G2
-  '1/x', '10^x', '%', '%CHG', 'Z+', 'Z-',
-  # G3
-  'Zx', 'Zx^2', 'Zxy', 'Zy', 'Zy^2', 'zx', 'zy',
-  # G4
-  'ALG', 'ALL', 'AND',
-  # G5
-  'b', 'BIN', '/c',
-  # G6
-  'CLZ', 'CLx', 'CLVARS', 'CLSTK', 'nCr', 'DEC', 'DEG',
-  # G7
-  '<-ENG', 'ENG->', 'ENTER', 'e^x',
-  # G8
-  'FP', 'GRAD', 'HEX',
-  # G9
-  '->HMS', 'HMS->', '->IN', 'INT/', 'INTG',
-  # G10
-  'IP', '->KG', '->KM', '->L', 'LASTx', '->LB', 'LN', 'LOG', 'm',
-  # G11
-  '->MILE', 'n', 'NAND', 'NOR', 'NOT', 'OCT', 'OR', 'nPr', 'PSE',
-  # G12
-  'r', 'rta', 'RAD', '->RAD', 'RADIX,', 'RADIX.', 'RANDOM', 'RMDR',
-  # G13
-  'RND', 'RPN', 'RTN', 'Rv', 'R^', 'SEED', 'SGN',
-  # G14
-  'STOP',
-  # G15
-  'sx', 'sy', 'x^2', 'sqrt', 'xroot', '\x-', '\x^', '!',
-  # G16
-  '\x-w', 'x<>y', 'x!=y?', 'x<=y?', 'x<y?', 'x>y?', 'x>=y?',
-  # G17
-  'x=y?', 'x!=0?', 'x<=0?', 'x<0?', 'x>0?', 'x>=0?', 'x=0?', 'XOR',
-  # G18
-  'xiy', 'x+yi', '\y-', '\y^', 'y^x',
-);
-
-our @with_address = (
-  # G8
-  'GTO',
-  # G15
-  'XEQ',
-);
-
-our @with_digits = (
-  # G5
-  'CF',
-  # G7
-  'ENG',
-  # G8
-  'FIX', 'FS?',
-  # G13
-  'SCI', 'SF',
-);
-
-our @with_variables = (
-  # G9
-  'INPUT',  # HP35s bug -> INVALID (I)
-  # G10
-  'LBL',
-);
-
-# 14-22
-our @with_indirects = (
-  # G3
-  '$FN_d',
-  # G7
-  'DSE',
-  # G8
-  'FN=',
-  # G10
-  'ISG',
-  # G12
-  'RCL', 'RCL+', 'RCL-', 'RCL*', 'RCL/',
-  # G14
-  'SOLVE', 'STO', 'STO+', 'STO-', 'STO*', 'STO/',
-  # G15
-  'VIEW',
-  # G16
-  'x<>',
-);
-
-our @expressions = (
-  # G7
-  'eqn',
-);
-
-our @functions = (
-  # G2
-#  'INV',
-  # G4
-  'ABS', 'ACOS', 'ACOSH',
-#  'ALOG',
-  'ARG', 'ASIN', 'ASINH', 'ATAN',
-  # G5
-  'ATANH', '->°C',
-  # G6
-  '->CM', 'COS', 'COSH', '->DEG',
-  # G8
-#  'EXP',
-  '->°F', '->GAL',
-  # G9
-#  'IDIV', 'INV',
-  # G12
-  'RMDR',
-  # G14
-  'SIN', 'SINH',
-#  'SQ', 'SQRT',
-  # G15
-  'TAN', 'TANH',
-  # G16
-#  'XROOT',
-);
-
-our @register = (
-  'REGX', 'REGY', 'REGZ', 'REGT',
-);
-
-# EQN character
-my $character = {
-  '\^c'   => '02',  # Constant 'lamda c'
-  '\^e'   => '03',  # Constant 'e'
-  '\^g'   => '04',  # Constant 'g'
-  '\^h'   => '05',  # Constant 'h'
-  '\^m'   => '06',  # Constant 'me'
-  '\^n'   => '07',  # Constant 'mn'
-  '\^p'   => '08',  # Constant 'mp'
-  '\^r'   => '09',  # Constant 're'
-  '\^t'   => '0a',  # Constant 'atm'
-  '\015'  => '0f',  # Constant 'NA'
-  '\016'  => '10',  # Constant 'c'
-  '\017'  => '11',  # Constant 'F'
-  '\018'  => '12',  # Constant 'G'
-  '\^k'   => '13',  # Constant 'k'
-  '\020'  => '14',  # Constant 'R'
-  '\021'  => '15',  # Constant 'G0'
-  '\023'  => '17',  # Constant 'h-bar'
-  '\024'  => '18',  # Constant 't'
-  '\Ga'   => '19',  # Constant 'alpha'
-  '\Gl'   => '1a',  # Constant 'lamda c'
-  '\O/'   => '1b',  # Constant 'Phi 0'
-  '\Gg'   => '1c',  # Constant 'gamma p'
-  '\oo'   => '1e',  # Constant 'R infinity'
-  '\Ge'   => '1f',  # Constant 'epsilon 0'
-  ' '     => '20',  # Space
-  '!'     => '21',  # Factorial symbol
-  '%'     => '25',  # Percent symbol '%CHG'
-  '\^-'   => '26',  # Sign symbol '+/-'
-  '('     => '28',  # Function bracket
-  ')'     => '29',  # Function bracket
-  '+'     => '2b',  # Addition sign
-  '-'     => '2d',  # Substraction sign
-  '0'     => '30',  # Number '0'
-  '1'     => '31',  # Number '1'
-  '2'     => '32',  # Number '2'
-  '3'     => '33',  # Number '3'
-  '4'     => '34',  # Number '4'
-  '5'     => '35',  # Number '5'
-  '6'     => '36',  # Number '6'
-  '7'     => '37',  # Number '7'
-  '8'     => '38',  # Number '8'
-  '9'     => '39',  # Number '9'
-  '='     => '3d',  # Equal symbol
-  'A'     => '41',  # Variable 'A'
-  'B'     => '42',  # Variable 'B'
-  'C'     => '43',  # Variable 'C'
-  'D'     => '44',  # Variable 'D'
-  'E'     => '45',  # Variable 'E'
-  'F'     => '46',  # Variable 'F'
-  'G'     => '47',  # Variable 'G'
-  'H'     => '48',  # Variable 'H'
-  'I'     => '49',  # Variable 'I'
-  'J'     => '4a',  # Variable 'J'
-  'K'     => '4b',  # Variable 'K'
-  'L'     => '4c',  # Variable 'L'
-  'M'     => '4d',  # Variable 'M'
-  'N'     => '4e',  # Variable 'N'
-  'O'     => '4f',  # Variable 'O'
-  'P'     => '50',  # Variable 'P'
-  'Q'     => '51',  # Variable 'Q'
-  'R'     => '52',  # Variable 'R'
-  'S'     => '53',  # Variable 'S'
-  'T'     => '54',  # Variable 'T'
-  'U'     => '55',  # Variable 'U'
-  'V'     => '56',  # Variable 'V'
-  'W'     => '57',  # Variable 'W'
-  'X'     => '58',  # Variable 'X'
-  'Y'     => '59',  # Variable 'Y'
-  'Z'     => '5a',  # Variable 'Z'
-  '['     => '5b',  # Vector bracket
-  '\092'  => '5c',  # Base binary 'b'
-  'b'     => '5c',
-  ']'     => '5d',  # Vector bracket
-  '^'     => '5e',  # Exponent 'y^x'
-  '\096'  => '60',  # Base octal 'o'
-  'o'     => '60',
-  '\_b'   => '7b',  # Linear regression 'b'
-  '\125'  => '7d',  # Standard Deviation 's'
-  's'     => '7d',
-  '\128'  => '80',  # Summation statistics 'n'
-  'n'     => '80',
-  '\:-'   => '81',  # Division sign
-  '/'     => '81',
-  '\.x'   => '82',  # Multiplication sign
-  '*'     => '82',
-  '\GS'   => '85',  # Summation statistics 'Sigma x'
-  '\pi'   => '87',  # Greek small 'pi'
-  '\_y'   => '8c',  # Standard Deviation 'sigma y'
-  'y'     => '8c',
-  '\->'   => '8d',  # Unit Conversion '->l'
-  '\_x'   => '8e',  # Standard Deviation 'sigma x'
-  'x'     => '8e',
-  '\Gm'   => '8f',  # Constant 'µµ'
-  'µ'     => '8f',
-  '\145'  => '91',  # Summation statistics 'Sigma x^2'
-  '²'     => '91',
-  '\^o'   => '94',  # Degree '->°F'
-  '°'     => '94',
-  '\157'  => '9d',  # Constant 'sigma'
-  '\Gh'   => '9e',  # Complex small 'theta'
-  '\167'  => 'a7',  # Constant 'atm'
-  '\171'  => 'ab',  # Linear regression 'r'
-  'r'     => 'ab',
-  '\Gs'   => 'ae',  # Standard Deviation 'sigma x'
-  '\x-'   => 'af',  # Mean 'x-bar'
-  '\y-'   => 'b0',  # Mean 'y-bar'
-  '\x^'   => 'b1',  # Linear estimation 'x-hat'
-  '\y^'   => 'b2',  # Linear estimation 'y-hat'
-  '\179'  => 'b3',  # Linear regression 'm'
-  'm'     => 'b3',
-  '\^1'   => 'b8',  # Constant 'C1'
-  '\^2'   => 'b9',  # Constant 'C2'
-  '\_w'   => 'c1',  # Mean 'x-bar w'
-  'w'     => 'c1',
-  '\^B'   => 'c5',  # Constant 'µB'
-  '\^C'   => 'c6',  # Constant 'C1'
-  '\^G'   => 'ca',  # Constant 'G0'
-  '\^N'   => 'd1',  # Constant 'NA'
-  '\^a'   => 'd8',  # Constant 'a0'
-  '\^u'   => 'e3',  # Constant 'u'
-  '\231'  => 'e7',  # Exponent 'E'
-  'e'     => 'e7',
-  '\235'  => 'eb',  # Base hexadecimal 'h'
-  'h'     => 'eb',
-  '\im'   => 'ec',  # Complex script small 'i'
-  'i'     => 'ec',
-  '\^R'   => 'ef',  # Constant 'R infinity'
-  '\^V'   => 'f3',  # Constant 'Vm'
-  '\^Z'   => 'f7',  # Constant 'Z0'
-  '\252'  => 'fc',  # Base decimal 'd'
-  'd'     => 'fc',
-  '\;,'   => 'fd',  # comma ',' in function
-  ','     => 'fd',
-  '\|>'   => 'ff',  # 'STO' in mode algebraic
-};
-
 
 # Override constructor
 sub new {
@@ -407,7 +93,8 @@ sub new {
                                               @expressions,
                                               @functions;
   my %equations  = map { $_ => 'equation'   } @predefined;
-  $self->{_symbols} = { %constants, %variables, %directives, %opcodes, %equations };
+  $self->{_symbols} = { %constants, %variables, %directives, %opcodes, 
+    %equations };
 
   # Labels allow you to name the positions of specific instructions
   $self->{_labels} = undef;
@@ -533,7 +220,7 @@ sub parse_segment {
     
   # call specific segment type
   SWITCH: for ($type) {
-    /DATA/i && do {
+    /DATA/i and do {
       $result = $self->scope_of(
         undef,
         sub { $self->parse_data_block( $name ) },
@@ -541,7 +228,7 @@ sub parse_segment {
       );
       last;
     };
-    /CODE/i && do {
+    /CODE/i and do {
       $result = $self->scope_of(
         undef,
         sub { $self->parse_code_block( $name ) },
@@ -549,7 +236,7 @@ sub parse_segment {
       );
       last;
     };
-    /STACK/i && do {
+    /STACK/i and do {
       $result = $self->scope_of(
         undef,
         sub { $self->parse_stack_block( $name ) },
@@ -667,7 +354,7 @@ sub parse_data_statement {
   {
     $char .= $_;
     SWITCH: {
-      $state =~ /normal/ && do {
+      $state =~ /normal/ and do {
         if (/\\/) {
           $state = 'start';
           $char = '\\';
@@ -679,7 +366,7 @@ sub parse_data_statement {
         }
         last;
       };
-      $state =~ /start/ && do {
+      $state =~ /start/ and do {
         if (/\\/) {
           $state = 'normal';
           exists $character->{$char} or
@@ -694,7 +381,7 @@ sub parse_data_statement {
         }
         last;
       };
-      $state =~ /middle/ && do {
+      $state =~ /middle/ and do {
         if (/\d/) {
           $state = 'end';
         }
@@ -703,20 +390,22 @@ sub parse_data_statement {
         }
         last;
       };
-      $state =~ /end/ && do {
+      $state =~ /end/ and do {
         if (/\\/) {
           $state = 'unknown';
         }
         else {
           $state = 'normal';
           exists $character->{$char} or
-            $self->fail_from( $fail_pos - length($char), "Unknown character sequence" );
+            $self->fail_from( $fail_pos - length($char), 
+              "Unknown character sequence" );
           $char = '';
         }
         last;
       };
       DEFAULT: {
-        $self->fail_from( $fail_pos - length($char), "Invalid character sequence" );
+        $self->fail_from( $fail_pos - length($char), 
+          "Invalid character sequence" );
       }
     }
     $fail_pos++;
@@ -824,17 +513,23 @@ sub parse_code_statement {
       )
     },
     # [1,2] [3,4,5]
-    sub { $vector   = $self->generic_token(vector => qr/\[[\-\d\.e]+,[\-\d\.e]+(?:,[\-\d\.e]+)?\]/, sub { $_[1] } ) },
+    sub { $vector = $self->generic_token(vector 
+      => qr/\[[\-\d\.e]+,[\-\d\.e]+(?:,[\-\d\.e]+)?\]/, sub { $_[1] } ) },
     # 0110b
-    sub { $binary   = $self->generic_token(binary => qr/[01]+b/, sub { $_[1] } ) },
+    sub { $binary = $self->generic_token(binary 
+      => qr/[01]+b/, sub { $_[1] } ) },
     # 7012o
-    sub { $octal    = $self->generic_token(octal => qr/[0-7]+o/, sub { $_[1] } ) },
+    sub { $octal = $self->generic_token(octal 
+      => qr/[0-7]+o/, sub { $_[1] } ) },
     # 12ABh
-    sub { $hex      = $self->generic_token(hex => qr/[\dA-F]+h/, sub { $_[1] } ) },
+    sub { $hex = $self->generic_token(hex 
+      => qr/[\dA-F]+h/, sub { $_[1] } ) },
     # 1i2 3t4
-    sub { $complex  = $self->generic_token(comlex => qr/[\-\d\.e]+[it][\-\d\.e]+/, sub { $_[1] } ) },
+    sub { $complex = $self->generic_token(comlex 
+      => qr/[\-\d\.e]+[it][\-\d\.e]+/, sub { $_[1] } ) },
     # 1 2.3 4e5 -6 7e-1
-    sub { $decimal  = $self->generic_token(number => qr/[\-\d\.e]+d?/, sub { $_[1] } ) },
+    sub { $decimal = $self->generic_token(number 
+      => qr/[\-\d\.e]+d?/, sub { $_[1] } ) },
     sub { undef },
   );
   defined $ret
@@ -868,7 +563,9 @@ sub parse_code_statement {
     else {
       if ( grep { $_ eq $mnemonic } @with_address ) {
         # instructions with an address: GTO and XEQ
-        eval { $operand = $self->generic_token(label => qr/\@{0,2}\w+/, sub { $_[1] } ) } or
+        eval { $operand = $self->generic_token(label 
+          => qr/\@{0,2}\w+/, sub { $_[1] } )
+        } or
           $self->fail( "Illegal origin address" );
 
         $statement = {
@@ -931,7 +628,8 @@ sub parse_code_statement {
         }
         else {
           # it must be an quoted expression
-          $operand = $self->generic_token( expression => qr/\'(.*?)\'/, sub { $1 } );
+          $operand = $self->generic_token( expression 
+            => qr/\'(.*?)\'/, sub { $1 } );
           $statement->{$mnemonic}->{expression} = $operand;
         }
       }
@@ -1175,7 +873,8 @@ sub token_kw_icase
 
   grep { /^$kw$/i } @acceptable
     or
-  pos($self->{str}) = $pos, $self->fail( "Expected any of ".join( ", ", @acceptable ) );
+  pos($self->{str}) = $pos, $self->fail( "Expected any of " 
+    . join( ", ", @acceptable ) );
 
   return $kw;
 }
@@ -1202,15 +901,16 @@ sub token_kw_operation
 
   grep { $_ eq $kw } @acceptable
     or
-  pos($self->{str}) = $pos, $self->fail( "Expected any of ".join( ", ", @acceptable ) );
+  pos($self->{str}) = $pos, $self->fail( "Expected any of "
+    . join( ", ", @acceptable ) );
 
   return $kw;
 }
 
 =head2 $str = $parser->token_string
 
-Expects to find a quoted EQN string, and consumes it. The string should be quoted
-using C<"> or C<'> quote marks.
+Expects to find a quoted EQN string, and consumes it. The string should be 
+quoted using C<"> or C<'> quote marks.
 
 The content of the quoted string can not contain special characters.
 

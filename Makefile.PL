@@ -1,13 +1,12 @@
 #!perl
-
 use strict;
 use warnings;
 use ExtUtils::MakeMaker 6.64;
 
 WriteMakefile(
-  NAME                => 'Parser::HPC',
+  NAME                => 'HP35s',
   AUTHOR              => 'J. Schneider',
-  VERSION_FROM        => 'asm2hpc.pl',
+  VERSION_FROM        => 'bin/asm2hpc.pl',
   ABSTRACT            => 'Parsing HP-35s assembler file to creating RPN listings',
   CONFIGURE_REQUIRES  => {
     'ExtUtils::MakeMaker' => 6.64,
@@ -24,4 +23,49 @@ WriteMakefile(
     'Parser::MGC'         => 0.16,
   },
   LICENSE             => 'mit',
+
+  META_MERGE => {
+    'meta-spec' => { 
+      version => 2 
+    },
+    homepage  => 'http://brickpool.de',
+    resources => {
+      repository  => {
+        type => 'git',
+        url  => 'https://github.com/brickpool/hp35s.git',
+        web  => 'https://github.com/brickpool/hp35s',
+      },
+      bugtracker  => { 
+        web => 'https://github.com/brickpool/hp35s/issues',
+      },
+    },
+    provides => {
+      'Parser::HPC'
+        => { file => 'lib/Parser/HPC.pm', version => '0.5.0' },
+      'HP35S::Charset'
+        => { file => 'lib/HP35S/Charset.pm', version => '0.5.0' },
+      'HP35S::Instruction'
+        => { file => 'lib/HP35S/Instruction.pm', version => '0.5.0' },
+      'HP35S::Macro'
+        => { file => 'lib/HP35S/Macro.pm', version => '0.5.0' },
+      'HP35S::Render'
+        => { file => 'lib/HP35S/Render.pm', version => '0.5.0' },
+      'HP35S::Encode::Keystrokes'
+        => { file => 'lib/HP35S/Encode/Keystrokes.pm', version => '0.5.0' },
+    },
+    prereqs => {
+      runtime => {
+        requires => {
+          'Parser::MGC' => 0.16,
+        },
+      },
+    },
+  },
+
+  dist => {
+    TARFLAGS => '-cvzf',
+    COMPRESS => 'perl -MExtUtils::Command -e test_f',
+    POSTOP   => 'perl -MExtUtils::Command -e mv $(DISTVNAME).tar $(DISTVNAME).tar$(SUFFIX)'
+  },
+
 );

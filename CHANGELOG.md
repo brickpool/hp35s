@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-10-06
+### Changed
+- extracted parser and frontend tables into dedicated modules
+- added `HP35S::Instructions`
+- added `HP35S::Render`
+- added `HP35S::Macro`
+- added `HP35S::Encode::Keystrokes`
+
+### Fixed
+- made keystroke optimization deterministic by using an ordered rule list
+- fixed non-deterministic shortcut generation caused by optimization rule ordering
+
 ## [0.4.2] - 2020-08-14
 ### Added
 - example triangle `T`
@@ -225,7 +237,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - Initial version created
 
-[Unreleased]: https://github.com/brickpool/hp35s/compare/v0.4.2...HEAD
+[Unreleased]: https://github.com/brickpool/hp35s/compare/v0.4.3...HEAD
+[0.4.3]: https://github.com/brickpool/hp35s/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/brickpool/hp35s/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/brickpool/hp35s/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/brickpool/hp35s/compare/v0.3.12...v0.4.0
