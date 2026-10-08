@@ -17,6 +17,7 @@ our @EXPORT_OK = qw(
   @with_variables
   @with_indirects
   @register
+  instruction_kind
 );
 
 our @constants = (
@@ -185,5 +186,29 @@ our @with_indirects = (
 our @register = (
   'REGX', 'REGY', 'REGZ', 'REGT',
 );
+
+sub instruction_kind {
+  my $mnemonic = shift;
+
+  return 'plain'
+    if grep { $_ eq $mnemonic } @instructions, @functions, @register;
+
+  return 'address'
+    if grep { $_ eq $mnemonic } @with_address;
+
+  return 'variable'
+    if grep { $_ eq $mnemonic } @with_variables;
+
+  return 'digit'
+    if grep { $_ eq $mnemonic } @with_digits;
+
+  return 'indirect'
+    if grep { $_ eq $mnemonic } @with_indirects;
+
+  return 'expression'
+    if grep { $_ eq $mnemonic } @expressions;
+
+  return;
+}
 
 1;

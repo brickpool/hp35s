@@ -123,3 +123,9 @@ LICENSE
 Makefile.PL
 MANIFEST			This list of files
 README.pod
+t/frontend-forward-labels.t
+t/frontend-statements.t
+t/lib/FrontendTest.pm
+t/optimize-keystrokes.t
+t/parser-code-fail.t
+t/parser-code-good.t

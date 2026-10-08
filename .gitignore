@@ -24,8 +24,6 @@ _gsdata_/
 /extras/ZSS
 
 # Ignore generated files
-/t
-/xt
 /*.mac
 /examples/**/*.mac
 /examples/**/*.md

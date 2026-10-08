@@ -29,17 +29,6 @@ use HP35S::Render qw(
   $tbl_char_markdown
   $tbl_char_unicode
 );
-use HP35S::Instructions qw(
-  @constants
-  @instructions
-  @with_address
-  @with_digits
-  @with_variables
-  @with_indirects
-  @expressions
-  @functions
-  @register
-);
 
 # Declaration
 my $version;
@@ -207,6 +196,7 @@ my $out = '';
 my $codename = '';
 my $response;
 my $jump_targets = {};
+my $addresses = {};
 
 # Start of the main program 
 
@@ -217,10 +207,14 @@ if (defined $file) {
 
 ### read the stdin and get the response
 $response = $parser->from_file( \*STDIN );
-print STDERR Dumper( $response ) if $debug;
 
-# sort segments in alpabetic order
+# sort segments in alphabetic order
 my @segments = sort keys %{ $response->{segments} };
+
+if ( $debug ) {
+  local $Data::Dumper::Sortkeys = 1;
+  print STDERR Dumper( $response );
+}
 
 # predefined equations
 my $equations = {
@@ -344,103 +338,89 @@ foreach my $seq ( @segments ) {
   # get 'source lines of code'
   my $sloc = scalar @$statements;
 
-  # set line number for each statement
+  # set address for each statement
   for ( my $line = 0; $line < $sloc; $line++ ) {
-    my ($statement, $entry) = %{ $statements->[$line] };
-    if ($statement eq 'LBL') {
-      $label = $entry->{variable} ;
+    my $statement = $statements->[$line];
+    my $entry = $statement->{instruction} || $statement->{literal};
+    if ( exists $statement->{instruction} && $entry->{value} eq 'LBL' ) {
+      $label = $entry->{operand}->{value};
       $lloc = 0;
     }
-    $entry->{line} = sprintf("%s%03d", $label, ++$lloc);
+    $addresses->{$seq}->[$line] = sprintf("%s%03d", $label, ++$lloc);
   }
 
   # generate output for each statement
   for ( my $line = 0; $line < $sloc; $line++ ) {
-    my ($statement, $entry) = %{ $statements->[$line] };
-    defined $entry->{type} or
-      warn "missing 'type' in statement '$statement'\n" and next;
-
-    SWITCH: for ($entry->{type}) {
-      /constant/ && do {
-        $out .= sprintf_constant_statement( $entry->{line}, $statement );
-        last;
-      };
-      /decimal|binary|octal|hex/ && do {
-        $out .= sprintf_number_statement( $entry->{line}, $statement );
-        last;
-      };
-      /vector/ && do {
-        $out .= sprintf_vector_statement( $entry->{line}, $statement );
-        last;
-      };
-      /complex/ && do {
-        $out .= sprintf_complex_statement( $entry->{line}, $statement );
-        last;
-      };
-      /instruction/ && do {
-        my $mnemonic = $statement;
-        # instructions without an operand
-        if ( grep { $_ eq $mnemonic } @instructions, @functions, @register ) {
-          $out .= sprintf_single_instruction( $entry->{line}, $mnemonic );
+    my $statement = $statements->[$line];
+    my $address = $addresses->{$seq}->[$line];
+    if ( my $literal = $statement->{literal} ) {
+      my $kind = $literal->{kind};
+      my $value = $literal->{value};
+      SWITCH: for ( $kind ) {
+        /constant/ && do {
+          $out .= sprintf_constant_statement( $address, $value );
+          last;
+        };
+        /decimal|binary|octal|hex/ && do {
+          $out .= sprintf_number_statement( $address, $value );
+          last;
+        };
+        /vector/ && do {
+          $out .= sprintf_vector_statement( $address, $value );
+          last;
+        };
+        /complex/ && do {
+          $out .= sprintf_complex_statement( $address, $value );
+          last;
+        };
+        DEFAULT: {
+          warn "unknown literal kind '$kind'\n";
         }
-        # instructions with an address: GTO and XEQ
-        elsif ( grep { $_ eq $mnemonic } @with_address ) {
-          # absolute address
-          if ( defined $entry->{address} ) {
-            $out .= sprintf_address_instruction( $entry->{line}, $mnemonic, 
-              $entry->{address} );
-          }
-          # address label
-          elsif ( defined $entry->{label} ) {
-            $out .= sprintf_label_instruction( $entry->{line}, $mnemonic, 
-              $entry->{label}, $seq );
-          }
-          # unknown operand
-          else {
-            warn "missing type 'address' or 'label' in instruction "
-              . "'$mnemonic'\n";
-            next;
-          }
-        }
-        # instructions with a variable: LBL, INPUT, VIEW, STO, ...
-        elsif ( grep { $_ eq $mnemonic } @with_variables, @with_indirects ) {
-          $out .= sprintf_variable_instruction( $entry->{line}, $mnemonic, 
-            $entry->{variable} );
-        }
-        # instructions with a number: CF, FIX, ...
-        elsif ( grep { $_ eq $mnemonic } @with_digits ) {
-          $out .= sprintf_number_instruction( $entry->{line}, $mnemonic, 
-            $entry->{number} );
-        }
-        # instructions with an expression: EQN
-        elsif ( grep { $_ eq $mnemonic } @expressions ) {
-        
-          # expression
-          if ( defined $entry->{expression} ) {
-            $out .= sprintf_expression_instruction( $entry->{line}, $mnemonic, 
-              $entry->{expression} );
-          }
-          # equation
-          elsif ( defined $entry->{equation} ) {
-            $out .= sprintf_equation_instruction( $entry->{line}, $mnemonic, 
-              $entry->{equation} );
-          }
-          # unknown operand
-          else {
-            warn "missing type 'expression' or 'equation' in instruction '$mnemonic'\n";
-            next;
-          }
-        }
-        # unknown instruction
-        else {
-          warn "unknown instruction '$mnemonic'\n";
-        }
-        last;
-      };
-      # unknown statement
-      DEFAULT: {
-        warn "unknown statement '$statement'\n";
       }
+    }
+    elsif ( my $instruction = $statement->{instruction} ) {
+      my $mnemonic = $instruction->{value};
+      my $operand = $instruction->{operand};
+      unless ( defined $operand ) {
+        $out .= sprintf_single_instruction( $address, $mnemonic );
+        next;
+      }
+      my $type  = $operand->{type};
+      my $value = $operand->{value};
+      SWITCH: for ( $type ) {
+        /address/ && do {
+          $out .= sprintf_address_instruction( $address, $mnemonic, $value );
+          last;
+        };
+        /label/ && do {
+          $out .= sprintf_label_instruction( $address, $mnemonic, $value, 
+            $seq );
+          last;
+        };
+        /variable/ && do {
+          $out .= sprintf_variable_instruction( $address, $mnemonic, $value);
+          last;
+        };
+        /decimal/ && do {
+          $out .= sprintf_number_instruction( $address, $mnemonic, $value );
+          last;
+        };
+        /expression/ && do {
+          $out .= sprintf_expression_instruction( $address, $mnemonic, $value );
+          last;
+        };
+        /equation/ && do {
+          $out .= sprintf_equation_instruction( $address, $mnemonic, $value );
+          last;
+        };
+        DEFAULT: {
+          warn "unknown operand type '$type' in instruction "
+            . "'$mnemonic'\n";
+        }
+      }
+    }
+    else {
+      warn "unknown statement\n";
     }
   }
 }
@@ -810,9 +790,8 @@ sub sprintf_label_instruction {
 
   if ( $response->{labels}->{$label}->{type} eq 'near' ) {
     my $pos = $response->{labels}->{$label}->{statement};
-    my (undef, $entry) 
-      = %{ $response->{segments}->{$seq}->{statements}->[$pos] };
-    my $addr = $entry->{line};
+    my $addr = $addresses->{$seq}->[$pos];
+    return '' unless defined $addr;
     $jump_targets->{$addr} = $addr;
     if ($shortcut) {
       $keystrokes = sprintf("\t; %s ", instruction_keystrokes($mnemonic));

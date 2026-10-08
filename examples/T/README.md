@@ -67,7 +67,7 @@ R/S
 
 [Output...](#output)
 
-This case can have two solutions if the angle is smaller than 90° and the side
+This case can have two solutions if the angle is smaller than 90Â° and the side
 adjacent to this angle is larger than the opposite side.
 
 ```assembly

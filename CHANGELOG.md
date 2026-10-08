@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Internal
+- reduced size and complexity of `Parser::HPC`
+- reduced size and complexity of `asm2hpc.pl`
+- separated data definitions from parser and frontend logic
+
 ## [0.4.3] - 2026-10-06
 ### Changed
 - extracted parser and frontend tables into dedicated modules

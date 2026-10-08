@@ -31,6 +31,7 @@ use HP35S::Instructions qw(
   @expressions
   @functions
   @register
+  instruction_kind
 );
 
 use parent 'Parser::MGC';
@@ -176,7 +177,6 @@ sub parse_title {
   return $result;
 }
 
-
 sub parse_model {
   my $self = shift;
 
@@ -197,7 +197,6 @@ sub parse_model {
 
   return $result;
 }
-
 
 sub parse_segment {
   my $self = shift;
@@ -488,214 +487,193 @@ sub parse_code_block {
 sub parse_code_statement {
   my $self = shift;
 
-  my $mnemonic;
-  my $vector;
-  my $binary;
-  my $octal;
-  my $hex;
-  my $complex;
-  my $decimal;
-  my $variable;
-  my $statement;
+  $self->skip_ws;
+  my ($line) = $self->where;
 
-  my $ret = $self->any_of(
-    sub {
-      $mnemonic = $self->token_kw_operation(
-        @constants,
-        @instructions,
-        @with_address,
-        @with_variables,
-        @with_digits,
-        @with_indirects, 
-        @expressions,
-        @functions,
-        @register,
-      )
-    },
-    # [1,2] [3,4,5]
-    sub { $vector = $self->generic_token(vector 
-      => qr/\[[\-\d\.e]+,[\-\d\.e]+(?:,[\-\d\.e]+)?\]/, sub { $_[1] } ) },
-    # 0110b
-    sub { $binary = $self->generic_token(binary 
-      => qr/[01]+b/, sub { $_[1] } ) },
-    # 7012o
-    sub { $octal = $self->generic_token(octal 
-      => qr/[0-7]+o/, sub { $_[1] } ) },
-    # 12ABh
-    sub { $hex = $self->generic_token(hex 
-      => qr/[\dA-F]+h/, sub { $_[1] } ) },
-    # 1i2 3t4
-    sub { $complex = $self->generic_token(comlex 
-      => qr/[\-\d\.e]+[it][\-\d\.e]+/, sub { $_[1] } ) },
-    # 1 2.3 4e5 -6 7e-1
-    sub { $decimal = $self->generic_token(number 
-      => qr/[\-\d\.e]+d?/, sub { $_[1] } ) },
+  my $statement = $self->any_of(
+    sub { $self->parse_code_instruction },
+    sub { $self->parse_code_literal },
     sub { undef },
   );
-  defined $ret
+  defined $statement
     or
   $self->fail( "Illegal instruction" );
-  
-  # get current position in str for "fail_from"
-  my $pos = $self->pos;
-  my ($line) = $self->where;
+
   $self->commit;
-
-  if ( defined $mnemonic ) {
-
-    my $operand;
-    if ( grep { $_ eq $mnemonic } @constants ) {
-      # constants
-      $statement = {
-        $mnemonic => {
-          type => 'constant',
-        }
-      };
-    }
-    elsif ( grep { $_ eq $mnemonic } @instructions, @functions, @register ) {
-      # instructions without an operand
-      $statement = {
-        $mnemonic => {
-          type => 'instruction',
-        }
-      };
-    }
-    else {
-      if ( grep { $_ eq $mnemonic } @with_address ) {
-        # instructions with an address: GTO and XEQ
-        eval { $operand = $self->generic_token(label 
-          => qr/\@{0,2}\w+/, sub { $_[1] } )
-        } or
-          $self->fail( "Illegal origin address" );
-
-        $statement = {
-          $mnemonic => {
-            type    => 'instruction',
-          }
-        };
-        if ($operand =~ /[A-Z]\d{3}/) {
-          $statement->{$mnemonic}->{address} = $operand;
-        } else {
-          $statement->{$mnemonic}->{label} = uc $operand;
-        };
-      }
-      elsif ( grep { $_ eq $mnemonic } @with_variables ) {
-        # instructions with a variable: LBL and INPUT
-        $operand = $self->generic_token( variable => qr/[A-Z]/ );
-        $statement = {
-          $mnemonic => {
-            type      => 'instruction',
-            variable  => $operand,
-          }
-        };
-      }
-      elsif ( grep { $_ eq $mnemonic } @with_digits ) {
-        # instructions with a number 0 < n < 11: CF, FIX, ...
-        $operand = $self->generic_token( number => qr/10|11|[0-9]/ );
-        $statement = {
-          $mnemonic => {
-            type    => 'instruction',
-            number  => $operand,
-          }
-        };
-      }
-      elsif ( grep { $_ eq $mnemonic } @with_indirects ) {
-        # instructions with a (indirect) variable: VIEW, ...
-        $operand = $self->generic_token( variable => qr/[A-Z]|(?:\([IJ]\))/ );
-        $statement = {
-          $mnemonic => {
-            type      => 'instruction',
-            variable  => $operand,
-          }
-        };
-      }
-      elsif ( grep { $_ eq $mnemonic } @expressions ) {
-        # instructions with an expression: EQN
-
-        $statement = {
-          $mnemonic => {
-            type      => 'instruction',
-          }
-        };
-        # determine all current equations
-        my @equations = ();
-        foreach ( keys %{ $self->{_symbols} } ) {
-          push @equations, $_ if $self->{_symbols}->{$_} eq 'equation';
-        }
-        # test if it is an equation
-        if ( eval { $operand = $self->token_kw(@equations) } ) {
-          $statement->{$mnemonic}->{equation} = $operand;
-        }
-        else {
-          # it must be an quoted expression
-          $operand = $self->generic_token( expression 
-            => qr/\'(.*?)\'/, sub { $1 } );
-          $statement->{$mnemonic}->{expression} = $operand;
-        }
-      }
-  
-      @_ = $self->where;
-      $line eq $_[0] or
-        $self->fail_from( $pos, "Argument mismatch" );
-
-    }
-  }
-  elsif ( defined $vector ) {
-    $statement = {
-      $vector => {
-        type => 'vector',
-      }
-    };
-  }
-  elsif ( defined $binary ) {
-    $statement = {
-      $binary => {
-        type => 'binary',
-      }
-    };
-  }
-  elsif ( defined $octal ) {
-    $statement = {
-      $octal => {
-        type => 'octal',
-      }
-    };
-  }
-  elsif ( defined $hex ) {
-    $statement = {
-      $hex => {
-        type => 'hex',
-      }
-    };
-  }
-  elsif ( defined $complex ) {
-    $statement = {
-      $complex => {
-        type => 'complex',
-      }
-    };
-  }
-  elsif ( defined $decimal ) {
-    $statement = {
-      $decimal => {
-        type => 'decimal',
-      }
-    };
-  }
-  elsif ( defined $variable ) {
-    $statement = {
-      $variable => {
-        type => 'variable',
-      }
-    };
-  }
-
   $self->skip_ws;
   @_ = $self->where;
   $line ne $_[0] or
     $self->fail("Extra characters on line");
 
   return $statement;
+}
+
+sub parse_code_instruction {
+  my $self = shift;
+
+  my $mnemonic = $self->token_kw_operation(
+    @instructions,
+    @with_address,
+    @with_variables,
+    @with_digits,
+    @with_indirects,
+    @expressions,
+    @functions,
+    @register,
+  );
+
+  # get current position in str for "fail_from"
+  my $pos = $self->pos;
+  my ($line) = $self->where;
+  $self->commit;
+
+  my $statement;
+  my $operand;
+  my $kind = instruction_kind($mnemonic);
+  SWTICH: for ( $kind ) {
+    /plain/ and do {
+      # instructions without an operand
+      $statement = {
+        instruction => {
+          value => $mnemonic,
+        },
+      };
+      last;
+    };
+    /address/ and do {
+      # instructions with an address: GTO and XEQ
+      eval { $operand = $self->generic_token(label
+        => qr/\@{0,2}\w+/, sub { $_[1] } )
+      } or
+        $self->fail( "Illegal origin address" );
+
+      $statement = {
+        instruction => {
+          value => $mnemonic,
+        },
+      };
+      if ($operand =~ /[A-Z]\d{3}/) {
+        $statement->{instruction}->{operand} = {
+          type  => 'address',
+          value => $operand,
+        },
+      } else {
+        $statement->{instruction}->{operand} = {
+          type  => 'label',
+          value => uc $operand,
+        };
+      };
+      last;
+    };
+    /variable/ and do {
+      # instructions with a variable: LBL and INPUT
+      $operand = $self->generic_token( variable => qr/[A-Z]/ );
+      $statement = {
+        instruction => {
+          value => $mnemonic,
+          operand  => {
+            type  => 'variable',
+            value => $operand,
+          },
+        },
+      };
+      last;
+    };
+    /digit/ and do {
+      # instructions with a number 0 < n < 11: CF, FIX, ...
+      $operand = $self->generic_token( number => qr/10|11|[0-9]/ );
+      $statement = {
+        instruction => {
+          value => $mnemonic,
+          operand  => {
+            type  => 'decimal',
+            value => $operand,
+          },
+        },
+      };
+      last;
+    };
+    /indirect/ and do {
+      # instructions with a (indirect) variable: VIEW, ...
+      $operand = $self->generic_token( variable => qr/[A-Z]|(?:\([IJ]\))/ );
+      $statement = {
+        instruction => {
+          value => $mnemonic,
+          operand  => {
+            type  => 'variable',
+            value => $operand,
+          },
+        },
+      };
+      last;
+    };
+    /expression/ and do {
+      # instructions with an expression: EQN
+      $statement = {
+        instruction => {
+          value => $mnemonic,
+        },
+      };
+      # determine all current equations
+      my @equations = ();
+      foreach ( keys %{ $self->{_symbols} } ) {
+        push @equations, $_ if $self->{_symbols}->{$_} eq 'equation';
+      }
+      # test if it is an equation
+      if ( eval { $operand = $self->token_kw(@equations) } ) {
+        $statement->{instruction}->{operand} = {
+          type  => 'equation',
+          value => $operand,
+        };
+      }
+      else {
+        # it must be an quoted expression
+        $operand = $self->generic_token( expression
+          => qr/\'(.*?)\'/, sub { $1 } );
+        $statement->{instruction}->{operand} = {
+          type  => 'expression',
+          value => $operand,
+        };
+      }
+      last;
+    };
+    DEFAULT: {
+      @_ = $self->where;
+      $line eq $_[0] or
+        $self->fail_from( $pos, "Argument mismatch" );
+    }
+  }
+
+  return $statement;
+}
+
+sub parse_code_literal {
+  my $self = shift;
+
+  my $literal = $self->any_of(
+    sub { [ constant => $self->token_kw_operation( @constants ) ] },
+    sub { [ vector => $self->generic_token(vector
+      => qr/\[[\-\d\.e]+,[\-\d\.e]+(?:,[\-\d\.e]+)?\]/, sub { $_[1] } ) ] },
+    sub { [ binary => $self->generic_token(binary
+      => qr/[01]+b/, sub { $_[1] } ) ] },
+    sub { [ octal => $self->generic_token(octal
+      => qr/[0-7]+o/, sub { $_[1] } ) ] },
+    sub { [ hex => $self->generic_token(hex
+      => qr/[\dA-F]+h/, sub { $_[1] } ) ] },
+    sub { [ complex => $self->generic_token(complex
+      => qr/[\-\d\.e]+[it][\-\d\.e]+/, sub { $_[1] } ) ] },
+    sub { [ decimal => $self->generic_token(number
+      => qr/[\-\d\.e]+d?/, sub { $_[1] } ) ] },
+  );
+  $self->commit;
+
+  my ($kind, $value) = @$literal;
+  return {
+    literal => {
+      kind  => $kind,
+      value => $value,
+    },
+  };
 }
 
 sub parse_label {
@@ -742,8 +720,7 @@ sub parse_label {
   return $ident;
 }
 
-sub parse_stack_block
-{
+sub parse_stack_block {
   my $self  = shift;
   my $ident = shift || 'STACK';
   my $type  = 'stack';
@@ -791,8 +768,7 @@ sub parse_stack_block
   return $entry;
 }
 
-sub parse_stack_statement
-{
+sub parse_stack_statement {
   my $self = shift;
   my $type = 'register';
 
@@ -819,8 +795,7 @@ sub parse_stack_statement
   return $entry;
 }
 
-sub parse_end
-{
+sub parse_end {
   my $self = shift;
 
   # error, if at the end of input
@@ -858,8 +833,7 @@ This method works case insensitive.
 
 =cut
 
-sub token_kw_icase
-{
+sub token_kw_icase {
   my $self = shift;
   my @acceptable = @_;
 
@@ -886,8 +860,7 @@ identifier which is exactly one of the literal values passed in.
 
 =cut
 
-sub token_kw_operation
-{
+sub token_kw_operation {
   my $self = shift;
   my @acceptable = @_;
 
@@ -916,8 +889,7 @@ The content of the quoted string can not contain special characters.
 
 =cut
 
-sub token_string
-{
+sub token_string {
   my $self = shift;
 
   $self->fail( "Expected string" ) if $self->at_eos;
@@ -951,8 +923,7 @@ Private subroutine to search backwards a substring inside the parser-string.
 
 =cut
 
-sub _find_before
-{
+sub _find_before {
   my $self    = shift;
   my $substr  = reverse shift;
 
