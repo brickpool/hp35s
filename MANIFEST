@@ -118,7 +118,6 @@ lib/HP35S/Instructions.pm
 lib/HP35S/Macro.pm
 lib/HP35S/Render.pm
 lib/Parser/HPC.pm
-lib/README.pod
 LICENSE
 Makefile.PL
 MANIFEST			This list of files

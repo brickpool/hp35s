@@ -1,21 +1,10 @@
 package Parser::HPC;
 # ABSTRACT: Simple recursive-descent 1-pass assembler parser for HP calculators
 
-# ToDo:
-#   - the directive DISPLAY, LOCALS, NOLOCALS and RADIX are not implemented
-#   - only the polish notation mode is supported
-#   - Thousand separator operations are not implemented
-
 use strict;
 use warnings;
 
 our $VERSION = 'v0.5.0';
-
-=head1 NAME
-
-Parser::HPC - simple recursive-descent assembler parser for HP calculators
-
-=cut
 
 use Parser::MGC;
 use HP35S::Charset qw(
@@ -35,19 +24,6 @@ use HP35S::Instructions qw(
 );
 
 use parent 'Parser::MGC';
-
-=head1 PATTERNS
-The following pattern names are recognised.
-
-=over 4
-
-=item * comment
-
-Pattern used to skip comments between tokens. Defaults to C</;.*\n+/>
-
-=back
-
-=cut
 
 use constant pattern_comment    => qr/;.*\n/;
 use constant pattern_operation  => qr/[^\s\(\)]+/;
@@ -102,12 +78,6 @@ sub new {
 
   return $self;
 }
-
-=head1 METHODS
-
-The following methods will be used to build the grammatical structure.
-
-=cut
 
 sub parse {
   my $self = shift;
@@ -825,14 +795,6 @@ sub parse_end {
   return uc $startaddress;
 }
 
-=head2 $keyword = $parser->token_kw_icase( @keywords )
-
-Expects to find a keyword, and consumes it. A keyword is defined as an
-identifier which is exactly one of the literal values passed in.
-This method works case insensitive.
-
-=cut
-
 sub token_kw_icase {
   my $self = shift;
   my @acceptable = @_;
@@ -853,13 +815,6 @@ sub token_kw_icase {
   return $kw;
 }
 
-=head2 $keyword = $parser->token_kw_operation( @keywords )
-
-Expects to find a operation, and consumes it. A operation is defined as an
-identifier which is exactly one of the literal values passed in.
-
-=cut
-
 sub token_kw_operation {
   my $self = shift;
   my @acceptable = @_;
@@ -879,15 +834,6 @@ sub token_kw_operation {
 
   return $kw;
 }
-
-=head2 $str = $parser->token_string
-
-Expects to find a quoted EQN string, and consumes it. The string should be 
-quoted using C<"> or C<'> quote marks.
-
-The content of the quoted string can not contain special characters.
-
-=cut
 
 sub token_string {
   my $self = shift;
@@ -917,12 +863,6 @@ sub token_string {
   return $string;
 }
 
-=head2 $position = $parser->_find_before( $literal )
-
-Private subroutine to search backwards a substring inside the parser-string.
-
-=cut
-
 sub _find_before {
   my $self    = shift;
   my $substr  = reverse shift;
@@ -947,3 +887,92 @@ sub _find_before {
 }
 
 1;
+
+__END__
+
+=head1 NAME
+
+Parser::HPC - parse HP-35s assembler source
+
+=head1 DESCRIPTION
+
+C<Parser::HPC> parses assembler source for the HP-35s calculator into a Perl
+data structure. It supports the C<P35S> model and the data, code, and stack
+segment forms described below.
+
+=head1 SYNOPSIS
+
+  use Parser::HPC;
+
+  my $parser = Parser::HPC->new;
+  my $program = $parser->from_string(<<'ASM');
+  %TITLE "Example"
+  MODEL P35S
+  SEGMENT DATA
+  FORMULA EQU 'A+B'
+  ENDS
+  SEGMENT main CODE
+  start:
+    LBL A
+    0
+    EQN FORMULA
+    GTO start
+    RTN
+  ENDS main
+  END start
+  ASM
+
+C<from_string> is provided by the parent class, L<Parser::MGC>. Parsing errors
+are reported by that parser interface.
+
+=head1 INPUT FORMAT
+
+An input file may begin with a C<%TITLE> directive and must specify its model
+with C<MODEL P35S>. It then contains one or more segments, each closed by
+C<ENDS>, and ends with an C<END> directive. The C<END> directive may name a
+code label as the program's start address.
+
+Segments have the form C<SEGMENT [name] DATA>, C<SEGMENT [name] CODE>, or
+C<SEGMENT [name] STACK>. The name is optional; unnamed data, code, and stack
+segments are named C<_DATA>, C<_TEXT>, and C<STACK> in the result. A named
+segment must be closed with its matching name, for example C<ENDS main>.
+
+Data segments contain C<name EQU value> definitions. Values may be numbers or
+quoted strings. Code segments contain labels, instructions, or literal values,
+with one statement per line. A semicolon begins a comment through the end of
+the line. Stack segments contain register assignments in the form
+C<register SET number>.
+
+The parser recognizes directives including C<%TITLE>, C<MODEL>, C<SEGMENT>,
+C<ENDS>, C<END>, C<EQU>, and C<SET>. Although some additional directive names
+are reserved internally, C<DISPLAY>, C<LOCALS>, C<NOLOCALS>, and C<RADIX> are
+not implemented.
+
+=head1 RETURN VALUE
+
+The parse result is a hash reference with a C<model> field and a C<segments>
+hash reference. Each segment entry has a C<type> of C<data>, C<code>, or
+C<stack>. Data definitions are stored in C<definitions>; code statements are
+stored in C<statements>; stack assignments are stored in C<assignments>.
+
+The C<labels> field is undefined if no labels are declared; otherwise it is a
+hash reference whose entries record each label's segment and zero-based
+statement index. If supplied, the title is returned in C<title>, and the
+upper-case start label is returned in C<startaddr>.
+
+Code statements are represented as either C<instruction> or C<literal> entries.
+Instructions carry their mnemonic and, when applicable, a typed operand;
+literals carry a kind and value. For example, C<GTO start> produces an
+instruction operand with type C<label> and value C<START>.
+
+=head1 LIMITATIONS
+
+Only the Polish notation mode is supported. Thousand-separator operations are
+not implemented. The directives C<DISPLAY>, C<LOCALS>, C<NOLOCALS>, and
+C<RADIX> are not supported.
+
+=head1 SEE ALSO
+
+L<Parser::MGC>, L<HP35S::Instructions>, C<bin/asm2hpc.pl>
+
+=cut
