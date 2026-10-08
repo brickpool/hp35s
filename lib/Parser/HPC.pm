@@ -7,10 +7,10 @@ use warnings;
 our $VERSION = 'v0.5.0';
 
 use Parser::MGC;
-use HP35S::Charset qw(
+use HP35s::Charset qw(
   $character
 );
-use HP35S::Instructions qw(
+use HP35s::Vocabulary qw(
   @constants
   @instructions
   @with_address
@@ -973,6 +973,6 @@ C<RADIX> are not supported.
 
 =head1 SEE ALSO
 
-L<Parser::MGC>, L<HP35S::Instructions>, C<bin/asm2hpc.pl>
+L<Parser::MGC>, L<HP35s::Vocabulary>, C<bin/asm2hpc.pl>
 
 =cut

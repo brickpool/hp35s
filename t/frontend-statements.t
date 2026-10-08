@@ -38,6 +38,7 @@ value:
   LBL B
   GTO start
   RTN
+  CLZ
 ENDS main
 END start
 ASM
@@ -68,6 +69,7 @@ my @expected = (
   [ 'B001', 'LBL B' ],
   [ 'B002', 'GTO A001' ],
   [ 'B003', 'RTN' ],
+  [ 'B004', 'CL\\GS' ],
 );
 my $expected = "%%HP: T(3)A(D)F(.);\n"
   . join('', map { join("\t", @$_) . "\n" } @expected);

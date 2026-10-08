@@ -12,19 +12,21 @@ use Encode;
 use File::Basename;
 
 use Parser::HPC; 
-use HP35S::Encode::Keystrokes qw(
+use HP35s::Keystrokes qw(
   constant_keystrokes
   instruction_keystrokes 
   number_keystroke
   char_keystrokes
   optimize_keystrokes
 );
-use HP35S::Macro qw(
+use HP35s::Macro qw(
   TIME_PRESSED
   TIME_BTWN_KEYS
   $tbl_char_macro
 );
-use HP35S::Render qw(
+use HP35s::Render qw(
+  $tbl_const_3graph
+  $tbl_instr_3graph
   $tbl_char_plain
   $tbl_char_markdown
   $tbl_char_unicode
@@ -67,129 +69,6 @@ $shortcut = 1 if $encoded;
 
 my $parser = Parser::HPC->new;
 
-# Constant mapping
-my $tbl_const_3graph = {
-  'i'   => '\im',
-  'pi'  => '\pi',
-  'c'   => '\016',
-  'g'   => '\^g',
-  'G'   => '\018',
-  'Vm'  => '\^V\^m',
-  'NA'  => '\^N\015',
-  'Rb'  => '\^R\oo',
-  'eV'  => '\^e\^V',
-  'me'  => '\^m\^e',
-  'mp'  => '\^m\^p',
-  'mn'  => '\^m\^n',
-  'mu'  => '\^m\Gm',
-  'k'   => '\^k',
-  'h'   => '\^h',
-  '\h-' => '\023',
-  'Ph0' => '\O/\021',
-  'a0'  => '\^a\021',
-  'e0'  => '\Ge\021',
-  'R'   => '\020',
-  'F'   => '\017',
-  'u'   => '\^u',
-  'u0'  => '\Gm\021',
-  'uB'  => '\Gm\^B',
-  'uN'  => '\Gm\^N',
-  'up'  => '\Gm\^p',
-  'ue'  => '\Gm\^e',
-  'un'  => '\Gm\^n',
-  'uu'  => '\Gm\Gm',
-  're'  => '\^r\^e',
-  'Z0'  => '\^Z\021',
-  'lc'  => '\Gl\^c',
-  'lcn' => '\Gl\^c\^n',
-  'lcp' => '\Gl\^c\^p',
-  'a'   => '\Ga',
-  'z'   => '\157',
-  't'   => '\024',
-  'atm' => '\167\^t\^m',
-  'gp'  => '\Gg\^p',
-  'C1'  => '\^C\^1',
-  'C2'  => '\^C\^2',
-  'G0'  => '\^G\021',
-  'e'   => '\^e',
-};
-
-# Instruction mapping
-my $tbl_instr_3graph = {
-  # G1
-  '*'     => '\.x',
-  '/'     => '\:-',
-  # G2
-  '10^x'  => '10\^x',
-  'Z+'    => '\GS+',
-  'Z-'    => '\GS-',
-  # G3
-  'Zx'    => '\GSx',
-  'Zx^2'  => '\GSx\^2',
-  'Zxy'   => '\GSxy',
-  'Zy'    => '\GSy',
-  'Zy^2'  => '\GSy\^2',
-  'S,z'   => 'S,\Gs',
-  'zx'    => '\Gsx',
-  'zy'    => '\Gsy',
-  '$FN_d' => '\.SFN d',
-  # G5
-  '->°C'  => '\->\^oC',
-  # G6
-  'CLZ'   => 'CL\GS',
-  '->CM'  => '\->CM',
-  '->DEG' => '\->DEG',
-  # G7
-  '<-ENG' => '\<-ENG',
-  'ENG->' => 'ENG\->',
-  'e^x'   => 'e\^x',
-  # G8
-  '->°F'  => '\->\^oF',
-  '->GAL' => '\->GAL',
-  # G9
-  '->HMS' => '\->HMS',
-  'HMS->' => 'HMS\->',
-  '->IN'  => '\->IN',
-  'INT/'  => 'INT\:-',
-  # G10
-  '->KG'  => '\->KG',
-  '->KM'  => '\->KM',
-  '->L'   => '\->L',
-  '->LB'  => '\->LB',
-  # G11
-  '->MILE'=> '\->MILE',
-  # G12
-  'rta'   => 'r\Gha',
-  '->RAD' => '\->RAD',
-  'RCL*'  => 'RCL\.x',
-  'RCL/'  => 'RCL\:-',
-  # G13
-  'Rv'    => 'R\|v',
-  'R^'    => 'R\|^',
-  # G14
-  'STO*'  => 'STO\.x',
-  'STO/'  => 'STO\:-',
-  # G15
-  'sx'    => '\Gsx',
-  'sy'    => '\Gsy',
-  'x^2'   => 'x\^2',
-  'sqrt'  => '\v/x',
-  'xroot' => 'x\v/y',
-  # G16
-  '\x-w'  => '\x-w',
-  'x!=y?' => 'x\=/y?',
-  'x<=y?' => 'x\<=y?',
-  'x>=y?' => 'x\>=y?',
-  # G17
-  'x!=0?' => 'x\=/0?',
-  'x<=0?' => 'x\<=0?',
-  'x>=0?' => 'x\>=0?',
-  # G18
-  'xiy'   => 'x\imy',
-#  'x+yi'  => 'x+y\im', only mode ALG
-  'y^x'   => 'y\^x',
-};
-
 my $label = '0';  # start with label '0'
 my $lloc = 0;     # logical lines of code
 my $out = '';
@@ -198,14 +77,17 @@ my $response;
 my $jump_targets = {};
 my $addresses = {};
 
+#
 # Start of the main program 
+#
 
 # option --file
 if (defined $file) {
   open(STDIN, '<', $file) or die "Can't open $file : $!";;
 }
 
-### read the stdin and get the response
+#1# read the stdin and get the response
+
 $response = $parser->from_file( \*STDIN );
 
 # sort segments in alphabetic order
@@ -245,7 +127,8 @@ CLEAR: {
   $out .= '; \+> CLEAR 3 \.< ENTER'.$/ if $shortcut && $clear;
 }
 
-### first handle the stack segment
+#2# first handle the stack segment
+
 foreach my $seq ( @segments ) {
   # test if it is a stack segment
   next unless $response->{segments}->{$seq}->{type} eq 'stack';
@@ -327,7 +210,8 @@ PRGM: {
   $out .= '; \CC \+> PRGM'.$/ if $shortcut;
 }
 
-### now handle all code segments
+#3# now handle all code segments
+
 foreach my $seq ( @segments ) {
   # test if it is a code segment
   next unless $response->{segments}->{$seq}->{type} eq 'code';
@@ -430,7 +314,7 @@ STOP: {
   $out .= '; \CC'.$/ if $shortcut;
 }
 
-### print to STDOUT
+#4# print to STDOUT
 
 # option --jumpmark
 if ($jumpmark) {
@@ -517,6 +401,7 @@ if ($encoded) {
   #  $out .= "\n";
   #}
 }
+
 # option --unicode
 elsif ($unicode) {
   foreach (keys %$tbl_char_unicode) {
@@ -526,6 +411,7 @@ elsif ($unicode) {
   }
   binmode(STDOUT, ":utf8");
 }
+
 # option --markdown
 elsif ($markdown) {
   foreach (keys %$tbl_char_markdown) {
@@ -544,6 +430,7 @@ elsif ($markdown) {
   ## code style
   #$out = "<code>\n" . $out . "</code>\n"
 }
+
 # option --plain
 elsif ($plain) {
   foreach (keys %$tbl_char_plain) {
@@ -558,8 +445,9 @@ else {
 
 print STDOUT $out;
 
-###############################
-# Here are the subs 
+#
+# helper subroutines
+#
 
 # constant statement
 sub sprintf_constant_statement {
@@ -645,7 +533,7 @@ sub sprintf_vector_statement {
 
   $vector =~ /\[(\S+)\]/;
   my ($a, $b, $c) = split /,/, $1;
-  defined $a and defined $b or
+  defined $a && defined $b or
     warn "unknown syntax for vector number '$vector'\n" and return '';
 
   if ($shortcut) {
@@ -693,7 +581,7 @@ sub sprintf_complex_statement {
   my $keystrokes = '';
 
   my ($a, $sep, $b) = split /([it])/, $complex;
-  defined $a and defined $b or
+  defined $a && defined $b or
     warn "unknown syntax for complex number '$complex'\n" and return '';
 
   $sep =~ s/i/\\im/;

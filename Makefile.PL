@@ -42,16 +42,16 @@ WriteMakefile(
     provides => {
       'Parser::HPC'
         => { file => 'lib/Parser/HPC.pm', version => '0.5.0' },
-      'HP35S::Charset'
-        => { file => 'lib/HP35S/Charset.pm', version => '0.5.0' },
-      'HP35S::Instruction'
-        => { file => 'lib/HP35S/Instruction.pm', version => '0.5.0' },
-      'HP35S::Macro'
-        => { file => 'lib/HP35S/Macro.pm', version => '0.5.0' },
-      'HP35S::Render'
-        => { file => 'lib/HP35S/Render.pm', version => '0.5.0' },
-      'HP35S::Encode::Keystrokes'
-        => { file => 'lib/HP35S/Encode/Keystrokes.pm', version => '0.5.0' },
+      'HP35s::Charset'
+        => { file => 'lib/HP35s/Charset.pm', version => '0.5.0' },
+      'HP35s::Vocabulary'
+        => { file => 'lib/HP35s/Vocabulary.pm', version => '0.5.0' },
+      'HP35s::Macro'
+        => { file => 'lib/HP35s/Macro.pm', version => '0.5.0' },
+      'HP35s::Render'
+        => { file => 'lib/HP35s/Render.pm', version => '0.5.0' },
+      'HP35s::Keystrokes'
+        => { file => 'lib/HP35s/Keystrokes.pm', version => '0.5.0' },
     },
     prereqs => {
       runtime => {

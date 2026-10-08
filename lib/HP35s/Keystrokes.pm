@@ -1,4 +1,4 @@
-package HP35S::Encode::Keystrokes;
+package HP35s::Keystrokes;
 # ABSTRACT: Encode keystrokes for the HP35S calculator
 
 use strict;

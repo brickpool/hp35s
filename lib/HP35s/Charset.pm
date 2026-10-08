@@ -1,4 +1,4 @@
-package HP35S::Charset;
+package HP35s::Charset;
 # ABSTRACT: Character set mapping for the HP35S calculator
 
 use strict;

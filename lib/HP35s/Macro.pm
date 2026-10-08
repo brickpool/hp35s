@@ -1,4 +1,4 @@
-package HP35S::Macro;
+package HP35s::Macro;
 # ABSTRACT: Macro mapping for the HP35S calculator
 
 use strict;

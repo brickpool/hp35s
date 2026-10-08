@@ -112,11 +112,11 @@ extras/doc-images/up.png
 extras/rpn-0.1-ko.xpi
 extras/tools/hp35s_checksum.pl
 extras/tools/uudecode.pl
-lib/HP35S/Charset.pm
-lib/HP35S/Encode/Keystrokes.pm
-lib/HP35S/Instructions.pm
-lib/HP35S/Macro.pm
-lib/HP35S/Render.pm
+lib/HP35s/Charset.pm
+lib/HP35s/Keystrokes.pm
+lib/HP35s/Vocabulary.pm
+lib/HP35s/Macro.pm
+lib/HP35s/Render.pm
 lib/Parser/HPC.pm
 LICENSE
 Makefile.PL

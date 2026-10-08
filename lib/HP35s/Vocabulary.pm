@@ -1,5 +1,5 @@
-package HP35S::Instructions;
-# ABSTRACT: Instruction set for the HP35S calculator
+package HP35s::Vocabulary;
+# ABSTRACT: Assembler vocabulary for the HP35S calculator
 
 use strict;
 use warnings;

@@ -4,7 +4,7 @@ use warnings;
 use Test::More;
 
 BEGIN {
-  use_ok 'HP35S::Encode::Keystrokes', qw( optimize_keystrokes );
+  use_ok 'HP35s::Keystrokes', qw( optimize_keystrokes );
 }
 
 subtest 'optimize indirect STO' => sub {

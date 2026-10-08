@@ -1,4 +1,4 @@
-package HP35S::Render;
+package HP35s::Render;
 # ABSTRACT: Render mappings for the HP35S calculator
 
 use strict;
@@ -8,10 +8,133 @@ our $VERSION = 'v0.5.0';
 
 use Exporter 'import';
 our @EXPORT_OK = qw(
+  $tbl_const_3graph
+  $tbl_instr_3graph
   $tbl_char_plain
   $tbl_char_markdown
   $tbl_char_unicode
 );
+
+our $tbl_const_3graph = {
+  'i'   => '\im',
+  'pi'  => '\pi',
+  'c'   => '\016',
+  'g'   => '\^g',
+  'G'   => '\018',
+  'Vm'  => '\^V\^m',
+  'NA'  => '\^N\015',
+  'Rb'  => '\^R\oo',
+  'eV'  => '\^e\^V',
+  'me'  => '\^m\^e',
+  'mp'  => '\^m\^p',
+  'mn'  => '\^m\^n',
+  'mu'  => '\^m\Gm',
+  'k'   => '\^k',
+  'h'   => '\^h',
+  '\h-' => '\023',
+  'Ph0' => '\O/\021',
+  'a0'  => '\^a\021',
+  'e0'  => '\Ge\021',
+  'R'   => '\020',
+  'F'   => '\017',
+  'u'   => '\^u',
+  'u0'  => '\Gm\021',
+  'uB'  => '\Gm\^B',
+  'uN'  => '\Gm\^N',
+  'up'  => '\Gm\^p',
+  'ue'  => '\Gm\^e',
+  'un'  => '\Gm\^n',
+  'uu'  => '\Gm\Gm',
+  're'  => '\^r\^e',
+  'Z0'  => '\^Z\021',
+  'lc'  => '\Gl\^c',
+  'lcn' => '\Gl\^c\^n',
+  'lcp' => '\Gl\^c\^p',
+  'a'   => '\Ga',
+  'z'   => '\157',
+  't'   => '\024',
+  'atm' => '\167\^t\^m',
+  'gp'  => '\Gg\^p',
+  'C1'  => '\^C\^1',
+  'C2'  => '\^C\^2',
+  'G0'  => '\^G\021',
+  'e'   => '\^e',
+};
+
+our $tbl_instr_3graph = {
+  # G1
+  '*'     => '\.x',
+  '/'     => '\:-',
+  # G2
+  '10^x'  => '10\^x',
+  'Z+'    => '\GS+',
+  'Z-'    => '\GS-',
+  # G3
+  'Zx'    => '\GSx',
+  'Zx^2'  => '\GSx\^2',
+  'Zxy'   => '\GSxy',
+  'Zy'    => '\GSy',
+  'Zy^2'  => '\GSy\^2',
+  'S,z'   => 'S,\Gs',
+  'zx'    => '\Gsx',
+  'zy'    => '\Gsy',
+  '$FN_d' => '\.SFN d',
+  # G5
+  '->°C'  => '\->\^oC',
+  # G6
+  'CLZ'   => 'CL\GS',
+  '->CM'  => '\->CM',
+  '->DEG' => '\->DEG',
+  # G7
+  '<-ENG' => '\<-ENG',
+  'ENG->' => 'ENG\->',
+  'e^x'   => 'e\^x',
+  # G8
+  '->°F'  => '\->\^oF',
+  '->GAL' => '\->GAL',
+  # G9
+  '->HMS' => '\->HMS',
+  'HMS->' => 'HMS\->',
+  '->IN'  => '\->IN',
+  'INT/'  => 'INT\:-',
+  # G10
+  '->KG'  => '\->KG',
+  '->KM'  => '\->KM',
+  '->L'   => '\->L',
+  '->LB'  => '\->LB',
+  # G11
+  '->MILE'=> '\->MILE',
+  # G12
+  'rta'   => 'r\Gha',
+  '->RAD' => '\->RAD',
+  'RCL*'  => 'RCL\.x',
+  'RCL/'  => 'RCL\:-',
+  # G13
+  'Rv'    => 'R\|v',
+  'R^'    => 'R\|^',
+  # G14
+  'STO*'  => 'STO\.x',
+  'STO/'  => 'STO\:-',
+  # G15
+  'sx'    => '\Gsx',
+  'sy'    => '\Gsy',
+  'x^2'   => 'x\^2',
+  'sqrt'  => '\v/x',
+  'xroot' => 'x\v/y',
+  # G16
+  '\x-w'  => '\x-w',
+  'x!=y?' => 'x\=/y?',
+  'x<=y?' => 'x\<=y?',
+  'x>=y?' => 'x\>=y?',
+  # G17
+  'x!=0?' => 'x\=/0?',
+  'x<=0?' => 'x\<=0?',
+  'x>=0?' => 'x\>=0?',
+  # G18
+  'xiy'   => 'x\imy',
+#  'x+yi'  => 'x+y\im', only mode ALG
+  'y^x'   => 'y\^x',
+};
 
 # unicode eqn charset
 use constant _supc      => "\N{U+1D9C}";
@@ -84,7 +207,7 @@ use constant _rsh       => "\N{U+21B1}";
 use constant _lg        => "\N{U+2276}";
 
 # plaintext mapping
-my $tbl_char_plain = {
+our $tbl_char_plain = {
   # equ charset
   '\^c'   => '^c',
   '\^e'   => '^e',
@@ -182,7 +305,7 @@ my $tbl_char_plain = {
 };
 
 # Markdown mapping
-my $tbl_char_markdown = {
+our $tbl_char_markdown = {
   # equ charset
   '\^c'   => '<sup>c</sup>',
   '\^e'   => '<sup>e</sup>',
@@ -279,7 +402,7 @@ my $tbl_char_markdown = {
 };
 
 # Unicode mapping
-my $tbl_char_unicode = {
+our $tbl_char_unicode = {
   # equ charset
   '\^c'   => _supc,
   '\^e'   => _supe,
