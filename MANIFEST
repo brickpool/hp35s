@@ -118,6 +118,8 @@ lib/HP35s/Macro.pm
 lib/HP35s/Render.pm
 lib/HP35s/Vocabulary.pm
 lib/Parser/HPC.pm
+lib/Parser/HPC/Macro.pm
+lib/Parser/HPC/Vocabulary.pm
 LICENSE
 Makefile.PL
 MANIFEST			This list of files
@@ -131,6 +133,8 @@ t/14_display.t
 t/20_frontend-statements.t
 t/21_frontend-forward-labels.t
 t/22_frontend-locals.t
+t/30_macros-good.t
+t/31_macros-fail.t
 t/lib/FrontendTest.pm
 xt/01_pod.t
 xt/02_sources.t

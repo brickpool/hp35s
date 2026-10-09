@@ -1,6 +1,25 @@
 ; Find the nearest fraction in the E24 numbers for the HP-35s
 ; This program is by Takayuki Hosoda and is used here by permission.
 ; http://www.finetune.co.jp/~lyuka/technote/e24/e24-35s.html
+MACRO E24ENTRY value
+  value
+  STO(I)
+  DSE I
+ENDM
+
+MACRO E24SCAN found
+  LOCAL again
+  23
+  STO I
+again:
+  RCL N
+  RCL(I)
+  x<y?
+    GTO found
+  DSE I
+    GTO again
+ENDM
+
 MODEL P35S
 
 SEGMENT E24 CODE
@@ -13,77 +32,31 @@ LBL E
   23
   STO I
   ; R23 = 9.1
-  9.1
-  STO(I)
-  DSE I
+  E24ENTRY 9.1
   ; R22 = 8.2
-  8.2
-  STO(I)
-  DSE I
-  7.5
-  STO(I)
-  DSE I
-  6.8
-  STO(I)
-  DSE I
-  6.2
-  STO(I)
-  DSE I
-  5.6
-  STO(I)
-  DSE I
-  5.1
-  STO(I)
-  DSE I
-  4.7
-  STO(I)
-  DSE I
-  4.3
-  STO(I)
-  DSE I
-  3.9
-  STO(I)
-  DSE I
-  3.6
-  STO(I)
-  DSE I
-  3.3
-  STO(I)
-  DSE I
-  3.0
-  STO(I)
-  DSE I
-  2.7
-  STO(I)
-  DSE I
-  2.4
-  STO(I)
-  DSE I
-  2.2
-  STO(I)
-  DSE I
-  2.0
-  STO(I)
-  DSE I
-  1.8
-  STO(I)
-  DSE I
-  1.6
-  STO(I)
-  DSE I
-  1.5
-  STO(I)
-  DSE I
-  1.3
-  STO(I)
-  DSE I
-  1.2
-  STO(I)
-  DSE I
+  E24ENTRY 8.2
+  E24ENTRY 7.5
+  E24ENTRY 6.8
+  E24ENTRY 6.2
+  E24ENTRY 5.6
+  E24ENTRY 5.1
+  E24ENTRY 4.7
+  E24ENTRY 4.3
+  E24ENTRY 3.9
+  E24ENTRY 3.6
+  E24ENTRY 3.3
+  E24ENTRY 3.0
+  E24ENTRY 2.7
+  E24ENTRY 2.4
+  E24ENTRY 2.2
+  E24ENTRY 2.0
+  E24ENTRY 1.8
+  E24ENTRY 1.6
+  E24ENTRY 1.5
+  E24ENTRY 1.3
+  E24ENTRY 1.2
   ; R01 = 1.1
-  1.1
-  STO(I)
-  DSE I
+  E24ENTRY 1.1
   2007.0810     ; NOP, V2007-08-10
   ; R00 = 1.0
   1.0
@@ -107,17 +80,7 @@ LBL E
   STO N
 
   ; DO I = 23, 0, -1
-  23
-  STO I
-  @092:
-    RCL N
-    RCL(I)
-    x<y?
-      GTO @098
-  ; CONTINUE
-  DSE I
-    GTO @092
-  ; END
+  E24SCAN @098
 
 @098:
   ; K = I

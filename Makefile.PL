@@ -42,6 +42,10 @@ WriteMakefile(
     provides => {
       'Parser::HPC'
         => { file => 'lib/Parser/HPC.pm', version => '0.5.0' },
+      'Parser::HPC::Macro'
+        => { file => 'lib/Parser/HPC/Macro.pm', version => '0.5.0' },
+      'Parser::HPC::Vocabulary'
+        => { file => 'lib/Parser/HPC/Vocabulary.pm', version => '0.5.0' },
       'HP35s::Charset'
         => { file => 'lib/HP35s/Charset.pm', version => '0.5.0' },
       'HP35s::Vocabulary'

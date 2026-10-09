@@ -2,8 +2,9 @@
 ; This program is by Dan B. (brianddk) and is used here by permission.
 ; https://brianddk.github.io/prog/mancala/mancala.asm
 MODEL P35S
+LOCALS
 SEGMENT Mancala CODE
-;Main Mancala program
+; Main Mancala program
 LBL M
   XEQ init                          ; Init the game registers
   main:                             ; Main game loop
@@ -16,13 +17,13 @@ LBL M
     FS? 4                           ; Invalid move?
       GTO redisplay                 ; .. Redisplay
     XEQ move                        ; Move the beans
-    XEQ switch                      ; Swithch players
+    XEQ switch                      ; Switch players
   GTO main                          ; Loop for next move
   done:                             ; This is where we finish
   XEQ cleanup                       ; Cleanup we are done
 RTN
 ;
-; .Init registers
+; Init registers
 init:                               ; Init the game registers
   CF 1                              ; Clear our flag regs
   CF 2
@@ -31,10 +32,10 @@ init:                               ; Init the game registers
   13                                ; For i in 13..1
   STO I                             ; i
   4                                 ; st-x = 4
-  init_loop:
+  @@loop:
     STO (I)                         ; 4->(i)
     DSE I                           ; DSE i
-  GTO init_loop
+  GTO @@loop
   0                                 ; i now equals zero
   STO (I)                           ; 0->(i), i = 0
   7
@@ -175,8 +176,8 @@ move:
   0
   x<> (I)                           ; (i)= 0 (MOVE BEANS OUT)
   STO J                             ; j=VALUE PREVIOUSLY IN (i)
-  move_loop:
-    ; INCI SUBROUTINE-INLINE
+  @@loop:
+    ; INC I SUBROUTINE-INLINE
     1
     RCL I                           ; i++ (MOVE REGISTER FORWARD)
     +
@@ -187,11 +188,11 @@ move:
       GTO skip0                     ; SKIP0 IF P1
     FS? 2
       GTO skip7                     ; SKIP7 IF P2
-    ; INCI END-SUBROUTINE-INLINE
+    ; INC I END-SUBROUTINE-INLINE
     1
     STO+ (I)                        ; (i)=(i)+1
     DSE J                           ; j--
-  GTO move_loop
+  GTO @@loop
   1
   RCL (I)
   x=y?
@@ -271,7 +272,7 @@ switch:
     CF 1
     SF 2
     RAD
-switch_done:
+  switch_done:
 RTN
 ;
 ; Clean up after game

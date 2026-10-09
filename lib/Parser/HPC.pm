@@ -31,6 +31,17 @@ use HP35s::Vocabulary qw(
   @register
   instruction_kind
 );
+use Parser::HPC::Vocabulary qw(
+  @directives
+  @predefined
+  @languages
+  @segments
+);
+use Parser::HPC::Macro;
+
+# -------------------------------------------------------------------------
+# Parent class
+# -------------------------------------------------------------------------
 
 use parent 'Parser::MGC';
 
@@ -40,29 +51,7 @@ use parent 'Parser::MGC';
 
 use constant pattern_comment    => qr/;.*\n/;
 use constant pattern_operation  => qr/[^\s\(\)]+/;
-use constant pattern_ident      => qr/[[:alpha:]@_\$?][[:alnum:]@_\$?]{0,246}/;
-
-# -------------------------------------------------------------------------
-# Local variables
-# -------------------------------------------------------------------------
-
-my @directives = (
-  'DISPLAY', 'ENDS', 'END', 'EQU', 'LOCALS', 'NOLOCALS', 'MODEL', 'RADIX', 
-  'SEGMENT', 'SET', '%TITLE',
-);
-
-# Pre defined text equates
-my @predefined = (
-  '??date', '??time',
-);
-
-my @languages = (
-  'P35S',
-);
-
-my @segments = (
-  'DATA', 'CODE', 'STACK',
-);
+use constant pattern_ident      => qr/[[:alpha:]\@_\$?][[:alnum:]\@_\$?]{0,246}/;
 
 # -------------------------------------------------------------------------
 # Constructor
@@ -107,8 +96,17 @@ sub new {
 }
 
 # -------------------------------------------------------------------------
-# Public Methods
+# Overload existing Methods
 # -------------------------------------------------------------------------
+
+sub from_string {
+  my ($self, $source) = @_;
+  my $macro_parser = Parser::HPC::Macro->new(
+    patterns => { ident => $self->{patterns}->{ident} },
+  );
+  $source = $macro_parser->from_string($source);
+  return $self->SUPER::from_string($source);
+}
 
 sub parse {
   my $self = shift;
@@ -162,6 +160,10 @@ sub parse {
   $root->{startaddr}  = $start if $start;
   return $root;
 }
+
+# -------------------------------------------------------------------------
+# New public Methods
+# -------------------------------------------------------------------------
 
 sub parse_title {
   my $self = shift;
@@ -650,7 +652,7 @@ sub parse_code_instruction {
     /address/ and do {
       # instructions with an address: GTO and XEQ
       eval { $operand = $self->generic_token(label
-        => qr/\@{0,2}\w+/, sub { $_[1] } )
+        => qr/(?:\?\?\d{4}|\@{0,2}\w+)/, sub { $_[1] } )
       } or
         $self->fail( "Illegal origin address" );
 
@@ -833,7 +835,7 @@ sub parse_label {
   my $type = 'label';
   my $ident;
 
-  $ident = $self->expect( qr/\@{0,2}\w+:/ );
+  $ident = $self->expect( qr/(?:\?\?\d{4}|\@{0,2}\w+):/ );
   $self->commit;
   my $fail_pos = $self->pos - length $ident;
 

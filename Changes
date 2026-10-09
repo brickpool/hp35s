@@ -1,9 +1,10 @@
-0.005_0   2026-10-09
+0.5.0   2026-10-09
         [ADDED]
          * Test coverage for module loading, parser, frontend and keystroke
            optimization
          * Extended tests for POD documentation and example sources
          * Support for the LOCALS, NOLOCALS, RADIX and DISPLAY directives
+         * Macro support has been added (MACRO, ENDM, and LOCAL directives)
 
         [CHANGES]
          * Reduced size and complexity of Parser::HPC
