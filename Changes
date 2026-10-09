@@ -3,7 +3,7 @@
          * Test coverage for module loading, parser, frontend and keystroke
            optimization
          * Extended tests for POD documentation and example sources
-         * Support for the RADIX and DISPLAY directives
+         * Support for the LOCALS, NOLOCALS, RADIX and DISPLAY directives
 
         [CHANGES]
          * Reduced size and complexity of Parser::HPC

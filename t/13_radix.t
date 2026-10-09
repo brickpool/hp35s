@@ -52,7 +52,7 @@ subtest 'RADIX applies to numeric operands, data and stack' => sub {
   my $parser = Parser::HPC->new;
   my $root = $parser->from_string(<<'ASM');
 MODEL P35S
-radix 16 ; decimal operand
+RADIX 16 ; decimal operand
 SEGMENT DATA
 VALUE EQU 100
 RADIX 2
@@ -116,6 +116,20 @@ subtest 'RADIX rejects unsupported syntax and invalid numbers' => sub {
       1;
     };
     ok( !$success, "$code is rejected" );
+  }
+};
+
+subtest 'RADIX requires uppercase spelling' => sub {
+  for my $directive ( 'radix 16', 'Radix 16', 'RaDiX 16' ) {
+    for my $source (
+      "MODEL P35S\n$directive\nSEGMENT CODE\nRTN\nENDS\nEND\n",
+      "MODEL P35S\nSEGMENT CODE\n$directive\nRTN\nENDS\nEND\n",
+      "MODEL P35S\nSEGMENT DATA\n$directive\nVALUE EQU 1\nENDS\nEND\n",
+      "MODEL P35S\nSEGMENT STACK\n$directive\nREGX SET 1\nENDS\nEND\n",
+    ) {
+      my $success = eval { Parser::HPC->new->from_string($source); 1 };
+      ok( !$success, "$directive is rejected" );
+    }
   }
 };
 

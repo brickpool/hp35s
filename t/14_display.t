@@ -50,6 +50,21 @@ subtest 'DISPLAY is emitted before a later parse error' => sub {
     'message is emitted before the parser reports the later failure' );
 };
 
+subtest 'DISPLAY requires uppercase spelling' => sub {
+  for my $directive ( 'display', 'Display', 'DiSpLaY' ) {
+    for my $source (
+      "MODEL P35S\n$directive 'message'\nSEGMENT CODE\nRTN\nENDS\nEND\n",
+      "MODEL P35S\nSEGMENT CODE\n$directive 'message'\nRTN\nENDS\nEND\n",
+    ) {
+      my @warnings;
+      local $SIG{__WARN__} = sub { push @warnings, @_ };
+      my $success = eval { Parser::HPC->new->from_string($source); 1 };
+      ok( !$success, "$directive is rejected" );
+      is_deeply( \@warnings, [], 'invalid spelling emits no message' );
+    }
+  }
+};
+
 subtest '%OUT remains unsupported' => sub {
   my $parser = Parser::HPC->new;
   my $success = eval {

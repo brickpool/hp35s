@@ -99,6 +99,10 @@ sub new {
   # Default numeric radix is decimal
   $self->{_radix} = 10;
 
+  # Local label handling
+  $self->{_locals} = 0;
+  $self->{_local_scope} = '';
+
   return $self;
 }
 
@@ -120,6 +124,9 @@ sub parse {
   # list of segments
   my $result = $self->sequence_of(
     sub {
+      if ( defined $self->maybe(sub { $self->parse_locals }) ) {
+        return { };
+      }
       if ( defined $self->maybe(sub { $self->parse_radix }) ) {
         return { };
       }
@@ -187,7 +194,7 @@ sub parse_title {
 sub parse_display {
   my $self = shift;
 
-  $self->expect( qr/DISPLAY\b/i );
+  $self->expect( qr/DISPLAY\b/ );
   $self->commit;
 
   my $message;
@@ -225,7 +232,7 @@ sub parse_model {
 sub parse_radix {
   my $self = shift;
 
-  $self->expect( qr/RADIX(?=\s|;|\z)/i );
+  $self->expect( qr/RADIX(?=\s|;|\z)/ );
   $self->commit;
   my ($line) = $self->where;
   $self->skip_ws;
@@ -242,6 +249,28 @@ sub parse_radix {
 
   $self->{_radix} = 0 + $base;
   return $self->{_radix};
+}
+
+sub parse_locals {
+  my $self = shift;
+
+  my $directive = $self->expect( qr/(?:NOLOCALS|LOCALS)(?=\s|;|\z)/ );
+  $self->commit;
+  my ($line) = $self->where;
+  $self->skip_ws;
+  my ($next_line) = $self->where;
+  $line ne $next_line or
+    $self->fail( "Extra characters on line" );
+
+  $self->{_locals} = $directive eq 'LOCALS' ? 1 : 0;
+  return $self->{_locals};
+}
+
+sub _label_name {
+  my ($self, $ident) = @_;
+  $ident = uc $ident;
+  return $self->{_locals} && $ident =~ /^@@/
+    ? $self->{_local_scope} . ':' . $ident : $ident;
 }
 
 sub parse_segment {
@@ -352,6 +381,7 @@ sub parse_data_statement {
   my $self = shift;
   my $type = 'equation';
 
+  return { } if defined $self->maybe(sub { $self->parse_locals });
   return { } if defined $self->maybe(sub { $self->parse_radix });
 
   my $ident = $self->token_ident;
@@ -510,7 +540,8 @@ sub parse_code_block {
   my @statements;
   my @pending_tags;
   for (my $i = 0; $i < @$result; $i++ ) {
-    if ( exists $result->[$i]->{display} || exists $result->[$i]->{radix} ) {
+    if ( exists $result->[$i]->{display} || exists $result->[$i]->{radix}
+      || exists $result->[$i]->{locals} ) {
       push @pending_tags, @{ $tags[$i] };
       next;
     }
@@ -547,6 +578,9 @@ sub parse_code_statement {
 
   $self->skip_ws;
   my ($line) = $self->where;
+
+  my $locals = $self->maybe(sub { $self->parse_locals });
+  return { locals => $locals } if defined $locals;
 
   my $radix = $self->maybe(sub { $self->parse_radix });
   return { radix => $radix } if defined $radix;
@@ -625,7 +659,7 @@ sub parse_code_instruction {
           value => $mnemonic,
         },
       };
-      if ($operand =~ /[A-Z]\d{3}/) {
+      if ($operand =~ /^[A-Z]\d{3}$/) {
         $statement->{instruction}->{operand} = {
           type  => 'address',
           value => $operand,
@@ -633,7 +667,7 @@ sub parse_code_instruction {
       } else {
         $statement->{instruction}->{operand} = {
           type  => 'label',
-          value => uc $operand,
+          value => $self->_label_name($operand),
         };
       };
       last;
@@ -819,6 +853,8 @@ sub parse_label {
 
   $ident =~ s/://;
   $ident = uc $ident;
+  my $nonlocal = $ident !~ /^@@/;
+  $ident = $self->_label_name($ident);
 
   # check if symbol already exists
   if ( defined $self->{_symbols}->{$ident} ) {
@@ -834,6 +870,8 @@ sub parse_label {
 
   # insert symbol into global symbol table
   $self->{_symbols}->{$ident} = $type;
+
+  $self->{_local_scope} = $ident if $nonlocal;
 
   return $ident;
 }
@@ -891,6 +929,7 @@ sub parse_stack_statement {
   my $self = shift;
   my $type = 'register';
 
+  return { } if defined $self->maybe(sub { $self->parse_locals });
   return { } if defined $self->maybe(sub { $self->parse_radix });
 
   my $ident = $self->token_kw( @register );
@@ -928,15 +967,16 @@ sub parse_end {
     or
   $self->fail( "Code or data emission to undeclared segment" );
   
-  # determine all current labels
-  my @labels = ();
-  foreach ( keys %{ $self->{_symbols} } ) {
-    push @labels, $_ if $self->{_symbols}->{$_} eq 'label';
-  }
-
   # get the startaddress if present
   my $startaddress = $self->any_of(
-    sub { $self->token_kw_icase( @labels ) },
+    sub {
+      my $ident = $self->generic_token( label => qr/\@{0,2}\w+/ );
+      my $name = $self->_label_name($ident);
+      defined $self->{_symbols}->{$name}
+        && $self->{_symbols}->{$name} eq 'label' or
+        $self->fail( "Expected label" );
+      return $name;
+    },
     sub { 0 },
   );
 
@@ -1103,27 +1143,8 @@ code segment. Its message is written to standard error as it is parsed. The
 unquoted C<%OUT> directive is not supported.
 
 The parser recognizes directives including C<%TITLE>, C<MODEL>, C<SEGMENT>,
-C<ENDS>, C<END>, C<EQU>, C<SET>, C<DISPLAY>, and C<RADIX>. Although some
-additional directive names are reserved internally, C<LOCALS> and
-C<NOLOCALS> are not implemented.
-
-C<RADIX base> selects base 2, 8, 10, or 16 for subsequent unsuffixed
-integers; each new parser instance starts in base 10. It may appear after
-C<MODEL>, between segments, or inside a segment. The setting applies
-assembler-wide and persists across segment boundaries and subsequent parses
-on the same instance until another C<RADIX> directive changes it.
-Its operand is always decimal;
-explicit C<b>, C<o>, C<d>, and C<h> suffixes take precedence over the
-selected base. Use C<RADIX>, not C<.RADIX>.
-
-C<RADIX.> and C<RADIX,> are separate calculator instructions that select
-the display's decimal separator. They emit code statements and do not
-change the parser's default base; C<RADIX base> does not change the display.
-
-Numbers containing a decimal point or a negative exponent, and vector and
-complex components, remain decimal. Under C<RADIX 16>, C<1E7> is
-hexadecimal; use C<1E7d> for decimal scientific notation. Suffixes and
-hexadecimal digits are case-insensitive.
+C<ENDS>, C<END>, C<EQU>, C<SET>, C<DISPLAY>, C<RADIX>, C<LOCALS>, and
+C<NOLOCALS>.
 
 =head1 RETURN VALUE
 
@@ -1142,6 +1163,11 @@ Instructions carry their mnemonic and, when applicable, a typed operand;
 literals carry a kind and value. For example, C<GTO start> produces an
 instruction operand with type C<label> and value C<START>.
 
+Active local labels use qualified names in C<labels>, label operands, and
+C<startaddr>: for example C<@@loop> under C<start:> becomes C<START:@@LOOP>.
+The initial scope uses C<:@@LOOP>. Local names are case-insensitive, and
+duplicate definitions within the same scope are rejected.
+
 Unsuffixed non-decimal code literals receive an explicit suffix in their
 value, preserving the selected base for the frontend. Numeric instruction
 operands, C<EQU> definitions, and C<SET> assignments are converted to
@@ -1150,8 +1176,7 @@ decimal values. C<RADIX> emits no statement and does not change label indices.
 =head1 LIMITATIONS
 
 Only the Polish notation mode is supported. Thousand-separator operations are
-not implemented. The directives C<LOCALS> and C<NOLOCALS> are not
-supported.
+not implemented. Custom local-label prefixes are not supported.
 
 =head1 SEE ALSO
 

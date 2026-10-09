@@ -130,6 +130,7 @@ t/13_radix.t
 t/14_display.t
 t/20_frontend-statements.t
 t/21_frontend-forward-labels.t
+t/22_frontend-locals.t
 t/lib/FrontendTest.pm
 xt/01_pod.t
 xt/02_sources.t
