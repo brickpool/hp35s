@@ -39,9 +39,13 @@ The frontend supports these options:
 
 =over 4
 
-=item * C<-h>, C<--help>
+=item * C<-?>, C<--help>
 
 Show usage information.
+
+=item * C<--man>
+
+Show the full command documentation.
 
 =item * C<-v>, C<--version>
 
@@ -57,7 +61,8 @@ Mark jump targets in the listing.
 
 =item * C<-c>, C<--clear>
 
-Include keystrokes to clear calculator program memory.
+Include keystrokes to clear calculator program memory. This requires shortcut
+output, enabled with C<--shortcut> or C<--encoded>.
 
 =item * C<-p>, C<--plain>
 
@@ -87,13 +92,13 @@ Write debug information to standard error.
 
 For example, to create a plain-text listing or an encoded macro stream:
 
-  perl -Ilib bin/asm2hpc.pl --plain --file=examples/C/C.asm > C.raw
-  perl -Ilib bin/asm2hpc.pl --clear --encoded --file=examples/J/J.asm \
+  perl bin/asm2hpc.pl --plain --file=examples/C/C.asm > C.raw
+  perl bin/asm2hpc.pl --clear --encoded --file=examples/J/J.asm \
     | perl extras/tools/uudecode.pl
 
 =head1 PARSER
 
-C<Parser::HPC> parses C<P35S> source and returns a Perl data structure
+C<Parser::HPC> parses C<HP35s> source and returns a Perl data structure
 containing its segments, labels, statements, and optional title and start
 address. Its supported grammar, programmatic usage, return structure, and
 limitations are documented in L<Parser::HPC>.

@@ -1,10 +1,19 @@
 package Parser::HPC;
 # ABSTRACT: Simple recursive-descent 1-pass assembler parser for HP calculators
 
+# ------------------------------------------------------------------------
+# Boilerplate
+# ------------------------------------------------------------------------
+
 use strict;
 use warnings;
 
-our $VERSION = 'v0.5.0';
+use version;
+our $VERSION = version->declare('v0.5.0');
+
+# ------------------------------------------------------------------------
+# Imports
+# ------------------------------------------------------------------------
 
 use Parser::MGC;
 use HP35s::Charset qw(
@@ -25,9 +34,17 @@ use HP35s::Vocabulary qw(
 
 use parent 'Parser::MGC';
 
+# -------------------------------------------------------------------------
+# Define constants
+# -------------------------------------------------------------------------
+
 use constant pattern_comment    => qr/;.*\n/;
 use constant pattern_operation  => qr/[^\s\(\)]+/;
 use constant pattern_ident      => qr/[[:alpha:]@_\$?][[:alnum:]@_\$?]{0,246}/;
+
+# -------------------------------------------------------------------------
+# Local variables
+# -------------------------------------------------------------------------
 
 my @directives = (
   'DISPLAY', 'ENDS', 'END', 'EQU', 'LOCALS', 'NOLOCALS', 'MODEL', 'RADIX', 
@@ -47,7 +64,10 @@ my @segments = (
   'DATA', 'CODE', 'STACK',
 );
 
-# Override constructor
+# -------------------------------------------------------------------------
+# Constructor
+# -------------------------------------------------------------------------
+
 sub new {
   my $class = shift;
   
@@ -78,6 +98,10 @@ sub new {
 
   return $self;
 }
+
+# -------------------------------------------------------------------------
+# Public Methods
+# -------------------------------------------------------------------------
 
 sub parse {
   my $self = shift;
@@ -862,6 +886,10 @@ sub token_string {
 
   return $string;
 }
+
+# -------------------------------------------------------------------------
+# Private Methods
+# -------------------------------------------------------------------------
 
 sub _find_before {
   my $self    = shift;

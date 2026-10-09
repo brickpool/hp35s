@@ -1,0 +1,249 @@
+0.005_0   2026-10-09
+        [ADDED]
+         * Test coverage for module loading, parser, frontend and keystroke
+           optimization
+         * Extended tests for POD documentation and example sources
+
+        [CHANGES]
+         * Reduced size and complexity of Parser::HPC
+         * Reduced size and complexity of asm2hpc.pl
+         * Separated data definitions from parser and frontend logic
+         * Renamed the HP35S namespace to HP35s
+         * Consolidated instruction and keystroke modules as HP35s::Vocabulary
+           and HP35s::Keystrokes
+         * Updated command-line help and POD documentation; --clear now
+           requires shortcut output
+
+0.4.3   2026-10-06
+        [CHANGES]
+         * Extracted parser and frontend tables into dedicated modules
+         * Added HP35S::Instructions
+         * Added HP35S::Render
+         * Added HP35S::Macro
+         * Added HP35S::Encode::Keystrokes
+
+        [BUGFIXES]
+         * Made keystroke optimization deterministic by using an ordered rule
+           list
+         * Fixed non-deterministic shortcut generation caused by optimization
+           rule ordering
+
+0.4.2   2020-08-14
+        [ADDED]
+         * Example triangle T
+         * Predefined equate ??date and ??time
+
+0.4.1   2020-04-28
+        [ADDED]
+         * Example weekday W
+         * Folder /extras/doc-images with keystroke images
+
+        [BUGFIXES]
+         * Install dir in examples/Makefile
+         * README-files in the example folder
+         * Constant pi (\pi is not an trigraph anymore)
+         * Constant i (0\im1)
+
+        [CHANGES]
+         * Constant Planck constant over 2 pi (\h- => hbar)
+
+0.4.0   2020-04-01
+        [ADDED]
+         * Makefile.PL for the Parser HPC.pm
+         * README.pod in the example folder
+
+        [CHANGES]
+         * Move content from /src/README.md to /README.pod
+         * Move the Assembler asm2hpc.pl from folder /src to the root folder
+         * Move emulation files *.ep from root folder to /AppData
+         * Rename folder /macros to /AppData/Macros
+         * Rename folder /tools to /extras/tools
+         * Rename folder /src to /examples
+         * Rename folder /src/Parser to /lib/Parser
+         * Rename folder /src/third-party to /examples/3rd-party
+         * Generating cmd to dmake (generate.cmd to Makefile)
+
+0.3.12   2020-03-27
+        [ADDED]
+         * Support of the 41 physics built-in constants (CONST Menu)
+         * Keystroke optimization for jump to LBL => GTO A or XEQ A
+
+        [BUGFIXES]
+         * Keystroke RCL 0 => RCL (I)
+         * Keystroke RCL . => RCL (J)
+
+0.3.11   2020-03-02
+        [ADDED]
+         * Keystroke optimization for vector expressions => eqn '[A,B]'
+
+        [BUGFIXES]
+         * Keystroke [ => \+> [] \.> \BS
+         * Keystroke ] => \+> [] \BS \.>
+
+0.3.10   2020-02-19
+        [ADDED]
+         * Keystroke support for expressions => eqn 'TEXT'
+
+        [BUGFIXES]
+         * Key code \CC => 0x26
+         * Keystroke \|> => \+> STO \CC
+         * Cross-program jump labels
+         * Successive jump labels (Parser HPC.pm)
+         * Option --shortcut or -s
+
+0.3.9   2020-02-07
+        [ADDED]
+         * Keystrokes support for clear programs (option --clear or -c)
+         * Key code support PRGM => 04
+         * New macro directory with macros (*.mac) for the HP emulation
+           software
+         * New tool directory for OS indepedent tools
+         * Add some new emulation files *.ep
+
+        [CHANGES]
+         * Update text in README.pod
+         * Update checksum in *.asm
+         * Update src\generate.cmd
+         * Update _switch case_ syntax in perl source files
+         * Update emulation file ee.ep (ee => electric enginering)
+         * Uu encodes output format for option --encoded or -e
+
+        [BUGFIXES]
+         * Key 10^x => \<+ 10\^x (secound try)
+         * Key ALOG => \<+ 10\^x
+         * Key code y\^x => 0x10
+         * Key code 1/x => 0x11
+
+0.3.8   2020-01-31
+        [ADDED]
+         * Key code output support (option --encoded or -e) Uu encoded format
+         * Keystrokes support for complex and vector statement's
+
+        [CHANGES]
+         * File extensions from *.asc to *.raw
+
+        [BUGFIXES]
+         * Del ISG from @functions
+         * Line numbering: $loc = $0; => $loc = 0;
+         * Retuning from sub's sprintf_*: next; => return '';
+         * Key \R|v => R\|v for REGX, REGY, REGZ and REGT
+         * Key exp E => e, char E => RCL E and hex E => y^x
+         * Key ->LB => \<+ \->lb
+         * Key ->MILE => \<+ \->MILE
+         * Key ->IN => \+> \->in
+         * Key 10^x => \<+ 10\^x
+         * Key , => \<+ ,
+         * Key SOLVE => \+> SOLVE
+         * Key RND => \+> RND
+
+0.3.7   2019-06-13
+        [ADDED]
+         * Markdown output support (option --markdown or -m)
+         * * for jump targets (option --jumpmark or -j), by Paul Dale
+
+        [CHANGES]
+         * @ support for labels
+         * Eqn output, by Paul Dale
+
+        [BUGFIXES]
+         * Optimization of ALOG for EQN
+
+0.3.6   2019-06-07
+        [ADDED]
+         * Syntax checking for EQN
+         * Unicode und plantext support for EQN
+         * New keystrokes
+         * Optimization of keystrokes
+
+        [CHANGES]
+         * Trigraph \h- to \023
+         * Option --ascii, -a to --plain, -p
+
+        [BUGFIXES]
+         * Keystrokes for \->, ( and )
+
+0.3.5   2019-06-04
+        [ADDED]
+         * Charater-Set files to extras
+
+        [CHANGES]
+         * Trigraph \Mi to \im
+         * &#x25B6; to &#x25BA;
+         * &#x1F132; to &#x1F172;
+         * EQN character % and ,
+         * Rename instruction EQN to eqn, by Paul Dale
+
+        [BUGFIXES]
+         * Fixing output of ENG->
+         * Fixing syntax for RANDOM
+
+        [REMOVED]
+         * EQN character a and u
+
+0.3.4   2019-05-17
+        [ADDED]
+         * Support vectors and register
+
+0.3.3   2019-05-17
+        [ADDED]
+         * Correct handling of numbers
+
+0.3.2   2019-05-15
+        [ADDED]
+         * Adding trigraphs to keystrokes
+         * Output can be trigraph, ascii-text or unicode
+         * Add functions to statements
+
+        [CHANGES]
+         * Trigraph \=x to \x-
+         * Trigraph \=y to \y-
+         * Trigraph \^x to \x^
+         * Trigraph \^y to \y^
+
+0.3.1   2019-05-10
+        [CHANGES]
+         * Test for unknown characters at EQU
+
+        [BUGFIXES]
+         * Fixing keystrokes for CF, FIX, ... and EQN
+
+0.3.0   2019-05-09
+        [ADDED]
+         * Keystrokes (option --shortcut or -s)
+
+        [BUGFIXES]
+         * Bugfix <-ENG
+
+0.2.2   2019-05-08
+        [ADDED]
+         * Support 'r &theta; a'
+
+0.2.1   2019-05-07
+        [BUGFIXES]
+         * Several bug fixes
+
+0.2.1   2019-05-06
+        [BUGFIXES]
+         * Fixing unicode handling
+         * '0' instruction
+         * Non escaping for 'token_string'
+
+0.2.0   2019-05-02
+        [CHANGES]
+         * Rename File
+         * Use of Parser::HPC
+
+        [BUGFIXES]
+         * Bugfix GTO in Parser::HPC
+
+0.1.2   2019-04-29
+        [CHANGES]
+         * Pre-alpha release of Parser::HPC
+
+0.1.1   2019-04-12
+        [ADDED]
+         * Added parser Parser::HPC
+
+0.1.0   2019-04-09
+        [ADDED]
+         * Initial version created

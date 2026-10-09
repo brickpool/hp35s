@@ -1,0 +1,11 @@
+^\.\w+
+^\S+\.tar\.gz
+\bMakefile$
+\bMakefile\.old
+\bMANIFEST\.bak
+\bMANIFEST\.SKIP
+\bMYMETA\.
+\bsrc
+\btrial
+.+\.komodoproject
+\bdebug\.log

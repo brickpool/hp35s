@@ -37,3 +37,7 @@ _gsdata_/
 
 # Other
 *.old
+*.txt
+debug.log
+MYMETA.*
+MANIFEST.bak

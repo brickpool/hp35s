@@ -4,7 +4,8 @@ package HP35s::Charset;
 use strict;
 use warnings;
 
-our $VERSION = 'v0.5.0';
+use version;
+our $VERSION = version->declare('v0.5.0');
 
 use Exporter 'import';
 our @EXPORT_OK = qw(

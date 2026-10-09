@@ -1,16 +1,27 @@
 # ABSTRACT: Convert an assembler program to HP35s native keystrokes
 
+# ------------------------------------------------------------------------
+# Boilerplate
+# ------------------------------------------------------------------------
+
 use strict;
 use warnings;
 
-our $VERSION = 'v0.5.0';
+use version;
+our $VERSION = version->declare('v0.5.0');
+
+# ------------------------------------------------------------------------
+# Imports
+# ------------------------------------------------------------------------
 
 use Getopt::Long;
+use Pod::Usage;
 use POSIX;
 use Data::Dumper;
 use Encode;
 use File::Basename;
 
+use lib '../lib', 'lib';
 use Parser::HPC; 
 use HP35s::Keystrokes qw(
   constant_keystrokes
@@ -32,422 +43,460 @@ use HP35s::Render qw(
   $tbl_char_unicode
 );
 
-# Declaration
-my $version;
+# ------------------------------------------------------------------------
+# Command line options and parsing
+# ------------------------------------------------------------------------
+
+# Declarations for command line options
 my $jumpmark;
-my $plain;
-my $unicode;
-my $markdown;
-my $shortcut;
-my $help;
-my $debug;
 my $clear;
-my $file;
+my $plain;
+my $markdown;
+my $unicode;
+my $shortcut;
 my $encoded;
-# the next lines are only for my own test cases
-#$file = 'xt\encoding.asm';
+my $file;
+my $debug;
 
-Getopt::Long::Configure('bundling');
-GetOptions (
-  "help"        => \$help,      "h"   => \$help,
-  "version"     => \$version,   "v"   => \$version,
-  "jumpmark"    => \$jumpmark,  "j"   => \$jumpmark,
-  "clear"       => \$clear,     "c"   => \$clear,
-  "plain"       => \$plain,     "p"   => \$plain,
-  "markdown"    => \$markdown,  "m"   => \$markdown,
-  "unicode"     => \$unicode,   "u"   => \$unicode,
-  "shortcut"    => \$shortcut,  "s"   => \$shortcut,
-  "encoded"     => \$encoded,   "e"   => \$encoded,
-  "debug"       => \$debug,
-  "file=s"      => \$file,      "f=s" => \$file,
+Getopt::Long::Configure qw(
+  bundling
+  no_ignore_case
 );
-# Check command line arguments
-&version()    if $version;
-&help()       if $help;
-$debug    = 0 unless defined $debug;
-$shortcut = 1 if $encoded;
 
-my $parser = Parser::HPC->new;
-
+# Global helper variables
 my $label = '0';  # start with label '0'
-my $lloc = 0;     # logical lines of code
-my $out = '';
-my $codename = '';
 my $response;
 my $jump_targets = {};
 my $addresses = {};
 
-#
+sub parse_options { # $ ($, @)
+  my ($argc, @argv) = @_;
+  my %options;
+
+  GetOptions(\%options,
+    'help|?',
+    'man',
+    'version|v',
+    'jumpmark|j',
+    'clear|c',
+    'plain|p',
+    'markdown|m',
+    'unicode|u',
+    'shortcut|s',
+    'encoded|e',
+    'debug',
+    'file|f=s',
+  ) or pod2usage("Try '$0 --help' for more information.");
+
+  if ($options{version}) {
+    print "$1 ($VERSION) - by J.Schneider http://www.brickpool.de/\n"
+      if $0 =~ /([^\/\\]+)$/;
+    return 0;
+  }
+  if ($options{help}) {
+    pod2usage(-exitval => 0, -verbose => 1);
+  }
+  if ($options{man}) {
+    pod2usage(-exitval => 0, -verbose => 2);
+  }
+
+  $jumpmark = $options{jumpmark};
+  $clear = $options{clear};
+  $plain = $options{plain};
+  $markdown = $options{markdown};
+  $unicode = $options{unicode};
+  $shortcut = $options{shortcut};
+  $encoded = $options{encoded};
+  $debug = $options{debug} // 0;
+  $file = $options{file};
+  $shortcut = 1 if $encoded;
+
+  return 1;
+}
+
+# ------------------------------------------------------------------------
 # Start of the main program 
-#
+# ------------------------------------------------------------------------
 
-# option --file
-if (defined $file) {
-  open(STDIN, '<', $file) or die "Can't open $file : $!";;
-}
+sub main { # $ ()
+  return 0 unless parse_options($#ARGV, @ARGV);
 
-#1# read the stdin and get the response
+  my $lloc = 0;     # logical lines of code
+  my $out = '';
+  my $codename = '';
 
-$response = $parser->from_file( \*STDIN );
-
-# sort segments in alphabetic order
-my @segments = sort keys %{ $response->{segments} };
-
-if ( $debug ) {
-  local $Data::Dumper::Sortkeys = 1;
-  print STDERR Dumper( $response );
-}
-
-# predefined equations
-my $equations = {
-  '??date' => strftime('%Y-%m-%d', localtime),
-  '??time' => strftime('%H,%M %S', localtime),
-};
-# get all equations over all segments
-foreach my $seg ( @segments ) {
-  next if $response->{segments}->{$seg}->{type} ne 'data';
-
-  defined $response->{segments}->{$seg}->{definitions} or
-    warn "no definitions for segment '$seg'\n" and next;
-
-  my $definitions = $response->{segments}->{$seg}->{definitions};
-
-  foreach my $definition ( keys %$definitions ) {
-    next if $definitions->{$definition}->{type} ne 'equation';
-    defined $definitions->{$definition}->{value} or
-      warn "missing 'value' for definition '$definition'\n" and next;
-
-    my $equation = $definitions->{$definition}->{value};
-    $equations->{$definition} = $equation;
-  }
-}
-
-# clear program
-CLEAR: {
-  $out .= '; \+> CLEAR 3 \.< ENTER'.$/ if $shortcut && $clear;
-}
-
-#2# first handle the stack segment
-
-foreach my $seq ( @segments ) {
-  # test if it is a stack segment
-  next unless $response->{segments}->{$seq}->{type} eq 'stack';
-
-  # get all register assignments
-  my $assignments = $response->{segments}->{$seq}->{assignments};
-  my @register = ();
-  foreach my $set (keys %$assignments) {
-    next unless $assignments->{$set}->{type} eq 'register';
-    push @register, $set;
+  # option --file
+  if (defined $file) {
+    open(STDIN, '<', $file) or die "Can't open $file : $!";;
   }
 
-  # sort register in stack order
-  my $sequence = {
-    REGT => 1, REGZ => 2, REGY => 3, REGX => 4,
+  #1# read the stdin and get the response
+
+  my $parser = Parser::HPC->new();
+  $response = $parser->from_file( \*STDIN );
+
+  # sort segments in alphabetic order
+  my @segments = sort keys %{ $response->{segments} };
+
+  if ( $debug ) {
+    local $Data::Dumper::Sortkeys = 1;
+    print STDERR Dumper( $response );
+  }
+
+  # predefined equations
+  my $equations = {
+    '??date' => strftime('%Y-%m-%d', localtime),
+    '??time' => strftime('%H,%M %S', localtime),
   };
-  @register = sort { $sequence->{$a} <=> $sequence->{$b} } @register;
+  # get all equations over all segments
+  foreach my $seg ( @segments ) {
+    next if $response->{segments}->{$seg}->{type} ne 'data';
 
-  # build stack
-  my @stack = ();
-  foreach my $reg ( @register ) {
-    my $value = $assignments->{$reg}->{value};
-    # t, z, y, x
-    SWITCH: for ($reg) {
-      /REGT/ && do {
-                              # t, z, y, x
-        push @stack, $value;  # z, y, x, [v]
-        push @stack, 'Rv';    # [v], z, y, x
-        last;
-      };
-      /REGZ/ && do {
-                              # t, z, y, x
-        push @stack, 'R^';    # z, y, x, t
-        push @stack, $value;  # y, x, t, [v]
-        push @stack, 'Rv';    # [v], y, x, t
-        push @stack, 'Rv';    # t, [v], y, x
-        last;
-      };
-      /REGY/ && do {
-                              # t, z, y, x
-        push @stack, 'Rv';    # x, t, z, y
-        push @stack, 'Rv';    # y, x, t, z
-        push @stack, $value;  # x, t, z, [v]
-        push @stack, 'R^';    # t, z, [v], x
-        last;
-      };
-      /REGX/ && do {
-                              # t, z, y, x
-        push @stack, 'Rv';    # x, t, z, y
-        push @stack, $value;  # t, z, y, [v]
-        last;
-      };
-      DEFAULT: {
-        warn "unknow register $reg\n";
-      }
+    defined $response->{segments}->{$seg}->{definitions} or
+      warn "no definitions for segment '$seg'\n" and next;
+
+    my $definitions = $response->{segments}->{$seg}->{definitions};
+
+    foreach my $definition ( keys %$definitions ) {
+      next if $definitions->{$definition}->{type} ne 'equation';
+      defined $definitions->{$definition}->{value} or
+        warn "missing 'value' for definition '$definition'\n" and next;
+
+      my $equation = $definitions->{$definition}->{value};
+      $equations->{$definition} = $equation;
     }
   }
 
-  # optimize stack roll
-  my $str = join(' ', @stack);
-  $str =~ s/Rv\s+Rv\s+Rv/R\^/g;
-  $str =~ s/R\^\s+R\^\s+R\^/Rv/g;
-  $str =~ s/R\^\s+Rv//g;
-  $str =~ s/Rv\s+R\^//g;
-  $str =~ s/\s+/ /g;
-  @stack = split /\s/, $str;
-
-  # print stack
-  foreach (@stack) {
-    $out .= sprintf("%s%03d\t%s\n", $label, ++$lloc, $_);
+  # clear program
+  CLEAR: {
+    $out .= '; \+> CLEAR 3 \.< ENTER'.$/ if $shortcut && $clear;
   }
 
-  # only one stack segment is supported yet
-  last;
-}
+  #2# first handle the stack segment
 
-# start programing
-PRGM: {
-  $out .= '; \CC \+> PRGM'.$/ if $shortcut;
-}
+  foreach my $seq ( @segments ) {
+    # test if it is a stack segment
+    next unless $response->{segments}->{$seq}->{type} eq 'stack';
 
-#3# now handle all code segments
-
-foreach my $seq ( @segments ) {
-  # test if it is a code segment
-  next unless $response->{segments}->{$seq}->{type} eq 'code';
-  $codename = $seq unless $codename;
-
-  # get all statements
-  my $statements = $response->{segments}->{$seq}->{statements};
-  # get 'source lines of code'
-  my $sloc = scalar @$statements;
-
-  # set address for each statement
-  for ( my $line = 0; $line < $sloc; $line++ ) {
-    my $statement = $statements->[$line];
-    my $entry = $statement->{instruction} || $statement->{literal};
-    if ( exists $statement->{instruction} && $entry->{value} eq 'LBL' ) {
-      $label = $entry->{operand}->{value};
-      $lloc = 0;
+    # get all register assignments
+    my $assignments = $response->{segments}->{$seq}->{assignments};
+    my @register = ();
+    foreach my $set (keys %$assignments) {
+      next unless $assignments->{$set}->{type} eq 'register';
+      push @register, $set;
     }
-    $addresses->{$seq}->[$line] = sprintf("%s%03d", $label, ++$lloc);
-  }
 
-  # generate output for each statement
-  for ( my $line = 0; $line < $sloc; $line++ ) {
-    my $statement = $statements->[$line];
-    my $address = $addresses->{$seq}->[$line];
-    if ( my $literal = $statement->{literal} ) {
-      my $kind = $literal->{kind};
-      my $value = $literal->{value};
-      SWITCH: for ( $kind ) {
-        /constant/ && do {
-          $out .= sprintf_constant_statement( $address, $value );
+    # sort register in stack order
+    my $sequence = {
+      REGT => 1, REGZ => 2, REGY => 3, REGX => 4,
+    };
+    @register = sort { $sequence->{$a} <=> $sequence->{$b} } @register;
+
+    # build stack
+    my @stack = ();
+    foreach my $reg ( @register ) {
+      my $value = $assignments->{$reg}->{value};
+      # t, z, y, x
+      SWITCH: for ($reg) {
+        /REGT/ && do {
+                                # t, z, y, x
+          push @stack, $value;  # z, y, x, [v]
+          push @stack, 'Rv';    # [v], z, y, x
           last;
         };
-        /decimal|binary|octal|hex/ && do {
-          $out .= sprintf_number_statement( $address, $value );
+        /REGZ/ && do {
+                                # t, z, y, x
+          push @stack, 'R^';    # z, y, x, t
+          push @stack, $value;  # y, x, t, [v]
+          push @stack, 'Rv';    # [v], y, x, t
+          push @stack, 'Rv';    # t, [v], y, x
           last;
         };
-        /vector/ && do {
-          $out .= sprintf_vector_statement( $address, $value );
+        /REGY/ && do {
+                                # t, z, y, x
+          push @stack, 'Rv';    # x, t, z, y
+          push @stack, 'Rv';    # y, x, t, z
+          push @stack, $value;  # x, t, z, [v]
+          push @stack, 'R^';    # t, z, [v], x
           last;
         };
-        /complex/ && do {
-          $out .= sprintf_complex_statement( $address, $value );
+        /REGX/ && do {
+                                # t, z, y, x
+          push @stack, 'Rv';    # x, t, z, y
+          push @stack, $value;  # t, z, y, [v]
           last;
         };
         DEFAULT: {
-          warn "unknown literal kind '$kind'\n";
+          warn "unknow register $reg\n";
         }
       }
     }
-    elsif ( my $instruction = $statement->{instruction} ) {
-      my $mnemonic = $instruction->{value};
-      my $operand = $instruction->{operand};
-      unless ( defined $operand ) {
-        $out .= sprintf_single_instruction( $address, $mnemonic );
-        next;
+
+    # optimize stack roll
+    my $str = join(' ', @stack);
+    $str =~ s/Rv\s+Rv\s+Rv/R\^/g;
+    $str =~ s/R\^\s+R\^\s+R\^/Rv/g;
+    $str =~ s/R\^\s+Rv//g;
+    $str =~ s/Rv\s+R\^//g;
+    $str =~ s/\s+/ /g;
+    @stack = split /\s/, $str;
+
+    # print stack
+    foreach (@stack) {
+      $out .= sprintf("%s%03d\t%s\n", $label, ++$lloc, $_);
+    }
+
+    # only one stack segment is supported yet
+    last;
+  }
+
+  # start programing
+  PRGM: {
+    $out .= '; \CC \+> PRGM'.$/ if $shortcut;
+  }
+
+  #3# now handle all code segments
+
+  foreach my $seq ( @segments ) {
+    # test if it is a code segment
+    next unless $response->{segments}->{$seq}->{type} eq 'code';
+    $codename = $seq unless $codename;
+
+    # get all statements
+    my $statements = $response->{segments}->{$seq}->{statements};
+    # get 'source lines of code'
+    my $sloc = scalar @$statements;
+
+    # set address for each statement
+    for ( my $line = 0; $line < $sloc; $line++ ) {
+      my $statement = $statements->[$line];
+      my $entry = $statement->{instruction} || $statement->{literal};
+      if ( exists $statement->{instruction} && $entry->{value} eq 'LBL' ) {
+        $label = $entry->{operand}->{value};
+        $lloc = 0;
       }
-      my $type  = $operand->{type};
-      my $value = $operand->{value};
-      SWITCH: for ( $type ) {
-        /address/ && do {
-          $out .= sprintf_address_instruction( $address, $mnemonic, $value );
-          last;
-        };
-        /label/ && do {
-          $out .= sprintf_label_instruction( $address, $mnemonic, $value, 
-            $seq );
-          last;
-        };
-        /variable/ && do {
-          $out .= sprintf_variable_instruction( $address, $mnemonic, $value);
-          last;
-        };
-        /decimal/ && do {
-          $out .= sprintf_number_instruction( $address, $mnemonic, $value );
-          last;
-        };
-        /expression/ && do {
-          $out .= sprintf_expression_instruction( $address, $mnemonic, $value );
-          last;
-        };
-        /equation/ && do {
-          $out .= sprintf_equation_instruction( $address, $mnemonic, $value );
-          last;
-        };
-        DEFAULT: {
-          warn "unknown operand type '$type' in instruction "
-            . "'$mnemonic'\n";
+      $addresses->{$seq}->[$line] = sprintf("%s%03d", $label, ++$lloc);
+    }
+
+    # generate output for each statement
+    for ( my $line = 0; $line < $sloc; $line++ ) {
+      my $statement = $statements->[$line];
+      my $address = $addresses->{$seq}->[$line];
+      if ( my $literal = $statement->{literal} ) {
+        my $kind = $literal->{kind};
+        my $value = $literal->{value};
+        SWITCH: for ( $kind ) {
+          /constant/ && do {
+            $out .= sprintf_constant_statement( $address, $value );
+            last;
+          };
+          /decimal|binary|octal|hex/ && do {
+            $out .= sprintf_number_statement( $address, $value );
+            last;
+          };
+          /vector/ && do {
+            $out .= sprintf_vector_statement( $address, $value );
+            last;
+          };
+          /complex/ && do {
+            $out .= sprintf_complex_statement( $address, $value );
+            last;
+          };
+          DEFAULT: {
+            warn "unknown literal kind '$kind'\n";
+          }
         }
       }
-    }
-    else {
-      warn "unknown statement\n";
-    }
-  }
-}
-
-# stop programing
-STOP: {
-  $out .= '; \CC'.$/ if $shortcut;
-}
-
-#4# print to STDOUT
-
-# option --jumpmark
-if ($jumpmark) {
-  foreach my $lbl (keys %$jump_targets) {
-    $out =~ s/^$lbl/$lbl\*/gm;
-  }
-}
-
-# option --encoded
-if ($encoded) {
-  my @lines = $out =~ /^(.*)$/mg;
-  unshift @lines, '; \CC \CC \+> PRGM';
-  $out = '';
-  foreach (@lines) {
-    next if /^$/;
-    # use only the key strokes
-    my $code = my $str = '';
-    if (/^(.*?);\s*(.*?)$/) {
-      $code = $1;
-      $str = $2;
-    }
-    elsif (/^(.+)$/) {
-      $code = $1;
-    }
-    # map key strokes to hex
-    my @enc = ();
-    foreach my $key (split /\s+/, $str) {
-      if (defined $tbl_char_macro->{$key}) {
-        push @enc, $tbl_char_macro->{$key};
+      elsif ( my $instruction = $statement->{instruction} ) {
+        my $mnemonic = $instruction->{value};
+        my $operand = $instruction->{operand};
+        unless ( defined $operand ) {
+          $out .= sprintf_single_instruction( $address, $mnemonic );
+          next;
+        }
+        my $type  = $operand->{type};
+        my $value = $operand->{value};
+        SWITCH: for ( $type ) {
+          /address/ && do {
+            $out .= sprintf_address_instruction( $address, $mnemonic, $value );
+            last;
+          };
+          /label/ && do {
+            $out .= sprintf_label_instruction( $address, $mnemonic, $value, 
+              $seq );
+            last;
+          };
+          /variable/ && do {
+            $out .= sprintf_variable_instruction( $address, $mnemonic, $value);
+            last;
+          };
+          /decimal/ && do {
+            $out .= sprintf_number_instruction( $address, $mnemonic, $value );
+            last;
+          };
+          /expression/ && do {
+            $out .= sprintf_expression_instruction( $address, $mnemonic, $value );
+            last;
+          };
+          /equation/ && do {
+            $out .= sprintf_equation_instruction( $address, $mnemonic, $value,
+              $equations );
+            last;
+          };
+          DEFAULT: {
+            warn "unknown operand type '$type' in instruction "
+              . "'$mnemonic'\n";
+          }
+        }
       }
       else {
-        warn "Encoding error.\n";
+        warn "unknown statement\n";
       }
     }
-    unshift(@enc, ';') if @enc;
-    # create new out
-    $out.= $code . join(' ', @enc) . "\n";
   }
-  UUENCODE: {
-    my $str = $out;
-    # create header
-    if ($codename =~ /^_TEXT$/) {
-      my $filename = fileparse($file, qr/\.[^.]*/);
-      $out = "begin 644 $filename.mac\n";
+
+  # stop programing
+  STOP: {
+    $out .= '; \CC'.$/ if $shortcut;
+  }
+
+  #4# print to STDOUT
+
+  # option --jumpmark
+  if ($jumpmark) {
+    foreach my $lbl (keys %$jump_targets) {
+      $out =~ s/^$lbl/$lbl\*/gm;
     }
-    else {
-      my $filename = lc $codename;
-      $out = "begin 644 $filename.mac\n";
+  }
+
+  # option --encoded
+  if ($encoded) {
+    my @lines = $out =~ /^(.*)$/mg;
+    unshift @lines, '; \CC \CC \+> PRGM';
+    $out = '';
+    foreach (@lines) {
+      next if /^$/;
+      # use only the key strokes
+      my $code = my $str = '';
+      if (/^(.*?);\s*(.*?)$/) {
+        $code = $1;
+        $str = $2;
+      }
+      elsif (/^(.+)$/) {
+        $code = $1;
+      }
+      # map key strokes to hex
+      my @enc = ();
+      foreach my $key (split /\s+/, $str) {
+        if (defined $tbl_char_macro->{$key}) {
+          push @enc, $tbl_char_macro->{$key};
+        }
+        else {
+          warn "Encoding error.\n";
+        }
+      }
+      unshift(@enc, ';') if @enc;
+      # create new out
+      $out.= $code . join(' ', @enc) . "\n";
     }
-    # use only the key strokes
-    $str =~ s/^.*?(?:;\s+|\n)//mg;
-    # extending the key codes, in macro key pressed and released
-    my $t = 0;
-    my $bin = '';
-    Encode::_utf8_off $bin;  # bytes
-    foreach my $k (split /\s+/, $str) {
-      $bin .= $_ = pack 'VVV', hex($k), 1, $t;
-      print STDERR unpack('H*', $_), "\n" if $debug;
-      $t += TIME_PRESSED;
-      $bin .= $_ = pack 'VVV', hex($k), 0, $t;
-      print STDERR unpack('H*', $_), "\n" if $debug;
-      $t += TIME_BTWN_KEYS;
+    UUENCODE: {
+      my $str = $out;
+      # create header
+      if ($codename =~ /^_TEXT$/) {
+        my $filename = fileparse($file, qr/\.[^.]*/);
+        $out = "begin 644 $filename.mac\n";
+      }
+      else {
+        my $filename = lc $codename;
+        $out = "begin 644 $filename.mac\n";
+      }
+      # use only the key strokes
+      $str =~ s/^.*?(?:;\s+|\n)//mg;
+      # extending the key codes, in macro key pressed and released
+      my $t = 0;
+      my $bin = '';
+      Encode::_utf8_off $bin;  # bytes
+      foreach my $k (split /\s+/, $str) {
+        $bin .= $_ = pack 'VVV', hex($k), 1, $t;
+        print STDERR unpack('H*', $_), "\n" if $debug;
+        $t += TIME_PRESSED;
+        $bin .= $_ = pack 'VVV', hex($k), 0, $t;
+        print STDERR unpack('H*', $_), "\n" if $debug;
+        $t += TIME_BTWN_KEYS;
+      }
+      # Uuencode the binary string
+      $out .= pack 'u', $bin;
+      # append trailer
+      $out .= 'end';
     }
-    # Uuencode the binary string
-    $out .= pack 'u', $bin;
-    # append trailer
-    $out .= 'end';
+    #ASCIIENC: {
+    #  my $str = $out;
+    #  # create header
+    #  $out = "%%HP: T(3)A(D)F(.);\n";
+    #  # use only the key strokes
+    #  $str =~ s/^.*?(?:;\s+|\n)//mg;
+    #  # delete all white spaces
+    #  $str =~ s/\s+//g;
+    #  # wrap after 64 char's
+    #  $str =~ s/(.{64})/$1\n/g;
+    #  # delete last '\n'
+    #  chomp $str;
+    #  # quote the ASCII encoded string
+    #  $out .= '"'. uc($str) .'"';
+    #  # append trailer
+    #  $out .= "\n";
+    #}
   }
-  #ASCIIENC: {
-  #  my $str = $out;
-  #  # create header
-  #  $out = "%%HP: T(3)A(D)F(.);\n";
-  #  # use only the key strokes
-  #  $str =~ s/^.*?(?:;\s+|\n)//mg;
-  #  # delete all white spaces
-  #  $str =~ s/\s+//g;
-  #  # wrap after 64 char's
-  #  $str =~ s/(.{64})/$1\n/g;
-  #  # delete last '\n'
-  #  chomp $str;
-  #  # quote the ASCII encoded string
-  #  $out .= '"'. uc($str) .'"';
-  #  # append trailer
-  #  $out .= "\n";
-  #}
-}
 
-# option --unicode
-elsif ($unicode) {
-  foreach (keys %$tbl_char_unicode) {
-    my $a = quotemeta $_;
-    my $b = $tbl_char_unicode->{$_};
-    $out =~ s/$a/$b/g;
+  # option --unicode
+  elsif ($unicode) {
+    foreach (keys %$tbl_char_unicode) {
+      my $a = quotemeta $_;
+      my $b = $tbl_char_unicode->{$_};
+      $out =~ s/$a/$b/g;
+    }
+    binmode(STDOUT, ":utf8");
   }
-  binmode(STDOUT, ":utf8");
-}
 
-# option --markdown
-elsif ($markdown) {
-  foreach (keys %$tbl_char_markdown) {
-    my $a = quotemeta $_;
-    my $b = $tbl_char_markdown->{$_};
-    $out =~ s/$a/$b/g;
+  # option --markdown
+  elsif ($markdown) {
+    foreach (keys %$tbl_char_markdown) {
+      my $a = quotemeta $_;
+      my $b = $tbl_char_markdown->{$_};
+      $out =~ s/$a/$b/g;
+    }
+    # markdown backslash escapes
+    $out =~ s/\*/\\\*/g;
+    $out =~ s/\[(.*?)\]/\\\[$1\\\]/g;
+    # replace tabulator
+    $out =~ s/(\w\d\d\d\\\*)\t/$1/gm;
+    $out =~ s/(\w\d\d\d)\t/$1  /gm;
+    # add 2 spaces to end of line for forcing new line
+    $out =~ s/\n/  \n/gm;
+    ## code style
+    #$out = "<code>\n" . $out . "</code>\n"
   }
-  # markdown backslash escapes
-  $out =~ s/\*/\\\*/g;
-  $out =~ s/\[(.*?)\]/\\\[$1\\\]/g;
-  # replace tabulator
-  $out =~ s/(\w\d\d\d\\\*)\t/$1/gm;
-  $out =~ s/(\w\d\d\d)\t/$1  /gm;
-  # add 2 spaces to end of line for forcing new line
-  $out =~ s/\n/  \n/gm;
-  ## code style
-  #$out = "<code>\n" . $out . "</code>\n"
-}
 
-# option --plain
-elsif ($plain) {
-  foreach (keys %$tbl_char_plain) {
-    my $a = quotemeta $_;
-    my $b = $tbl_char_plain->{$_};
-    $out =~ s/$a/$b/g;
+  # option --plain
+  elsif ($plain) {
+    foreach (keys %$tbl_char_plain) {
+      my $a = quotemeta $_;
+      my $b = $tbl_char_plain->{$_};
+      $out =~ s/$a/$b/g;
+    }
   }
-}
-else {
-  $out = qq{%%HP: T(3)A(D)F(.);\n} . $out;
+  else {
+    $out = qq{%%HP: T(3)A(D)F(.);\n} . $out;
+  }
+
+  print STDOUT $out;
+
+  return 0;
 }
 
-print STDOUT $out;
-
-#
-# helper subroutines
-#
+# ------------------------------------------------------------------------
+# Helper subroutines for formatting statements
+# ------------------------------------------------------------------------
 
 # constant statement
 sub sprintf_constant_statement {
@@ -752,8 +801,8 @@ sub sprintf_expression_instruction {
 
   $equation =~ s/(?<!\\O)\//\\:-/;  # '/' => '\:-'
   $equation =~ s/\*/\\\.x/;         # '*' => '\.x'
-#  $equation =~ s/e/\\231/;         # 'e' => '\231'
-#  $equation =~ s/i/\\im/;          # 'i' to '\im'
+  # $equation =~ s/e/\\231/;          # 'e' => '\231'
+  # $equation =~ s/i/\\im/;           # 'i' to '\im'
 
   if ($shortcut) {
  
@@ -834,6 +883,7 @@ sub sprintf_equation_instruction {
   my $line = shift;
   my $mnemonic = shift;
   my $definition = shift;
+  my $equations = shift;
 
   defined $equations->{$definition} or
     warn "missing 'equation' for instruction '$mnemonic'\n" and return '';
@@ -842,38 +892,81 @@ sub sprintf_equation_instruction {
     $equations->{$definition});
 }
 
-sub version () {
-  print "$1 ($VERSION) - by J.Schneider http://www.brickpool.de/\n" 
-    if $0 =~ /([^\/\\]+)$/;
-  exit 0;
-}
+exit main($#ARGV, $0, @ARGV);
 
-sub help () {
-  print <<USE;
-USAGE:
-  c:\> type <asm-file> | perl asm2hpc.pl [options] 1> outfile.35s 2> outfile.err
+__END__
 
-VERSION: $VERSION
-  Web: http://www.brickpool.de/
-  
-OPTIONS:
-  -h, --help          Print this text
-  -v, --version       Prints version
-  -j, --jumpmark      Prints an asterisk (*) at the jump target
-  -c, --clear         Prints keystrokes to delete the program memory
-  -p, --plain         Output as Plain text (7-bit ASCII)
-  -m, --markdown      Output as Markdown (inline HTML 5)
-  -u, --unicode       Output as Unicode (UTF-8)
-  -s, --shortcut      Output shortcut keys as comment
-  -e, --encoded       Output key codes as Macros (UU Encoding)
-  --debug             Show debug information on STDERR
+=head1 NAME
 
-  --file=<asm-file>:
-    Location of asm-file (Default is STDIN)
+asm2hpc - Convert an assembler program to HP 35s native program code
 
-This script converts an assembler program to HP35s native program code
-The output will be sent to STDOUT
+=head1 SYNOPSIS
 
-USE
-  exit 0;
-};
+  asm2hpc.pl [OPTIONS] < program.asm > program.35s
+  asm2hpc.pl --file program.asm [OPTIONS] > program.35s
+
+=head1 DESCRIPTION
+
+Reads an assembler program from standard input, or from the file named by
+C<--file>, and writes HP 35s program code to standard output. Shortcut
+keystrokes can optionally be included as comments or encoded as a macro.
+
+=head1 OPTIONS
+
+=over
+
+=item B<< -? >>, B<< --help >>
+
+Show the command summary.
+
+=item B<< --man >>
+
+Show the full documentation.
+
+=item B<< -v >>, B<< --version >>
+
+Show the version and author information.
+
+=item B<< -j >>, B<< --jumpmark >>
+
+Mark jump targets in the generated output.
+
+=item B<< -c >>, B<< --clear >>
+
+Include keystrokes to clear program memory. This requires shortcut output.
+
+=item B<< -p >>, B<< --plain >>
+
+Output plain 7-bit ASCII text.
+
+=item B<< -m >>, B<< --markdown >>
+
+Output Markdown with inline HTML.
+
+=item B<< -u >>, B<< --unicode >>
+
+Output Unicode text encoded as UTF-8.
+
+=item B<< -s >>, B<< --shortcut >>
+
+Include shortcut keystrokes as comments.
+
+=item B<< -e >>, B<< --encoded >>
+
+Output key codes as uuencoded macros. Shortcut output is enabled automatically.
+
+=item B<< --debug >>
+
+Write parser and encoding debug information to standard error.
+
+=item B<< -f FILE >>, B<< --file FILE >>
+
+Read the assembler source from C<FILE> instead of standard input.
+
+=back
+
+=head1 AUTHOR
+
+J. Schneider L<http://www.brickpool.de/>
+
+=cut
