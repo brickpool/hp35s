@@ -96,6 +96,9 @@ sub new {
   # Labels allow you to name the positions of specific instructions
   $self->{_labels} = undef;
 
+  # Default numeric radix is decimal
+  $self->{_radix} = 10;
+
   return $self;
 }
 
@@ -117,6 +120,15 @@ sub parse {
   # list of segments
   my $result = $self->sequence_of(
     sub {
+      if ( defined $self->maybe(sub { $self->parse_radix }) ) {
+        return { };
+      }
+      my $message = $self->maybe(
+        sub { $self->parse_display }
+      );
+      if ( defined $message ) {
+        return { };
+      }
       $self->parse_segment;
     },
   )
@@ -126,6 +138,7 @@ sub parse {
   # convert the array_ref to a hash_ref
   my $ref = { };
   foreach ( @$result ) {
+    next unless %$_;
     my ($key, $value) = each %$_;
     $ref->{$key} = $value;
   }
@@ -171,6 +184,23 @@ sub parse_title {
   return $result;
 }
 
+sub parse_display {
+  my $self = shift;
+
+  $self->expect( qr/DISPLAY\b/i );
+  $self->commit;
+
+  my $message;
+  eval { $message = $self->token_string };
+  defined $message
+    or
+  $self->fail( "Need quoted string" );
+
+  warn "$message\n";
+
+  return $message;
+}
+
 sub parse_model {
   my $self = shift;
 
@@ -190,6 +220,28 @@ sub parse_model {
   $self->skip_ws;
 
   return $result;
+}
+
+sub parse_radix {
+  my $self = shift;
+
+  $self->expect( qr/RADIX(?=\s|;|\z)/i );
+  $self->commit;
+  my ($line) = $self->where;
+  $self->skip_ws;
+  my ($operand_line) = $self->where;
+  $line eq $operand_line or
+    $self->fail( "RADIX requires a decimal base (2, 8, 10 or 16)" );
+  my $base = $self->generic_token( number => qr/[0-9]+(?=\s|;|\z)/ );
+  $base == 2 || $base == 8 || $base == 10 || $base == 16 or
+    $self->fail( "RADIX base must be 2, 8, 10 or 16" );
+  $self->skip_ws;
+  my ($next_line) = $self->where;
+  $line ne $next_line or
+    $self->fail( "Extra characters on line" );
+
+  $self->{_radix} = 0 + $base;
+  return $self->{_radix};
 }
 
 sub parse_segment {
@@ -277,6 +329,7 @@ sub parse_data_block {
   # convert the array_ref to a hash_ref
   my $ref = { };
   foreach ( @$result ) {
+    next unless %$_;
     my ($key, $value) = each %$_;
     $ref->{$key} = $value;
   }
@@ -298,6 +351,8 @@ sub parse_data_block {
 sub parse_data_statement {
   my $self = shift;
   my $type = 'equation';
+
+  return { } if defined $self->maybe(sub { $self->parse_radix });
 
   my $ident = $self->token_ident;
   my $fail_pos = $self->pos - length $ident;
@@ -326,7 +381,7 @@ sub parse_data_statement {
 
   my $value;
   $value = $self->any_of(
-    sub { $self->token_number },
+    sub { $self->_numeric_decimal($self->token_numeric_literal) },
     sub { $self->token_string },
     sub { 0 },
   )
@@ -452,23 +507,32 @@ sub parse_code_block {
     or
   return undef;
   
-  # insert the tags into global label table
-  for (my $i = 0; $i < @tags; $i++ ) {
-    foreach my $key ( @{ $tags[$i] }) {
-      # set the array index
+  my @statements;
+  my @pending_tags;
+  for (my $i = 0; $i < @$result; $i++ ) {
+    if ( exists $result->[$i]->{display} || exists $result->[$i]->{radix} ) {
+      push @pending_tags, @{ $tags[$i] };
+      next;
+    }
+
+    push @pending_tags, @{ $tags[$i] };
+    my $statement = scalar @statements;
+    push @statements, $result->[$i];
+    foreach my $key ( @pending_tags ) {
       $self->{_labels}->{$key} = {
         type      => 'near',
         segment   => $ident,
-        statement => $i,
-      }
+        statement => $statement,
+      };
     }
+    @pending_tags = ();
   }
 
   # create new entry
   my $entry = {
     $ident => {
       type        => $type,
-      statements  => $result,
+      statements  => \@statements,
     }
   };
   
@@ -483,6 +547,21 @@ sub parse_code_statement {
 
   $self->skip_ws;
   my ($line) = $self->where;
+
+  my $radix = $self->maybe(sub { $self->parse_radix });
+  return { radix => $radix } if defined $radix;
+
+  my $display = $self->maybe(
+    sub { $self->parse_display }
+  );
+  if ( defined $display ) {
+    $self->commit;
+    $self->skip_ws;
+    @_ = $self->where;
+    $line ne $_[0] or
+      $self->fail("Extra characters on line");
+    return { display => $display };
+  }
 
   my $statement = $self->any_of(
     sub { $self->parse_code_instruction },
@@ -575,7 +654,9 @@ sub parse_code_instruction {
     };
     /digit/ and do {
       # instructions with a number 0 < n < 11: CF, FIX, ...
-      $operand = $self->generic_token( number => qr/10|11|[0-9]/ );
+      $operand = $self->_numeric_decimal($self->token_numeric_literal);
+      $operand =~ /^\d+$/ && $operand <= 11 or
+        $self->fail( "Expected number from 0 to 11" );
       $statement = {
         instruction => {
           value => $mnemonic,
@@ -648,16 +729,12 @@ sub parse_code_literal {
     sub { [ constant => $self->token_kw_operation( @constants ) ] },
     sub { [ vector => $self->generic_token(vector
       => qr/\[[\-\d\.e]+,[\-\d\.e]+(?:,[\-\d\.e]+)?\]/, sub { $_[1] } ) ] },
-    sub { [ binary => $self->generic_token(binary
-      => qr/[01]+b/, sub { $_[1] } ) ] },
-    sub { [ octal => $self->generic_token(octal
-      => qr/[0-7]+o/, sub { $_[1] } ) ] },
-    sub { [ hex => $self->generic_token(hex
-      => qr/[\dA-F]+h/, sub { $_[1] } ) ] },
     sub { [ complex => $self->generic_token(complex
       => qr/[\-\d\.e]+[it][\-\d\.e]+/, sub { $_[1] } ) ] },
-    sub { [ decimal => $self->generic_token(number
-      => qr/[\-\d\.e]+d?/, sub { $_[1] } ) ] },
+    sub {
+      my $number = $self->token_numeric_literal;
+      [ $number->{kind}, $number->{value} ];
+    },
   );
   $self->commit;
 
@@ -668,6 +745,53 @@ sub parse_code_literal {
       value => $value,
     },
   };
+}
+
+sub token_numeric_literal {
+  my $self = shift;
+
+  my $value = $self->generic_token( number
+    => qr/-?(?:\d[\w.\-]*|\.\d[\w.\-]*|[A-F][\dA-F]*h)(?=\s|;|\z)/i,
+    sub { $_[1] } );
+  my %formats = (
+    2  => [ 'binary', 'b', qr/-?[01]+/ ],
+    8  => [ 'octal', 'o', qr/-?[0-7]+/ ],
+    10 => [ 'decimal', 'd', qr/-?(?:\d+(?:\.\d*)?|\.\d+)(?:e-?\d+)?/i ],
+    16 => [ 'hex', 'h', qr/-?[\dA-F]+/i ],
+  );
+  my %bases = ( b => 2, o => 8, d => 10, h => 16 );
+  my $base = $self->{_radix};
+  my $suffix = $value =~ /([bodh])$/i ? lc $1 : '';
+  my $digits = $value;
+  if ( $suffix ) {
+    $base = $bases{$suffix};
+    chop $digits;
+  }
+  elsif ( $value =~ /\.|e-/i ) {
+    $base = 10;
+  }
+  my ($kind, $default_suffix, $pattern) = @{ $formats{$base} };
+  $digits =~ /\A(?:$pattern)\z/ or
+    $self->fail( "Invalid base $base number" );
+  $digits = uc $digits if $base == 16;
+  $digits =~ tr/E/e/ if $base == 10;
+  $value = $digits . ($suffix || ($base != 10 ? $default_suffix : ''));
+
+  return { kind => $kind, value => $value };
+}
+
+sub _numeric_decimal {
+  my ($self, $number) = @_;
+  my $value = $number->{value};
+  if ( $number->{kind} eq 'decimal' ) {
+    $value =~ s/d$//;
+    return $value;
+  }
+  my $negative = $value =~ s/^-//;
+  chop $value;
+  my $decimal = $number->{kind} eq 'hex' ? hex($value)
+    : oct(($number->{kind} eq 'binary' ? '0b' : '0') . $value);
+  return $negative ? -$decimal : $decimal;
 }
 
 sub parse_label {
@@ -744,6 +868,7 @@ sub parse_stack_block {
   # convert the array_ref to a hash_ref
   my $ref = { };
   foreach ( @$result ) {
+    next unless %$_;
     my ($key, $value) = each %$_;
     $ref->{$key} = $value;
   }
@@ -766,6 +891,8 @@ sub parse_stack_statement {
   my $self = shift;
   my $type = 'register';
 
+  return { } if defined $self->maybe(sub { $self->parse_radix });
+
   my $ident = $self->token_kw( @register );
   $self->commit;
 
@@ -773,7 +900,7 @@ sub parse_stack_statement {
     $self->fail( "Expecting segment or group quantity" );
 
   my $value;
-  eval { $value = $self->token_number };
+  eval { $value = $self->_numeric_decimal($self->token_numeric_literal) };
   defined $value
     or
   $self->fail( "Need expression" );
@@ -971,10 +1098,32 @@ with one statement per line. A semicolon begins a comment through the end of
 the line. Stack segments contain register assignments in the form
 C<register SET number>.
 
+C<DISPLAY> followed by a quoted string may appear between segments or within a
+code segment. Its message is written to standard error as it is parsed. The
+unquoted C<%OUT> directive is not supported.
+
 The parser recognizes directives including C<%TITLE>, C<MODEL>, C<SEGMENT>,
-C<ENDS>, C<END>, C<EQU>, and C<SET>. Although some additional directive names
-are reserved internally, C<DISPLAY>, C<LOCALS>, C<NOLOCALS>, and C<RADIX> are
-not implemented.
+C<ENDS>, C<END>, C<EQU>, C<SET>, C<DISPLAY>, and C<RADIX>. Although some
+additional directive names are reserved internally, C<LOCALS> and
+C<NOLOCALS> are not implemented.
+
+C<RADIX base> selects base 2, 8, 10, or 16 for subsequent unsuffixed
+integers; each new parser instance starts in base 10. It may appear after
+C<MODEL>, between segments, or inside a segment. The setting applies
+assembler-wide and persists across segment boundaries and subsequent parses
+on the same instance until another C<RADIX> directive changes it.
+Its operand is always decimal;
+explicit C<b>, C<o>, C<d>, and C<h> suffixes take precedence over the
+selected base. Use C<RADIX>, not C<.RADIX>.
+
+C<RADIX.> and C<RADIX,> are separate calculator instructions that select
+the display's decimal separator. They emit code statements and do not
+change the parser's default base; C<RADIX base> does not change the display.
+
+Numbers containing a decimal point or a negative exponent, and vector and
+complex components, remain decimal. Under C<RADIX 16>, C<1E7> is
+hexadecimal; use C<1E7d> for decimal scientific notation. Suffixes and
+hexadecimal digits are case-insensitive.
 
 =head1 RETURN VALUE
 
@@ -993,14 +1142,23 @@ Instructions carry their mnemonic and, when applicable, a typed operand;
 literals carry a kind and value. For example, C<GTO start> produces an
 instruction operand with type C<label> and value C<START>.
 
+Unsuffixed non-decimal code literals receive an explicit suffix in their
+value, preserving the selected base for the frontend. Numeric instruction
+operands, C<EQU> definitions, and C<SET> assignments are converted to
+decimal values. C<RADIX> emits no statement and does not change label indices.
+
 =head1 LIMITATIONS
 
 Only the Polish notation mode is supported. Thousand-separator operations are
-not implemented. The directives C<DISPLAY>, C<LOCALS>, C<NOLOCALS>, and
-C<RADIX> are not supported.
+not implemented. The directives C<LOCALS> and C<NOLOCALS> are not
+supported.
 
 =head1 SEE ALSO
 
 L<Parser::MGC>, L<HP35s::Vocabulary>, C<bin/asm2hpc.pl>
+
+The project wiki provides the assembler reference:
+L<Directives|https://github.com/brickpool/hp35s/wiki/Directives> and
+L<Symbols|https://github.com/brickpool/hp35s/wiki/Symbols>.
 
 =cut

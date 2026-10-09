@@ -126,6 +126,8 @@ t/01_load.t
 t/10_optimize-keystrokes.t
 t/11_parser-code-good.t
 t/12_parser-code-fail.t
+t/13_radix.t
+t/14_display.t
 t/20_frontend-statements.t
 t/21_frontend-forward-labels.t
 t/lib/FrontendTest.pm

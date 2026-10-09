@@ -100,7 +100,7 @@ For example, to create a plain-text listing or an encoded macro stream:
 
 C<Parser::HPC> parses C<HP35s> source and returns a Perl data structure
 containing its segments, labels, statements, and optional title and start
-address. Its supported grammar, programmatic usage, return structure, and
+address. Its supported grammar, programmatic usage, return structure, and 
 limitations are documented in L<Parser::HPC>.
 
 =head1 EXAMPLES

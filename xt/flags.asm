@@ -7,8 +7,8 @@ MODEL P35S
 
 SEGMENT Flags CODE
 
-; 6-1 Flag toggling "FT"
-; ------------------------
+DISPLAY '6-1 Flag toggling "FT"'
+; ------------------------------
 ; - Source: Ron Knapp (618) (PPC J, V6N5T6) & Jake Schwartz (1820)
 ;   (PPC J, V6N8P26).
 ; - Source: https://hpmuseum.org/forum/thread-10589-post-96201.html
@@ -95,7 +95,7 @@ LBL T
 RTN
 
 
-; 6-2 Set or clear a flag depending on the value in X
+DISPLAY '6-2 Set or clear a flag depending on the value in X'
 ; ----------------------------------------------------------
 ; - Source: Bill Kalb (265) (BP 67/97).
 LBL B
@@ -106,8 +106,8 @@ LBL B
 RTN
 
 
-; 6-3 Clearing multiple flags ("CFX" & "CFA")
-; --------------------------------------------
+DISPLAY '6-3 Clearing multiple flags ("CFX" & "CFA")'
+; ---------------------------------------------------
 ; "CFX" clears the 'block' of flags specified by the control number 'abc.lmn'
 ; in X, e.g. flags 1-3 with '1.003, XEQ X'.
 ; "CFA" (called with 'XEQ A') prefixes 0.004 to clear flags 0-4.
@@ -177,13 +177,13 @@ RTN
 ; - Source: William Cheeseman (4381) (PPC CJ, V7N5P7).
 
 
-; 6-4 Synthetic flag toggling ("IF")
+DISPLAY '6-4 Synthetic flag toggling ("IF")'
 ; ---------------------------------------------
 ; Synthetic programming is not possible on the HP-35s.
 ; See 6-2.
 
 
-; 6-5 Viewing the flags ("VF")
+DISPLAY '6-5 Viewing the flags ("VF")'
 ; ------------------------------
 ; 'XEQ F' shows which flags are set.
 ; Flags 0-4 are visible on the HP-35s display, so only flags 5-11 are shown.
@@ -254,13 +254,13 @@ RTN
 ; LN=134 (164 Bytes)
 
 
-; 6-6 Synthetic toggling of flag 55 ("55")
+DISPLAY '6-6 Synthetic toggling of flag 55 ("55")'
 ; -----------------------------------------------
 ; A printer cannot be connected to the HP-35s.
 
 
-; 6-7 Resetting the flags ("RF")
-; -------------------------------
+DISPLAY '6-7 Resetting the flags ("RF")'
+; --------------------------------------
 ; This routine sets the flags to the state they would have after a memory
 ; clear ("MEMORY CLEAR"). By default, all 12 flags are clear.
 ; 
@@ -282,7 +282,7 @@ LBL R
 RTN
 
 
-; 6-8 Bulk flag control
+DISPLAY '6-8 Bulk flag control'
 ; -----------------------------
 ; An important use is to control all 12 flags at once, setting them to the
 ; desired state. The command sequence is '"XXXXXXX", XEQ X003', where
@@ -519,8 +519,8 @@ STOFLAGS:
 RTN
 
 
-; 6-17 Logical AND/OR in conditional branches
-; --------------------------------------------------------------------
+DISPLAY '6-17 Logical AND/OR in conditional branches'
+; ---------------------------------------------------
 ; 1. When testing two conditions joined by logical AND, invert the second
 ;    test. For example, to execute "SUB" only when 'x=0' and flag 0 is set,
 ;    use this sequence:

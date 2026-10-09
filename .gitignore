@@ -36,6 +36,7 @@ _gsdata_/
 /examples/3rd-party/Isola
 
 # Other
+/src/
 *.old
 *.txt
 debug.log
