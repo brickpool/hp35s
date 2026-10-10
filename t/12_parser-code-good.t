@@ -55,13 +55,15 @@ subtest 'literal ASTs' => sub {
     [ '[1,2]', 'vector' ], [ '[3,4,5]', 'vector' ],
     [ '0110b', 'binary' ], [ '7012o', 'octal' ], [ '12ABh', 'hex' ],
     [ '1i2', 'complex' ], [ '3t4', 'complex' ],
-    [ '0', 'decimal' ], [ '2.3', 'decimal' ], [ '4e5', 'decimal' ],
-    [ '-6', 'decimal' ], [ '7e-1', 'decimal' ], [ '12d', 'decimal' ],
+    [ '0', 'decimal' ], [ '2.3', 'decimal' ], [ '4e5', 'decimal', 400000 ],
+    [ '-6', 'decimal' ], [ '7e-1', 'decimal', 0.7 ],
+    [ '12d', 'decimal' ], [ '-12d', 'decimal' ],
   );
   for my $case ( @cases ) {
-    my ($value, $kind) = @$case;
+    my ($value, $kind, $parsed_value) = @$case;
+    $parsed_value = $value unless defined $parsed_value;
     is_deeply( parse_statements($value)->[0], {
-      literal => { kind => $kind, value => $value },
+      literal => { kind => $kind, value => $parsed_value },
     }, $value );
   }
 };

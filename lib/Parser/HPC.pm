@@ -49,9 +49,19 @@ use parent 'Parser::MGC';
 # Define constants
 # -------------------------------------------------------------------------
 
-use constant pattern_comment    => qr/;.*\n/;
-use constant pattern_operation  => qr/[^\s\(\)]+/;
-use constant pattern_ident      => qr/[[:alpha:]\@_\$?][[:alnum:]\@_\$?]{0,246}/;
+# overwrite existing patterns
+use constant pattern_comment   => qr/;.*\n/;
+use constant pattern_operation => qr/[^\s\(\)]+/;
+use constant pattern_ident     => qr/[[:alpha:]\@_\$?][[:alnum:]\@_\$?]{0,246}/;
+
+# new numeric patterns
+use constant pattern_vector  => qr/\[[\-\d\.e]+,[\-\d\.e]+(?:,[\-\d\.e]+)?\]/;
+use constant pattern_binary  => qr/[01]+b/;
+use constant pattern_octal   => qr/[0-7]+o/;
+use constant pattern_hex     => qr/[\dA-F]+h/;
+use constant pattern_complex => qr/[\-\d\.e]+[it][\-\d\.e]+/;
+use constant pattern_decimal => qr/-?\d+d\b/;
+use constant pattern_float   => qr/-?(?:\d*\.\d+|\d+\.)(?:e-?\d+)?|-?\d+e-?\d+/;
 
 # -------------------------------------------------------------------------
 # Constructor
@@ -61,7 +71,21 @@ sub new {
   my $class = shift;
   
   # Call the constructor of the parent class
-  my $self = $class->SUPER::new(@_);
+  my $self = $class->SUPER::new( 
+    patterns => {
+      comment    => pattern_comment,
+      ident      => pattern_ident,
+      operations => pattern_operation,
+      vector     => pattern_vector,
+      binary     => pattern_binary,
+      octal      => pattern_octal,
+      hex        => pattern_hex,
+      complex    => pattern_complex,
+      decimal    => pattern_decimal,
+      float      => pattern_float,
+    },
+    @_,
+  );
 
   # A symbol represents a value, which can be a variable, address label, 
   # or an operand to an assembly instruction and directive
@@ -136,9 +160,7 @@ sub parse {
       }
       $self->parse_segment;
     },
-  )
-    or
-  $self->fail( "Expecting SEGMENT keyword" );
+  ) or $self->fail( "Expecting SEGMENT keyword" );
 
   # convert the array_ref to a hash_ref
   my $ref = { };
@@ -161,6 +183,51 @@ sub parse {
   return $root;
 }
 
+sub token_number {
+  my $self = shift;
+  my $value = $self->any_of(
+    \&token_binary,
+    \&token_octal,
+    \&token_decimal,
+    \&token_hex,
+    sub {
+      my $base = $self->{_radix};
+      if ( $base == 2 ) {
+        return $self->generic_token(binary => qr/[01]+/,
+          sub {
+            no warnings 'portable';
+            my $number = oct('0b' . $_[1]);
+            $number -= 2**36 if $number >= 2**35;
+            return $number;
+          }
+        );
+      } 
+      elsif ( $base == 8 ) {
+        return $self->generic_token(octal => qr/[0-7]+/,
+          sub {
+            no warnings 'portable';
+            my $number = oct('0' . $_[1]);
+            $number -= 2**36 if $number >= 2**35;
+            return $number;
+          }
+        );
+      }
+      elsif ( $base == 16 ) {
+        return $self->generic_token(hex => qr/[\dA-F]+/,
+          sub {
+            no warnings 'portable';
+            my $number = hex($_[1]);
+            $number -= 2**36 if $number >= 2**35;
+            return $number;
+          }
+        );
+      } 
+      return $self->SUPER::token_number;
+    },
+  );
+  return $value;
+}
+
 # -------------------------------------------------------------------------
 # New public Methods
 # -------------------------------------------------------------------------
@@ -179,13 +246,11 @@ sub parse_title {
 
   # check if quoted string is present
   defined $result
-    or
-  $self->fail("Need quoted string");
+    or $self->fail("Need quoted string");
 
   # validate quoted string (the built-in variable '@-' holds the start position)
   $result !~ /\s*\n/
-    or
-  $self->fail_from($pos + $-[0]+1, "Missing end quote");
+    or $self->fail_from($pos + $-[0]+1, "Missing end quote");
   
   # skip whitespace characters and any comments
   $self->skip_ws;
@@ -202,8 +267,7 @@ sub parse_display {
   my $message;
   eval { $message = $self->token_string };
   defined $message
-    or
-  $self->fail( "Need quoted string" );
+    or $self->fail( "Need quoted string" );
 
   warn "$message\n";
 
@@ -215,15 +279,13 @@ sub parse_model {
 
   # check if model is defined
   $self->maybe_expect( qr/MODEL\b/i )
-    or
-  $self->fail("Model must be specified first");
+    or $self->fail("Model must be specified first");
 
   # check if language is defined
   my $result;
   eval { $result = $self->token_kw_icase( @languages ) };
   defined $result
-    or
-  $self->fail("Missing or illegal language ID");
+    or $self->fail("Missing or illegal language ID");
 
   # skip whitespace characters and any comments
   $self->skip_ws;
@@ -234,22 +296,19 @@ sub parse_model {
 sub parse_radix {
   my $self = shift;
 
-  $self->expect( qr/RADIX(?=\s|;|\z)/ );
+  $self->expect( qr/RADIX[ \t]/ );
   $self->commit;
-  my ($line) = $self->where;
-  $self->skip_ws;
-  my ($operand_line) = $self->where;
-  $line eq $operand_line or
-    $self->fail( "RADIX requires a decimal base (2, 8, 10 or 16)" );
-  my $base = $self->generic_token( number => qr/[0-9]+(?=\s|;|\z)/ );
-  $base == 2 || $base == 8 || $base == 10 || $base == 16 or
-    $self->fail( "RADIX base must be 2, 8, 10 or 16" );
-  $self->skip_ws;
-  my ($next_line) = $self->where;
-  $line ne $next_line or
-    $self->fail( "Extra characters on line" );
 
-  $self->{_radix} = 0 + $base;
+  # check if base is defined
+  my $result;
+  eval { $result = $self->generic_token( radix => qr/(?:2|8|10|16)\s/ ) };
+  defined $result
+    or $self->fail("Illegal radix");
+
+  # skip whitespace characters and any comments
+  $self->skip_ws;
+
+  $self->{_radix} = 0+ $result;
   return $self->{_radix};
 }
 
@@ -411,87 +470,97 @@ sub parse_data_statement {
   defined $self->maybe_expect( qr/EQU/i ) or
     $self->fail( "Expecting segment or group quantity" );
 
+  my $is_string = 0;
   my $value;
   $value = $self->any_of(
-    sub { $self->_numeric_decimal($self->token_numeric_literal) },
-    sub { $self->token_string },
+    sub { $self->token_number },
+    sub {
+      my $value = $self->token_string;
+      $is_string = 1;
+      return $value;
+    },
     sub { 0 },
   )
     or
   $self->fail( "Need expression" );
 
-  # test if value has unknown character
-  $fail_pos = $self->pos - length($value);
+  if ( $is_string ) {
+    # test if value has unknown character
+    $fail_pos = $self->pos - length($value);
 
-  # input | normal  | start  | middle    | end     | unknown
-  # ----- | ------- | ------ | --------- | ------- | -------
-  # `\`   | start   | normal | unknown   | unknown | -
-  # `\d`  | -       | middle | end       | normal  | -
-  # `\D`  | -       | end    | unknown   | normal  | -
-  my $state = 'normal';
-  my $char = '';
-  foreach (split //, $value)
-  {
-    $char .= $_;
-    SWITCH: {
-      $state =~ /normal/ and do {
-        if (/\\/) {
-          $state = 'start';
-          $char = '\\';
-        }
-        else {
-          exists $character->{$char} or
+    # input | normal  | start  | middle    | end     | unknown
+    # ----- | ------- | ------ | --------- | ------- | -------
+    # `\`   | start   | normal | unknown   | unknown | -
+    # `\d`  | -       | middle | end       | normal  | -
+    # `\D`  | -       | end    | unknown   | normal  | -
+    my $state = 'normal';
+    my $char = '';
+    foreach (split //, $value)
+    {
+      $char .= $_;
+      SWITCH: {
+        $state =~ /normal/ and do {
+          if (/\\/) {
+            $state = 'start';
+            $char = '\\';
+          }
+          else {
+            exists $character->{$char}
+              or
             $self->fail_from( $fail_pos - length($char), "Unknown character" );
-          $char = '';
-        }
-        last;
-      };
-      $state =~ /start/ and do {
-        if (/\\/) {
-          $state = 'normal';
-          exists $character->{$char} or
+            $char = '';
+          }
+          last;
+        };
+        $state =~ /start/ and do {
+          if (/\\/) {
+            $state = 'normal';
+            exists $character->{$char}
+              or
             $self->fail_from( $fail_pos - 1, "Invalid character" );
-          $char = '';
-        }
-        elsif (/\d/) {
-          $state = 'middle';
-        }
-        else {
-          $state = 'end';
-        }
-        last;
-      };
-      $state =~ /middle/ and do {
-        if (/\d/) {
-          $state = 'end';
-        }
-        else {
-          $state = 'unknown';
-        }
-        last;
-      };
-      $state =~ /end/ and do {
-        if (/\\/) {
-          $state = 'unknown';
-        }
-        else {
-          $state = 'normal';
-          exists $character->{$char} or
+            $char = '';
+          }
+          elsif (/\d/) {
+            $state = 'middle';
+          }
+          else {
+            $state = 'end';
+          }
+          last;
+        };
+        $state =~ /middle/ and do {
+          if (/\d/) {
+            $state = 'end';
+          }
+          else {
+            $state = 'unknown';
+          }
+          last;
+        };
+        $state =~ /end/ and do {
+          if (/\\/) {
+            $state = 'unknown';
+          }
+          else {
+            $state = 'normal';
+            exists $character->{$char}
+              or
             $self->fail_from( $fail_pos - length($char), 
               "Unknown character sequence" );
-          $char = '';
+            $char = '';
+          }
+          last;
+        };
+        DEFAULT: {
+          $self->fail_from( $fail_pos - length($char), 
+            "Invalid character sequence" );
         }
-        last;
-      };
-      DEFAULT: {
-        $self->fail_from( $fail_pos - length($char), 
-          "Invalid character sequence" );
       }
+      $fail_pos++;
     }
-    $fail_pos++;
+    $state =~ /normal/ or
+      $self->fail_from( $fail_pos - length($char) - 1, "Argument mismatch" );
   }
-  $state =~ /normal/ or
-    $self->fail_from( $fail_pos - length($char) - 1, "Argument mismatch" );
 
   # create new entry
   my $entry = {
@@ -542,8 +611,10 @@ sub parse_code_block {
   my @statements;
   my @pending_tags;
   for (my $i = 0; $i < @$result; $i++ ) {
-    if ( exists $result->[$i]->{display} || exists $result->[$i]->{radix}
-      || exists $result->[$i]->{locals} ) {
+    if ( exists $result->[$i]->{display} 
+      || exists $result->[$i]->{radix}
+      || exists $result->[$i]->{locals}
+    ) {
       push @pending_tags, @{ $tags[$i] };
       next;
     }
@@ -655,7 +726,6 @@ sub parse_code_instruction {
         => qr/(?:\?\?\d{4}|\@{0,2}\w+)/, sub { $_[1] } )
       } or
         $self->fail( "Illegal origin address" );
-
       $statement = {
         instruction => {
           value => $mnemonic,
@@ -690,7 +760,10 @@ sub parse_code_instruction {
     };
     /digit/ and do {
       # instructions with a number 0 < n < 11: CF, FIX, ...
-      $operand = $self->_numeric_decimal($self->token_numeric_literal);
+      my $number = eval { $self->token_int };
+      defined $number or
+        $self->fail( "Expected number" );
+      $operand = $number;
       $operand =~ /^\d+$/ && $operand <= 11 or
         $self->fail( "Expected number from 0 to 11" );
       $statement = {
@@ -762,72 +835,32 @@ sub parse_code_literal {
   my $self = shift;
 
   my $literal = $self->any_of(
-    sub { [ constant => $self->token_kw_operation( @constants ) ] },
-    sub { [ vector => $self->generic_token(vector
-      => qr/\[[\-\d\.e]+,[\-\d\.e]+(?:,[\-\d\.e]+)?\]/, sub { $_[1] } ) ] },
-    sub { [ complex => $self->generic_token(complex
-      => qr/[\-\d\.e]+[it][\-\d\.e]+/, sub { $_[1] } ) ] },
+    sub { { literal => { kind => 'constant',
+      value => $self->token_kw_operation( @constants ) } } },
+    sub { { literal => { kind => 'vector',  value => $self->token_vector  } } },
+    sub { { literal => { kind => 'complex', value => $self->token_complex } } },
+    sub { { literal => { kind => 'binary',  value => $self->token_binary  } } },
+    sub { { literal => { kind => 'octal',   value => $self->token_octal   } } },
+    sub { { literal => { kind => 'decimal', value => $self->token_decimal } } },
+    sub { { literal => { kind => 'hex',     value => $self->token_hex     } } },
+    sub { { literal => { kind => 'decimal', value => $self->token_float   } } },
     sub {
-      my $number = $self->token_numeric_literal;
-      [ $number->{kind}, $number->{value} ];
+      my $base = $self->{_radix};
+      if ( $base == 2 ) {
+        my $value = $self->generic_token(binary => qr/[01]+/ );
+        return { literal => { kind => 'binary', value => $value . 'b' } };
+      }
+      elsif ( $base == 8 ) {
+        my $value = $self->generic_token(octal => qr/[0-7]+/ );
+        return { literal => { kind => 'octal', value => $value . 'o' } };
+      }
+      elsif ( $base == 16 ) {
+        my $value = $self->generic_token(hex => qr/[\dA-F]+/ );
+        return { literal => { kind => 'hex', value => $value . 'h' } };
+      }
+      return { literal => { kind => 'decimal', value => $self->token_int } };
     },
   );
-  $self->commit;
-
-  my ($kind, $value) = @$literal;
-  return {
-    literal => {
-      kind  => $kind,
-      value => $value,
-    },
-  };
-}
-
-sub token_numeric_literal {
-  my $self = shift;
-
-  my $value = $self->generic_token( number
-    => qr/-?(?:\d[\w.\-]*|\.\d[\w.\-]*|[A-F][\dA-F]*h)(?=\s|;|\z)/i,
-    sub { $_[1] } );
-  my %formats = (
-    2  => [ 'binary', 'b', qr/-?[01]+/ ],
-    8  => [ 'octal', 'o', qr/-?[0-7]+/ ],
-    10 => [ 'decimal', 'd', qr/-?(?:\d+(?:\.\d*)?|\.\d+)(?:e-?\d+)?/i ],
-    16 => [ 'hex', 'h', qr/-?[\dA-F]+/i ],
-  );
-  my %bases = ( b => 2, o => 8, d => 10, h => 16 );
-  my $base = $self->{_radix};
-  my $suffix = $value =~ /([bodh])$/i ? lc $1 : '';
-  my $digits = $value;
-  if ( $suffix ) {
-    $base = $bases{$suffix};
-    chop $digits;
-  }
-  elsif ( $value =~ /\.|e-/i ) {
-    $base = 10;
-  }
-  my ($kind, $default_suffix, $pattern) = @{ $formats{$base} };
-  $digits =~ /\A(?:$pattern)\z/ or
-    $self->fail( "Invalid base $base number" );
-  $digits = uc $digits if $base == 16;
-  $digits =~ tr/E/e/ if $base == 10;
-  $value = $digits . ($suffix || ($base != 10 ? $default_suffix : ''));
-
-  return { kind => $kind, value => $value };
-}
-
-sub _numeric_decimal {
-  my ($self, $number) = @_;
-  my $value = $number->{value};
-  if ( $number->{kind} eq 'decimal' ) {
-    $value =~ s/d$//;
-    return $value;
-  }
-  my $negative = $value =~ s/^-//;
-  chop $value;
-  my $decimal = $number->{kind} eq 'hex' ? hex($value)
-    : oct(($number->{kind} eq 'binary' ? '0b' : '0') . $value);
-  return $negative ? -$decimal : $decimal;
 }
 
 sub parse_label {
@@ -902,8 +935,7 @@ sub parse_stack_block {
       $self->parse_stack_statement;
     },
   )
-    or
-  return undef;
+    or return undef;
 
   # convert the array_ref to a hash_ref
   my $ref = { };
@@ -941,10 +973,9 @@ sub parse_stack_statement {
     $self->fail( "Expecting segment or group quantity" );
 
   my $value;
-  eval { $value = $self->_numeric_decimal($self->token_numeric_literal) };
+  eval { $value = $self->token_number };
   defined $value
-    or
-  $self->fail( "Need expression" );
+    or $self->fail( "Need expression" );
 
   # create new entry
   my $entry = {
@@ -966,17 +997,16 @@ sub parse_end {
   
   # error, if statements outside of any segment
   $self->maybe_expect( qr/END\b/i )
-    or
-  $self->fail( "Code or data emission to undeclared segment" );
+    or $self->fail( "Code or data emission to undeclared segment" );
   
   # get the startaddress if present
   my $startaddress = $self->any_of(
     sub {
       my $ident = $self->generic_token( label => qr/\@{0,2}\w+/ );
       my $name = $self->_label_name($ident);
-      defined $self->{_symbols}->{$name}
-        && $self->{_symbols}->{$name} eq 'label' or
-        $self->fail( "Expected label" );
+      defined $self->{_symbols}->{$name} 
+        && $self->{_symbols}->{$name} eq 'label' 
+          or $self->fail( "Expected label" );
       return $name;
     },
     sub { 0 },
@@ -988,6 +1018,33 @@ sub parse_end {
   return uc $startaddress;
 }
 
+# token methods
+
+sub token_binary {
+  my $self = shift;
+  return $self->generic_token(binary => pattern_binary);
+}
+
+sub token_complex {
+  my $self = shift;
+  return $self->generic_token(complex => pattern_complex);
+}
+
+sub token_decimal {
+  my $self = shift;
+  return $self->generic_token(decimal => pattern_decimal);
+}
+
+sub token_hex {
+  my $self = shift;
+  return $self->generic_token(hex => pattern_hex);
+}
+
+sub token_octal {
+  my $self = shift;
+  return $self->generic_token(octal => pattern_octal);
+}
+
 sub token_kw_icase {
   my $self = shift;
   my @acceptable = @_;
@@ -997,13 +1054,11 @@ sub token_kw_icase {
   my $pos = pos $self->{str};
 
   defined( my $kw = $self->token_ident )
-    or
-  return undef;
+    or return undef;
 
   grep { /^$kw$/i } @acceptable
-    or
-  pos($self->{str}) = $pos, $self->fail( "Expected any of " 
-    . join( ", ", @acceptable ) );
+    or pos($self->{str}) = $pos, $self->fail( "Expected any of " 
+      . join( ", ", @acceptable ) );
 
   return $kw;
 }
@@ -1017,13 +1072,11 @@ sub token_kw_operation {
   my $pos = pos $self->{str};
   
   defined( my $kw = $self->generic_token( operation => pattern_operation, ) )
-    or
-  return undef;
+    or return undef;
 
   grep { $_ eq $kw } @acceptable
-    or
-  pos($self->{str}) = $pos, $self->fail( "Expected any of "
-    . join( ", ", @acceptable ) );
+    or pos($self->{str}) = $pos, $self->fail( "Expected any of "
+      . join( ", ", @acceptable ) );
 
   return $kw;
 }
@@ -1037,8 +1090,7 @@ sub token_string {
 
   $self->skip_ws;
   $self->{str} =~ m/\G($self->{patterns}{string_delim})/gc
-    or
-  $self->fail( "Expected string delimiter" );
+    or $self->fail( "Expected string delimiter" );
 
   my $delim = $1;
 
@@ -1048,12 +1100,18 @@ sub token_string {
          \\.              # symbolic escape
         |[^\\$delim]+     # plain chunk
       )*?
-    )$delim/gcix or
-      pos($self->{str}) = $pos, $self->fail( "Expected contents of string" );
+    )$delim/gcix
+      or pos($self->{str}) = $pos, $self->fail( "Expected contents of string" );
 
   my $string = $1;
 
   return $string;
+}
+
+sub token_vector {
+  my $self = shift;
+  my $vector = $self->generic_token( vector => pattern_vector );
+  return $vector;
 }
 
 # -------------------------------------------------------------------------
@@ -1065,12 +1123,10 @@ sub _find_before {
   my $substr  = reverse shift;
 
   exists $self->{reverse_str}
-    or
-  $self->{reverse_str} = reverse $self->{str};
+    or $self->{reverse_str} = reverse $self->{str};
   
   exists $self->{length}
-    or
-  $self->{length} = length $self->{str};
+    or $self->{length} = length $self->{str};
 
   my $pos = $self->{length} - $self->pos;
   my $idx = index $self->{reverse_str}, $substr, $pos;
@@ -1172,8 +1228,11 @@ duplicate definitions within the same scope are rejected.
 
 Unsuffixed non-decimal code literals receive an explicit suffix in their
 value, preserving the selected base for the frontend. Numeric instruction
-operands, C<EQU> definitions, and C<SET> assignments are converted to
-decimal values. C<RADIX> emits no statement and does not change label indices.
+operands are unsuffixed decimal integers and are not affected by C<RADIX>.
+Explicitly suffixed numeric values in C<EQU> definitions and C<SET> assignments
+retain their spelling. Unsuffixed values in those definitions are interpreted
+using the active radix; unsuffixed decimal floats are accepted only with
+C<RADIX 10>. C<RADIX> emits no statement and does not change label indices.
 
 =head1 LIMITATIONS
 

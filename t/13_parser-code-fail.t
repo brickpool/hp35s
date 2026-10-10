@@ -32,6 +32,8 @@ subtest 'statement line boundary rejects extra tokens' => sub {
   for my $code (
     'RTN extra   ; return',
     '0 extra   ; zero',
+    '12.3d',
+    '1e3d',
     'pi extra   ; constant',
     'GTO start extra   ; jump',
     'RTN RTN',
