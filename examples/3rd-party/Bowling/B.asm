@@ -58,6 +58,7 @@ SEGMENT Bowling CODE
         PSE
         CF      10
         ;1890 FOR I=1 TO 100: FOR J=1 TO 6: A(I,J)=0: NEXT J: NEXT I
+@1890:
         1.3             ;1.6
         STO     I
         CLx
@@ -443,7 +444,7 @@ SEGMENT Bowling CODE
         CF      10
         2
         x=y?
-        GTO     @2610
+        GTO     @1890
         FIX     4
         RTN
 
