@@ -146,18 +146,9 @@ sub parse {
   # list of segments
   my $result = $self->sequence_of(
     sub {
-      if ( defined $self->maybe(sub { $self->parse_locals }) ) {
-        return { };
-      }
-      if ( defined $self->maybe(sub { $self->parse_radix }) ) {
-        return { };
-      }
-      my $message = $self->maybe(
-        sub { $self->parse_display }
-      );
-      if ( defined $message ) {
-        return { };
-      }
+      return { } if defined $self->parse_locals;
+      return { } if defined $self->parse_radix;
+      return { } if defined $self->parse_display;
       $self->parse_segment;
     },
   ) or $self->fail( "Expecting SEGMENT keyword" );
@@ -235,25 +226,32 @@ sub token_number {
 sub parse_title {
   my $self = shift;
 
-  # check if title is defined
-  $self->expect( qr/%TITLE\b/i );
+  # %TITLE ...
+  $self->expect( qr/\%TITLE(?=[ \t])/ );
   $self->commit;
+  my ($line) = $self->where;
   
-  # get quoted string
+  # %TITLE "title"
   my $pos = $self->pos;
-  my $result;
-  eval { $result = $self->token_string };
+  $self->skip_ws;
+  my $pos2 = $self->pos;
+
+  # get quoted string
+  my $result = eval { $self->token_string };
 
   # check if quoted string is present
   defined $result
-    or $self->fail("Need quoted string");
+    or $self->fail_from($pos + 1, "Need quoted string");
 
   # validate quoted string (the built-in variable '@-' holds the start position)
   $result !~ /\s*\n/
-    or $self->fail_from($pos + $-[0]+1, "Missing end quote");
+    or $self->fail_from($pos2 + $-[0]+1, "Missing end quote");
   
   # skip whitespace characters and any comments
   $self->skip_ws;
+  my ($next_line) = $self->where;
+  $line ne $next_line or
+    $self->fail( "Extra characters on line" );
 
   return $result;
 }
@@ -261,29 +259,47 @@ sub parse_title {
 sub parse_display {
   my $self = shift;
 
-  $self->expect( qr/DISPLAY\b/ );
+  defined $self->maybe_expect(qr/DISPLAY(?=[ \t])/)
+    or return;
   $self->commit;
+  my ($line) = $self->where;
 
-  my $message;
-  eval { $message = $self->token_string };
-  defined $message
-    or $self->fail( "Need quoted string" );
+  # DISPLAY "message"
+  my $pos = $self->pos;
+  $self->skip_ws;
+  my $pos2 = $self->pos;
 
-  warn "$message\n";
+  # get quoted string
+  my $result = eval { $self->token_string };
 
-  return $message;
+  # check if quoted string is present
+  defined $result
+    or $self->fail_from($pos + 1, "Need quoted string");
+
+  # validate quoted string
+  $result !~ /\s*\n/
+    or $self->fail_from($pos2 + $-[0]+1, "Missing end quote");
+
+  # skip whitespace characters and any comments
+  $self->skip_ws;
+  my ($next_line) = $self->where;
+  $line ne $next_line or
+    $self->fail( "Extra characters on line" );
+
+  warn "$result\n";
+
+  return $result;
 }
 
 sub parse_model {
   my $self = shift;
 
-  # check if model is defined
-  $self->maybe_expect( qr/MODEL\b/i )
+  # MODEL ...
+  $self->maybe_expect( qr/MODEL(?=[ \t])/ )
     or $self->fail("Model must be specified first");
 
-  # check if language is defined
-  my $result;
-  eval { $result = $self->token_kw_icase( @languages ) };
+  # MODEL language
+  my $result = eval { $self->token_kw_icase( @languages ) };
   defined $result
     or $self->fail("Missing or illegal language ID");
 
@@ -296,17 +312,24 @@ sub parse_model {
 sub parse_radix {
   my $self = shift;
 
-  $self->expect( qr/RADIX[ \t]/ );
+  # RADIX ...
+  defined $self->maybe_expect(qr/RADIX(?=[ \t])/)
+    or return;
   $self->commit;
+  my ($line) = $self->where;
 
-  # check if base is defined
-  my $result;
-  eval { $result = $self->generic_token( radix => qr/(?:2|8|10|16)\s/ ) };
+  # RADIX base
+  my $result = eval {
+    $self->generic_token( radix => qr/(?:2|8|10|16)(?=\s|;|\z)/ )
+  };
   defined $result
     or $self->fail("Illegal radix");
 
   # skip whitespace characters and any comments
   $self->skip_ws;
+  my ($next_line) = $self->where;
+  $line ne $next_line or
+    $self->fail( "Extra characters on line" );
 
   $self->{_radix} = 0+ $result;
   return $self->{_radix};
@@ -315,9 +338,12 @@ sub parse_radix {
 sub parse_locals {
   my $self = shift;
 
-  my $directive = $self->expect( qr/(?:NOLOCALS|LOCALS)(?=\s|;|\z)/ );
+  my $directive = $self->maybe_expect(qr/(?:NOLOCALS|LOCALS)(?=\s|;|\z)/);
+  defined $directive
+    or return;
   $self->commit;
   my ($line) = $self->where;
+
   $self->skip_ws;
   my ($next_line) = $self->where;
   $line ne $next_line or
@@ -342,7 +368,7 @@ sub parse_segment {
   my $type;
 
   # SEGMENT ...
-  $self->expect( qr/SEGMENT\b/i );
+  $self->expect( qr/SEGMENT(?=[ \t])/i );
   $self->commit;
 
   # SEGMENT [name] type
@@ -359,7 +385,7 @@ sub parse_segment {
       $result = $self->scope_of(
         undef,
         sub { $self->parse_data_block( $name ) },
-        qr/ENDS/i
+        qr/ENDS/
       );
       last;
     };
@@ -367,7 +393,7 @@ sub parse_segment {
       $result = $self->scope_of(
         undef,
         sub { $self->parse_code_block( $name ) },
-        qr/ENDS/i
+        qr/ENDS/
       );
       last;
     };
@@ -375,7 +401,7 @@ sub parse_segment {
       $result = $self->scope_of(
         undef,
         sub { $self->parse_stack_block( $name ) },
-        qr/ENDS/i
+        qr/ENDS/
       );
       last;
     };
@@ -412,9 +438,7 @@ sub parse_data_block {
       $self->commit;
       $self->parse_data_statement;
     },
-  )
-    or
-  return undef;
+  ) or return undef;
 
   # convert the array_ref to a hash_ref
   my $ref = { };
@@ -442,8 +466,8 @@ sub parse_data_statement {
   my $self = shift;
   my $type = 'equation';
 
-  return { } if defined $self->maybe(sub { $self->parse_locals });
-  return { } if defined $self->maybe(sub { $self->parse_radix });
+  return { } if defined $self->parse_locals;
+  return { } if defined $self->parse_radix;
 
   my $ident = $self->token_ident;
   my $fail_pos = $self->pos - length $ident;
@@ -480,9 +504,7 @@ sub parse_data_statement {
       return $value;
     },
     sub { 0 },
-  )
-    or
-  $self->fail( "Need expression" );
+  ) or $self->fail( "Need expression" );
 
   if ( $is_string ) {
     # test if value has unknown character
@@ -604,9 +626,7 @@ sub parse_code_block {
       );
       $self->parse_code_statement;
     }
-  )
-    or
-  return undef;
+  ) or return undef;
   
   my @statements;
   my @pending_tags;
@@ -652,23 +672,14 @@ sub parse_code_statement {
   $self->skip_ws;
   my ($line) = $self->where;
 
-  my $locals = $self->maybe(sub { $self->parse_locals });
+  my $locals = $self->parse_locals;
   return { locals => $locals } if defined $locals;
 
-  my $radix = $self->maybe(sub { $self->parse_radix });
+  my $radix = $self->parse_radix;
   return { radix => $radix } if defined $radix;
 
-  my $display = $self->maybe(
-    sub { $self->parse_display }
-  );
-  if ( defined $display ) {
-    $self->commit;
-    $self->skip_ws;
-    @_ = $self->where;
-    $line ne $_[0] or
-      $self->fail("Extra characters on line");
-    return { display => $display };
-  }
+  my $display = $self->parse_display;
+  return { display => $display } if defined $display;
 
   my $statement = $self->any_of(
     sub { $self->parse_code_instruction },
@@ -963,8 +974,8 @@ sub parse_stack_statement {
   my $self = shift;
   my $type = 'register';
 
-  return { } if defined $self->maybe(sub { $self->parse_locals });
-  return { } if defined $self->maybe(sub { $self->parse_radix });
+  return { } if defined $self->parse_locals;
+  return { } if defined $self->parse_radix;
 
   my $ident = $self->token_kw( @register );
   $self->commit;

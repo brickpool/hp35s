@@ -4,7 +4,7 @@ W002	STO A		; ↱ STO A
 W003	R↓		; R↓
 W004	ENTER		; ENTER
 W005	1/x		; 1/x
-W006	0.5		; 0 . 5 ENTER
+W006	0.5		; . 5 ENTER
 W007	+		; +
 W008	IP		; ↰ INTG 6
 W009	STO- A		; ↱ STO - A

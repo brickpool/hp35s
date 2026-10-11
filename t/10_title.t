@@ -1,0 +1,85 @@
+use strict;
+use warnings;
+
+use Test::More;
+use Parser::HPC;
+
+sub parse_program_with_title {
+  my ($title) = @_;
+  return Parser::HPC->new->from_string(<<ASM);
+$title
+MODEL P35S
+SEGMENT CODE
+RTN
+ENDS
+END
+ASM
+}
+
+sub parse_program_error {
+  my ($title) = @_;
+  my $success = eval { parse_program_with_title($title); 1 };
+  my $error = "$@";
+  note $error unless $success;
+  return $error;
+}
+
+subtest '%TITLE accepts valid delimiters' => sub {
+  for my $title (
+    '%TITLE "I/O Library"',
+    qq{%TITLE\t"I/O Library"},
+  ) {
+    my $program = parse_program_with_title($title);
+    is( $program->{title}, 'I/O Library', "$title is parsed" );
+  }
+};
+
+subtest '%TITLE rejects invalid delimiters' => sub {
+  for my $title (
+    '%TITLE"I/O Library"',
+    '%TITLE. "I/O Library"',
+    '%TITLE: "I/O Library"',
+    '%TITLEX "I/O Library"',
+    '%TITLE_ "I/O Library"',
+  ) {
+    my $error = parse_program_error($title);
+    like( $error, qr/Model must be specified first/,
+      "$title is not recognized as a title directive" );
+  }
+};
+
+subtest '%TITLE may only be used once' => sub {
+  my $error = parse_program_error(
+    "%TITLE \"First\"\n%TITLE \"Second\""
+  );
+  like( $error, qr/Model must be specified first/,
+    'the second %TITLE is rejected where MODEL is required' );
+};
+
+subtest '%TITLE reports string errors' => sub {
+  my @cases = (
+    [ '%TITLE ', qr/Need quoted string on line 1/, 'missing quoted string' ],
+    [ qq{%TITLE "I/O\nLibrary"},
+      qr/Missing end quote on line 1 at:\n%TITLE "I\/O\n {11}\^\n/,
+      'newline in title after I/O' ],
+  );
+  for my $case (@cases) {
+    my ($title, $message, $description) = @$case;
+    my $error = parse_program_error($title);
+    like( $error, $message, "$description reports the expected error" );
+  }
+};
+
+subtest '%TITLE requires uppercase spelling' => sub {
+  for my $title (
+    '%title "I/O Library"',
+    '%Title "I/O Library"',
+    '%TiTlE "I/O Library"',
+  ) {
+    my $error = parse_program_error($title);
+    like( $error, qr/Model must be specified first/,
+      "$title is not recognized as a title directive" );
+  }
+};
+
+done_testing;

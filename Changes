@@ -1,3 +1,31 @@
+0.5.1   2026-10-11
+        [ADDED]
+         * Regression tests comparing assembled examples with their .35s
+           reference listings
+        * Extended tests for TITLE, DISPLAY, RADIX and numeric keystroke
+          optimization
+         * Improved diagnostics for invalid RADIX values
+         * Enforced keyword delimiters and line endings for TITLE and DISPLAY
+
+        [CHANGES]
+         * Refined RADIX handling for numeric literals, EQU definitions and
+           SET assignments; instruction operands remain decimal
+         * Made numeric syntax case-sensitive: lowercase base suffixes and
+           decimal exponents, uppercase hexadecimal digits
+         * Optimized decimal literals in shortcut output to reduce keystrokes
+         * Centralized numeric and keystroke optimization in HP35s::Keystrokes
+         * Unified parsing of DISPLAY, RADIX, LOCALS and NOLOCALS directives
+         * Updated example .35s listings incl. jump-target markers
+
+        [BUGFIXES]
+         * Fixed signed 36-bit conversion of unsuffixed non-decimal values
+           in EQU definitions and SET assignments
+         * Corrected error positions for missing or unterminated quoted strings
+         * Prevented DISPLAY messages from being emitted for invalid lines
+         * Fixed undefined jump targets in example Z
+         * Fixed subroutine calls in the Mancala example
+         * Fixed restart input handling in the JiveTurkey example
+
 0.5.0   2026-10-09
         [ADDED]
          * Test coverage for module loading, parser, frontend and keystroke

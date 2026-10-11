@@ -28,6 +28,7 @@ use HP35s::Keystrokes qw(
   instruction_keystrokes 
   number_keystroke
   char_keystrokes
+  optimize_number_literal
   optimize_keystrokes
 );
 use HP35s::Macro qw(
@@ -517,9 +518,13 @@ sub sprintf_constant_statement {
 sub sprintf_number_statement {
   my $line = shift;
   my $number = shift;
+  my $display_number = $number;
   my $keystrokes = '';
 
   if ($shortcut) {
+    $number = optimize_number_literal($number);
+    $display_number = $number;
+    $display_number =~ s/\A(-?)\./${1}0./;
     my ($sign, $digits, $exponent, $base) 
       = $number =~ /^(\-?)([\.\dA-F]+)(?:e(\-?[\.\dA-F]+))?([dhob]?)$/;
 
@@ -571,7 +576,7 @@ sub sprintf_number_statement {
     }
     $keystrokes .= ' ENTER';
   }
-  return sprintf("%s\t%s%s\n", $line, $number, $keystrokes);
+  return sprintf("%s\t%s%s\n", $line, $display_number, $keystrokes);
 }
 
 # vector statement

@@ -6,6 +6,7 @@ use Parser::HPC;
 
 subtest 'RADIX rejects unsupported syntax and invalid values' => sub {
   for my $code (
+    'RADIX', 'RADIX16', 'RADIX 7', 'RADIX 8 1', 'RADIX "8"', '.RADIX',
     'RADIX 3', 'RADIX 0', 'RADIX 17', 'RADIX -2',
     'RADIX 10h', 'RADIX 16 extra', "RADIX\n16",
     'RADIX. 16', 'RADIX, 16',
@@ -25,6 +26,18 @@ subtest 'RADIX rejects unsupported syntax and invalid values' => sub {
     };
     ok( !$success, "$code is rejected" );
   }
+};
+
+subtest 'invalid RADIX base reports the documented error' => sub {
+  my $success = eval {
+    Parser::HPC->new->from_string(
+      "MODEL P35S\nSEGMENT CODE\nRADIX 7\nENDS\nEND\n"
+    );
+    1;
+  };
+  my $error = "$@";
+  ok( !$success, 'RADIX 7 is rejected' );
+  like( $error, qr/Illegal radix/, 'the diagnostic says Illegal radix' );
 };
 
 subtest 'RADIX directive spelling is case-sensitive' => sub {

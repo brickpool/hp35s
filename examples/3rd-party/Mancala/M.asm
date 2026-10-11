@@ -185,9 +185,9 @@ move:
     RMDR                            ; MOD
     STO I                           ; i=(i+1)MOD(14)
     FS? 1                           ; P1?
-      GTO skip0                     ; SKIP0 IF P1
+      XEQ skip0                     ; SKIP0 IF P1
     FS? 2
-      GTO skip7                     ; SKIP7 IF P2
+      XEQ skip7                     ; SKIP7 IF P2
     ; INC I END-SUBROUTINE-INLINE
     1
     STO+ (I)                        ; (i)=(i)+1

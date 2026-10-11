@@ -13,6 +13,7 @@ our @EXPORT_OK = qw(
   instruction_keystrokes
   number_keystroke
   char_keystrokes
+  optimize_number_literal
   optimize_keystrokes
 );
 
@@ -679,8 +680,83 @@ sub char_keystrokes {
 
 sub optimize_keystrokes {
   my $original  = shift;
-  my $max_depth = scalar split /\s+/, $original;
+  my $max_depth = _keystroke_count($original);
   return _minimize_keystrokes( $original, 0, $max_depth, );
+}
+
+sub optimize_number_literal {
+  my $number = shift;
+  my $text = "$number";
+  $text =~ s/e\+(\d+)\z/e$1/;
+  my ($sign, $integer, $fraction, $exponent) =
+    $text =~ /\A(-?)(\d*)(?:\.(\d*))?(?:e([+-]?\d+))?\z/;
+  return $number unless defined $integer
+    && ($integer ne '' || defined $fraction);
+
+  $integer //= '';
+  $fraction //= '';
+  my $digits = $integer . $fraction;
+  return '0' if $digits =~ /\A0+\z/;
+
+  my $decimal_position = length($integer) + ($exponent // 0);
+  $decimal_position-- while $digits =~ s/\A0//;
+  $digits =~ s/0+\z//;
+
+  my @candidates = ($text);
+  my $scientific_exponent = $decimal_position - 1;
+  my $mantissa = substr($digits, 0, 1);
+  $mantissa .= '.' . substr($digits, 1) if length($digits) > 1;
+  push @candidates, $sign . $mantissa
+    . ($scientific_exponent ? 'e' . $scientific_exponent : '');
+
+  my $plain_length = $decimal_position <= 0
+    ? 2 - $decimal_position + length($digits)
+    : $decimal_position >= length($digits)
+      ? $decimal_position
+      : length($digits) + 1;
+  $plain_length += length $sign;
+  if ( $plain_length <= length($text) + 1 ) {
+    my $plain;
+    if ( $decimal_position <= 0 ) {
+      $plain = '0.' . ('0' x -$decimal_position) . $digits;
+    }
+    elsif ( $decimal_position >= length($digits) ) {
+      $plain = $digits . ('0' x ($decimal_position - length($digits)));
+    }
+    else {
+      $plain = substr($digits, 0, $decimal_position) . '.'
+        . substr($digits, $decimal_position);
+    }
+    $plain = $sign . $plain;
+    push @candidates, $plain;
+    if ( $plain =~ /\A(-?)0\.(\d+)\z/ ) {
+      push @candidates, $1 . '.' . $2;
+    }
+  }
+
+  my %seen;
+  my $best = $text;
+  my $best_count = _number_keystroke_count($best);
+  for my $candidate ( @candidates ) {
+    next if $seen{$candidate}++;
+    my $count = _number_keystroke_count($candidate);
+    if ( $count < $best_count ) {
+      $best = $candidate;
+      $best_count = $count;
+    }
+  }
+  return $best;
+}
+
+sub _keystroke_count {
+  my $keystrokes = shift;
+  return scalar grep { length } split /\s+/, $keystrokes;
+}
+
+sub _number_keystroke_count {
+  my $number = shift;
+  my $keystrokes = join ' ', map { number_keystroke($_) } split //, $number;
+  return _keystroke_count($keystrokes);
 }
 
 sub _minimize_keystrokes {
@@ -690,7 +766,7 @@ sub _minimize_keystrokes {
   if $depth >= $max_depth;
 
   my $best       = $original;
-  my $best_count = scalar split /\s+/, $original;
+  my $best_count = _keystroke_count($original);
 
   foreach my $from ( keys %$tbl_opt_seq ) {
     my $to  = $tbl_opt_seq->{$from};
@@ -698,12 +774,12 @@ sub _minimize_keystrokes {
 
     next unless $new =~ s/\Q$from\E/$to/g;
 
-    my $new_count = scalar split /\s+/, $new;
+    my $new_count = _keystroke_count($new);
     next if $new_count > $best_count;
 
     $new = _minimize_keystrokes( $new, $depth + 1, $max_depth, );
 
-    $new_count = scalar split /\s+/, $new;
+    $new_count = _keystroke_count($new);
 
     if ( $new_count < $best_count ) {
       $best       = $new;

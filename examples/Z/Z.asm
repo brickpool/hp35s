@@ -56,7 +56,7 @@ calc1:
   ; Z=SQRT(L/C)
   /
   sqrt
-  GTO write
+  GTO print
 
 ; 18.2. Coaxial cable
 ;
@@ -85,7 +85,7 @@ calc2:
   x<>y
   sqrt
   /
-  GTO write
+  GTO print
 
 ; 18.3. Symmetrical two-wire lines
 ;
@@ -111,7 +111,7 @@ calc3:
   x<>y
   sqrt
   /
-  GTO write
+  GTO print
 
 ; 18.4. Quarter-wave transformer
 ;

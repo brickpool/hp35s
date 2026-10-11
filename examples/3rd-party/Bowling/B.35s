@@ -39,7 +39,7 @@ B034	1		; 1 ENTER
 B035	STO F		; ↱ STO F
 B036*	1		; 1 ENTER
 B037	STO P		; ↱ STO P
-B038	0.001		; 0 . 0 0 1 ENTER
+B038	1e-3		; 1 e +/- 3 ENTER
 B039	RCL× R		; RCL × R
 B040	STO+ P		; ↱ STO + P
 B041*	CLx		; ↱ CLEAR 1
@@ -110,7 +110,7 @@ B101	RCL+ B		; RCL + B
 B102	PSE		; ↱ PSE
 B103	RPN		; MODE 5
 B104	CF 10		; ↰ FLAGS 2 . 0
-B105	0.003		; 0 . 0 0 3 ENTER
+B105	3e-3		; 3 e +/- 3 ENTER
 B106	STO I		; ↱ STO I
 B107*	1.004		; 1 . 0 0 4 ENTER
 B108	STO L		; ↱ STO L
@@ -269,7 +269,7 @@ B255	x≤y?		; ↰ x?y 2
 B256	GTO B036	; GTO B 0 3 6
 B257	1		; 1 ENTER
 B258	STO P		; ↱ STO P
-B259	0.001		; 0 . 0 0 1 ENTER
+B259	1e-3		; 1 e +/- 3 ENTER
 B260	RCL× R		; RCL × R
 B261	STO+ P		; ↱ STO + P
 B262*	SF 10		; ↰ FLAGS 1 . 0
@@ -298,7 +298,7 @@ B283	STO+ I		; ↱ STO + I
 B284	R↓		; R↓
 B285	RCL(I)		; RCL (I)
 B286	RCL(J)		; RCL (J)
-; EQN ↱ [] R↓ 4 ↰ , R↓ 3 ↰ , R↓ 2 > ↱ STO 🄲 RCL (J) ENTER
+; EQN ↱ [] R↓ 4 ↰ , R↓ 3 ↰ , R↓ 2 > ↱ STO (J) ENTER
 B287	eqn [REGT,REGZ,REGY]►(J)
 B288	VIEW(J)		; ↰ VIEW (J)
 B289	R↓		; R↓

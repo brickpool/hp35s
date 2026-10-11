@@ -92,11 +92,13 @@ SEGMENT JiveTurkey CODE
         PSE
         VIEW    F
         ;210 DISPLAY"SAME GAME AGAIN? Y/N";:ACCEPT AT(22)BEEP VALIDATE("YNyn"),ANSWERS
+@210:
         CLx
-        eqn     'AGAIN Y=2 N=1'
+        SF      10
+        eqn     'AGAIN 2=YES 1=NO'
         CF      10
-        ;220 IF ANSWERS="Y" OR ANSWERS="y" THEN 110 ELSE 250
         2
+        ;220 IF ANSWERS="Y" OR ANSWERS="y" THEN 110 ELSE 250
         x=y?
         GTO     @110
         GTO     @250

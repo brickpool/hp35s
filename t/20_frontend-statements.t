@@ -91,6 +91,39 @@ subtest 'jump markers resolve instruction and literal targets' => sub {
   is( $output, $marked, 'both target nodes retain their line addresses' );
 };
 
+subtest 'decimal literals use the fewest numeric keystrokes' => sub {
+  my $numbers = <<'ASM';
+MODEL P35S
+SEGMENT CODE
+1e-9
+1000
+3.0
+0.0000012
+0.001
+0.5
+-0.5
+ENDS
+END
+ASM
+  my ($status, $output, $errors) = run_frontend($numbers, '-s');
+  is( $status, 0, 'frontend succeeds' );
+  is( $errors, '', 'no warnings' );
+  like( $output, qr/^0001\t1e-9\t\t; 1 e \+\/- 9 ENTER$/m,
+    'renders the optimized exponent used by the keystrokes' );
+  like( $output, qr/^0002\t1e3\t\t; 1 e 3 ENTER$/m,
+    'renders the optimized integer form used by the keystrokes' );
+  like( $output, qr/^0003\t3\t\t; 3 ENTER$/m,
+    'omits an unnecessary fractional zero in both render and keystrokes' );
+  like( $output, qr/^0004\t1\.2e-6\t\t; 1 \. 2 e \+\/- 6 ENTER$/m,
+    'renders the optimized small decimal used by the keystrokes' );
+  like( $output, qr/^0005\t1e-3\t\t; 1 e \+\/- 3 ENTER$/m,
+    'renders the optimized 0.001 value used by the keystrokes' );
+  like( $output, qr/^0006\t0\.5\t\t; \. 5 ENTER$/m,
+    'adds a leading zero only to the rendered fractional literal' );
+  like( $output, qr/^0007\t-0\.5\t\t; \. 5 \+\/- ENTER$/m,
+    'adds a leading zero to the rendered negative fraction only' );
+};
+
 subtest 'debug shows the parser statement AST without filtering' => sub {
   my ($status, $output, $errors) = run_frontend($source, '--debug');
   is( $status, 0, 'frontend succeeds' );

@@ -3,10 +3,8 @@ use warnings;
 
 use Test::More;
 use Parser::HPC;
-use lib 't/lib';
-use FrontendTest qw( run_frontend );
 
-subtest 'DISPLAY directives emit quoted messages without changing code AST' => sub {
+subtest 'DISPLAY emits messages without changing parsed code' => sub {
   my $parser = Parser::HPC->new;
   my (@warnings, $root);
   {
@@ -26,69 +24,63 @@ ASM
   is_deeply( \@warnings, [
     "Starting assembly\n", "Inside code\n", "Assembly complete\n",
   ], 'messages are warned in source order while parsing' );
-  ok( !exists $root->{display}, 'messages are not stored in the parse AST' );
   is_deeply( $root->{segments}->{_TEXT}->{statements}, [
     { instruction => { value => 'RTN' } },
-  ], 'DISPLAY directives are not code statements' );
+  ], 'messages are not stored as code statements' );
+  ok( !exists $root->{display}, 'messages are not stored in the parse AST' );
 };
 
-subtest 'DISPLAY is emitted before a later parse error' => sub {
-  my $parser = Parser::HPC->new;
-  my @warnings;
-  my $success;
-  {
-    local $SIG{__WARN__} = sub { push @warnings, @_ };
-    $success = eval {
-      $parser->from_string(
-        "MODEL P35S\nDISPLAY 'Checkpoint'\nSEGMENT CODE\nUNKNOWN\nENDS\nEND\n"
-      );
-      1;
-    };
+subtest 'DISPLAY reports string errors at the source position' => sub {
+  my @cases = (
+    [ "MODEL P35S\nDISPLAY \nSEGMENT CODE\nRTN\nENDS\nEND\n",
+      qr/Need quoted string on line 2/, 'missing message' ],
+    [ "MODEL P35S\nDISPLAY \"I\/O\nLibrary\"\nSEGMENT CODE\nRTN\nENDS\nEND\n",
+      qr/Missing end quote on line 2 at:\nDISPLAY \"I\/O\n {12}\^/,
+      'newline in message after I/O' ],
+  );
+  for my $case (@cases) {
+    my ($source, $message, $description) = @$case;
+    my $success = eval { Parser::HPC->new->from_string($source); 1 };
+    my $error = "$@";
+    ok( !$success, "$description is rejected" );
+    like( $error, $message, "$description reports the expected error" );
   }
-  ok( !$success, 'later invalid code still fails parsing' );
-  is_deeply( \@warnings, [ "Checkpoint\n" ],
-    'message is emitted before the parser reports the later failure' );
 };
 
-subtest 'DISPLAY requires uppercase spelling' => sub {
-  for my $directive ( 'display', 'Display', 'DiSpLaY' ) {
-    for my $source (
-      "MODEL P35S\n$directive 'message'\nSEGMENT CODE\nRTN\nENDS\nEND\n",
-      "MODEL P35S\nSEGMENT CODE\n$directive 'message'\nRTN\nENDS\nEND\n",
-    ) {
-      my @warnings;
+subtest 'DISPLAY cannot share a line with the next directive' => sub {
+  my @cases = (
+    [ 'between segments',
+      "MODEL P35S\nDISPLAY 'message' SEGMENT CODE\nRTN\nENDS\nEND\n" ],
+    [ 'inside code',
+      "MODEL P35S\nSEGMENT CODE\nDISPLAY 'message' RTN\nENDS\nEND\n" ],
+  );
+  for my $case (@cases) {
+    my ($context, $source) = @$case;
+    my (@warnings, $success, $error);
+    {
       local $SIG{__WARN__} = sub { push @warnings, @_ };
-      my $success = eval { Parser::HPC->new->from_string($source); 1 };
-      ok( !$success, "$directive is rejected" );
-      is_deeply( \@warnings, [], 'invalid spelling emits no message' );
+      $success = eval { Parser::HPC->new->from_string($source); 1 };
+      $error = "$@";
     }
+    ok( !$success, "DISPLAY cannot share a line $context" );
+    like( $error, qr/Extra characters on line/, "$context reports line error" );
+    is_deeply( \@warnings, [], "invalid DISPLAY $context emits no message" );
   }
 };
 
-subtest '%OUT remains unsupported' => sub {
-  my $parser = Parser::HPC->new;
-  my $success = eval {
-    $parser->from_string(
-      "MODEL P35S\n%OUT This message is not supported\nSEGMENT CODE\nRTN\nENDS\nEND\n"
-    );
-    1;
-  };
-  ok( !$success, '%OUT is rejected rather than treated as DISPLAY' );
-};
-
-subtest 'DISPLAY writes messages to STDERR without changing the listing' => sub {
-  my $source = <<'ASM';
+subtest 'DISPLAY requires uppercase spelling and %OUT is unsupported' => sub {
+  for my $directive ( 'display', 'DiSpLaY', '%OUT' ) {
+    my $source = <<ASM;
 MODEL P35S
-DISPLAY 'Assembly started'
+$directive 'message'
 SEGMENT CODE
 RTN
 ENDS
 END
 ASM
-  my ($status, $output, $errors) = run_frontend($source);
-  is( $status, 0, 'frontend accepts DISPLAY' );
-  is( $errors, "Assembly started\n", 'message is displayed on STDERR' );
-  unlike( $output, qr/Assembly started/, 'message is not part of HP output' );
+    my $success = eval { Parser::HPC->new->from_string($source); 1 };
+    ok( !$success, "$directive is rejected" );
+  }
 };
 
 done_testing;
