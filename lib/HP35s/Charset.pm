@@ -5,7 +5,7 @@ use strict;
 use warnings;
 
 use version;
-our $VERSION = version->declare('v0.5.0');
+our $VERSION = version->declare('v0.5.1');
 
 use Exporter 'import';
 our @EXPORT_OK = qw(
