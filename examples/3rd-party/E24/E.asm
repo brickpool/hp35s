@@ -1,23 +1,10 @@
 ; Find the nearest fraction in the E24 numbers for the HP-35s
 ; This program is by Takayuki Hosoda and is used here by permission.
 ; http://www.finetune.co.jp/~lyuka/technote/e24/e24-35s.html
-MACRO E24ENTRY value
+MACRO PUSH value
   value
   STO(I)
   DSE I
-ENDM
-
-MACRO E24SCAN found
-  LOCAL again
-  23
-  STO I
-again:
-  RCL N
-  RCL(I)
-  x<y?
-    GTO found
-  DSE I
-    GTO again
 ENDM
 
 MODEL P35S
@@ -31,35 +18,33 @@ LBL E
   ; I = 23
   23
   STO I
-  ; R23 = 9.1
-  E24ENTRY 9.1
-  ; R22 = 8.2
-  E24ENTRY 8.2
-  E24ENTRY 7.5
-  E24ENTRY 6.8
-  E24ENTRY 6.2
-  E24ENTRY 5.6
-  E24ENTRY 5.1
-  E24ENTRY 4.7
-  E24ENTRY 4.3
-  E24ENTRY 3.9
-  E24ENTRY 3.6
-  E24ENTRY 3.3
-  E24ENTRY 3.0
-  E24ENTRY 2.7
-  E24ENTRY 2.4
-  E24ENTRY 2.2
-  E24ENTRY 2.0
-  E24ENTRY 1.8
-  E24ENTRY 1.6
-  E24ENTRY 1.5
-  E24ENTRY 1.3
-  E24ENTRY 1.2
-  ; R01 = 1.1
-  E24ENTRY 1.1
+
+  PUSH 9.1      ; R23 = 9.1
+  PUSH 8.2      ; R22 = 8.2
+  PUSH 7.5      ; R21 = ..
+  PUSH 6.8
+  PUSH 6.2
+  PUSH 5.6
+  PUSH 5.1
+  PUSH 4.7
+  PUSH 4.3
+  PUSH 3.9
+  PUSH 3.6
+  PUSH 3.3
+  PUSH 3.0
+  PUSH 2.7
+  PUSH 2.4
+  PUSH 2.2
+  PUSH 2.0
+  PUSH 1.8
+  PUSH 1.6
+  PUSH 1.5
+  PUSH 1.3      ; ..
+  PUSH 1.2      ; R02 = 1.2
+  PUSH 1.1      ; R01 = 1.1
   2007.0810     ; NOP, V2007-08-10
   ; R00 = 1.0
-  1.0
+  1.0           ; R00 = 1.0
   STO(I)
   ; P = 0.05
   0.05
@@ -80,7 +65,15 @@ LBL E
   STO N
 
   ; DO I = 23, 0, -1
-  E24SCAN @098
+  23
+  STO I
+@092:
+  RCL N
+  RCL(I)
+  x<y?
+    GTO @098
+  DSE I
+    GTO @092
 
 @098:
   ; K = I
@@ -147,7 +140,7 @@ RTN
   RCL P
   x<y?
     RTN
-  
+
   Rv
   STO P
   RCL R
