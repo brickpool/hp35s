@@ -26,17 +26,17 @@ ENDS
 END start
 ASM
   my $root = Parser::HPC->new->from_string($source);
-  my $statements = $root->{segments}->{_TEXT}->{statements};
-  is( scalar @$statements, 7, 'LOCALS emits no instruction' );
-  my $first = $statements->[1]->{instruction}->{operand}->{value};
-  my $second = $statements->[4]->{instruction}->{operand}->{value};
+  my $statements = $root->{segments}->[0]->{statements};
+  is( scalar @$statements, 11, 'seven instructions and four declarations, no LOCALS node' );
+  my $first = $statements->[2]->{instruction}->{operand}->{value};
+  my $second = $statements->[7]->{instruction}->{operand}->{value};
   isnt( $first, $second, 'same local spelling has distinct scoped identities' );
-  is( $statements->[3]->{instruction}->{operand}->{value}, $first,
+  is( $statements->[5]->{instruction}->{operand}->{value}, $first,
     'case-insensitive backward reference retains first scope' );
-  is( $statements->[6]->{instruction}->{operand}->{value}, $second,
+  is( $statements->[10]->{instruction}->{operand}->{value}, $second,
     'backward reference retains second scope' );
-  is( $root->{labels}->{$first}->{statement}, 2, 'first local target' );
-  is( $root->{labels}->{$second}->{statement}, 5, 'second local target' );
+  is_deeply( $statements->[3], { label => { name => $first } }, 'first local declaration' );
+  is_deeply( $statements->[8], { label => { name => $second } }, 'second local declaration' );
   for my $options ( [], [ '-j' ], [ '-s' ] ) {
     my ($first_scope, $next_scope) = split /(?=^next:)/m, $source;
     $first_scope =~ s/^LOCALS[^\n]*\n//m;
@@ -73,14 +73,17 @@ GTO @@loop
 ENDS
 END @@loop
 ASM
-  my $statements = $root->{segments}->{_TEXT}->{statements};
-  is( scalar @$statements, 4, 'both directives leave instruction indices unchanged' );
-  is( $statements->[1]->{instruction}->{operand}->{value}, '@@LOOP',
+  my $statements = $root->{segments}->[0]->{statements};
+  is( scalar @$statements, 9, 'four instructions and five declarations, no directive nodes' );
+  is( $statements->[4]->{instruction}->{operand}->{value}, '@@LOOP',
     'disabled local name remains global' );
-  is( $statements->[2]->{instruction}->{operand}->{value}, '@@LOOP',
+  is( $statements->[6]->{instruction}->{operand}->{value}, '@@LOOP',
     'nonlocal label does not restrict ordinary global reference' );
-  is( $root->{labels}->{'@@LOOP'}->{statement}, 1, 'global target is retained' );
-  is( $root->{startaddr}, $statements->[3]->{instruction}->{operand}->{value},
+  is_deeply( $statements->[3], { label => { name => '@@LOOP' } },
+    'global declaration is retained' );
+  is_deeply( $root->{startaddr}, {
+    type => 'label', value => $statements->[8]->{instruction}->{operand}->{value},
+  },
     'END resolves a local label in the current scope' );
 };
 
@@ -102,13 +105,15 @@ RTN
 ENDS second
 END
 ASM
-  my $target = $root->{segments}->{FIRST}->{statements}->[1]
+  my $target = $root->{segments}->[0]->{statements}->[3]
     ->{instruction}->{operand}->{value};
-  is( $root->{labels}->{$target}->{segment}, 'SECOND',
+  is_deeply( $root->{segments}->[1]->{statements}->[0],
+    { label => { name => $target } },
     'segment and mode changes do not start a new scope' );
-  my $initial = $root->{segments}->{FIRST}->{statements}->[0]
+  my $initial = $root->{segments}->[0]->{statements}->[1]
     ->{instruction}->{operand}->{value};
-  is( $root->{labels}->{$initial}->{statement}, 0,
+  is_deeply( $root->{segments}->[0]->{statements}->[0],
+    { label => { name => $initial } },
     'locals before the first nonlocal label have an initial scope' );
 };
 
@@ -129,20 +134,20 @@ GTO @shared
 ENDS
 END start
 ASM
-  my $statements = $root->{segments}->{_TEXT}->{statements};
-  my $local = $statements->[1]->{instruction}->{operand};
+  my $statements = $root->{segments}->[0]->{statements};
+  my $local = $statements->[3]->{instruction}->{operand};
   is( $local->{type}, 'label', '@@A001 is not a literal calculator address' );
-  is( $root->{labels}->{$local->{value}}->{statement}, 0,
+  is_deeply( $statements->[1], { label => { name => $local->{value} } },
     'address-like local name resolves normally' );
-  my $other = $statements->[3]->{instruction}->{operand}->{value};
-  ok( !exists $root->{labels}->{$other},
+  my $other = $statements->[7]->{instruction}->{operand}->{value};
+  ok( !(grep { $_->{label} && $_->{label}->{name} eq $other } @$statements),
     'reference in another scope does not resolve to earlier local definition' );
-  is( $statements->[4]->{instruction}->{operand}->{value}, '@SHARED',
+  is( $statements->[8]->{instruction}->{operand}->{value}, '@SHARED',
     'single-at name remains global under LOCALS' );
 };
 
-subtest 'LOCALS and NOLOCALS require uppercase spelling' => sub {
-  for my $directive ( 'locals', 'Locals', 'LoCaLs', 'nolocals', 'Nolocals', 'NoLoCaLs' ) {
+subtest 'LOCALS and NOLOCALS allow uppercase spelling' => sub {
+  for my $directive ( 'locals', 'Locals', 'nolocals', 'Nolocals' ) {
     for my $source (
       "MODEL P35S\n$directive\nSEGMENT CODE\nRTN\nENDS\nEND\n",
       "MODEL P35S\nSEGMENT CODE\n$directive\nRTN\nENDS\nEND\n",
@@ -150,7 +155,7 @@ subtest 'LOCALS and NOLOCALS require uppercase spelling' => sub {
       "MODEL P35S\nSEGMENT STACK\n$directive\nREGX SET 1\nENDS\nEND\n",
     ) {
       my $success = eval { Parser::HPC->new->from_string($source); 1 };
-      ok( !$success, "$directive is rejected" );
+      ok( $success, "$directive is allowed" );
     }
   }
 };

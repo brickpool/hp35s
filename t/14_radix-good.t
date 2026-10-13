@@ -32,7 +32,7 @@ RADIX 16
 ENDS
 END
 ASM
-  my $statements = $root->{segments}->{_TEXT}->{statements};
+  my $statements = $root->{segments}->[0]->{statements};
   is_deeply( $statements, [ map { +{ literal => $_ } } (
     { kind => 'hex', value => '100h' },
     { kind => 'hex', value => '1E7h' },
@@ -85,44 +85,44 @@ GTO start
 ENDS
 END start
 ASM
-  is( $root->{segments}->{_DATA}->{definitions}->{VALUE}->{value}, 256,
+  is( $root->{segments}->[0]->{definitions}->[0]->{value}, 256,
     'EQU uses the active radix' );
-  is( $root->{segments}->{_DATA}->{definitions}->{SUFFIXB}->{value}, '101b',
+  is( $root->{segments}->[0]->{definitions}->[1]->{value}, '101b',
     'suffixed binary EQU is preserved' );
-  is( $root->{segments}->{_DATA}->{definitions}->{SUFFIXO}->{value}, '17o',
+  is( $root->{segments}->[0]->{definitions}->[2]->{value}, '17o',
     'suffixed octal EQU is preserved' );
-  is( $root->{segments}->{_DATA}->{definitions}->{SUFFIXD}->{value}, '12d',
+  is( $root->{segments}->[0]->{definitions}->[3]->{value}, '12d',
     'suffixed decimal EQU is preserved' );
-  is( $root->{segments}->{_DATA}->{definitions}->{SUFFIXH}->{value}, 'FFh',
+  is( $root->{segments}->[0]->{definitions}->[4]->{value}, 'FFh',
     'suffixed hexadecimal EQU is preserved' );
-  is( $root->{segments}->{_DATA}->{definitions}->{OTHER}->{value}, 4,
+  is( $root->{segments}->[0]->{definitions}->[6]->{value}, 4,
     'RADIX inside data changes subsequent definitions' );
-  cmp_ok( abs( $root->{segments}->{_DATA}->{definitions}->{FLOATVAL}->{value} - 0.7 ),
+  cmp_ok( abs( $root->{segments}->[0]->{definitions}->[5]->{value} - 0.7 ),
     '<', 1e-12, 'lowercase e float converts under RADIX 10' );
-  is( $root->{segments}->{STACK}->{assignments}->{REGX}->{value}, 4,
+  is( $root->{segments}->[1]->{assignments}->{REGX}->{value}, 4,
     'radix persists across segments' );
-  is( $root->{segments}->{STACK}->{assignments}->{REGY}->{value}, 256,
+  is( $root->{segments}->[1]->{assignments}->{REGY}->{value}, 256,
     'RADIX works inside stack segments' );
-  is( $root->{segments}->{STACK}->{assignments}->{REGZ}->{value}, 'FFh',
+  is( $root->{segments}->[1]->{assignments}->{REGZ}->{value}, 'FFh',
     'suffixed hexadecimal SET is preserved' );
-  cmp_ok( abs( $root->{segments}->{STACK}->{assignments}->{REGT}->{value} - 0.7 ),
+  cmp_ok( abs( $root->{segments}->[1]->{assignments}->{REGT}->{value} - 0.7 ),
     '<', 1e-12, 'lowercase e float converts under RADIX 10' );
-  is( $root->{segments}->{_TEXT}->{statements}->[0]->{instruction}->{operand}->{value},
+  is( $root->{segments}->[2]->{statements}->[1]->{instruction}->{operand}->{value},
     11, 'CF operand remains decimal under RADIX 2' );
-  is( $root->{segments}->{_TEXT}->{statements}->[1]->{instruction}->{operand}->{value},
+  is( $root->{segments}->[2]->{statements}->[2]->{instruction}->{operand}->{value},
     11, 'FIX operand remains decimal under RADIX 16' );
-  is( $root->{segments}->{_TEXT}->{statements}->[2]->{instruction}->{operand}->{value},
+  is( $root->{segments}->[2]->{statements}->[3]->{instruction}->{operand}->{value},
     10, 'SF operand remains decimal under RADIX 16' );
-  is( $root->{labels}->{START}->{statement}, 0,
-    'labels skip RADIX directives' );
+  is_deeply( $root->{segments}->[2]->{statements}->[0],
+    { label => { name => 'START' } }, 'RADIX preserves label declarations' );
   my $next = $parser->from_string("MODEL P35S\nSEGMENT next CODE\n100\nENDS next\nEND\n");
-  is_deeply( $next->{segments}->{NEXT}->{statements}->[0],
+  is_deeply( $next->{segments}->[0]->{statements}->[0],
     { literal => { kind => 'hex', value => '100h' } },
     'radix persists when the parser instance is reused' );
   my $fresh = Parser::HPC->new->from_string(
     "MODEL P35S\nSEGMENT CODE\n100\nENDS\nEND\n"
   );
-  is_deeply( $fresh->{segments}->{_TEXT}->{statements}->[0],
+  is_deeply( $fresh->{segments}->[0]->{statements}->[0],
     { literal => { kind => 'decimal', value => '100' } },
     'a new parser instance starts in decimal' );
 };
@@ -139,11 +139,11 @@ SMALLNEG EQU FFFFFFEDB
 ENDS
 END
 ASM
-  my $definitions = $root->{segments}->{_DATA}->{definitions};
-  is( $definitions->{MAX}->{value}, 34359738367, 'largest positive value' );
-  is( $definitions->{MIN}->{value}, -34359738368, 'sign bit is negative' );
-  is( $definitions->{NEGATIVE}->{value}, -1, 'all bits set is -1' );
-  is( $definitions->{SMALLNEG}->{value}, -293,
+  my $definitions = $root->{segments}->[0]->{definitions};
+  is( $definitions->[0]->{value}, 34359738367, 'largest positive value' );
+  is( $definitions->[1]->{value}, -34359738368, 'sign bit is negative' );
+  is( $definitions->[2]->{value}, -1, 'all bits set is -1' );
+  is( $definitions->[3]->{value}, -293,
     'two\'s-complement hexadecimal value' );
 };
 
@@ -224,8 +224,9 @@ ASM
     my %suffixes = ( 2 => 'b', 8 => 'o', 10 => '', 16 => 'h' );
     my $value = '100' . $suffixes{$base};
     my $root = Parser::HPC->new->from_string($source);
-    is_deeply( $root->{segments}->{_TEXT}->{statements}, [
+    is_deeply( $root->{segments}->[0]->{statements}, [
       { instruction => { value => 'LBL', operand => { type => 'variable', value => 'A' } } },
+      { label => { name => 'START' } },
       { instruction => { value => 'RADIX.' } },
       { literal => { kind => $kinds{$base}, value => $value } },
       { instruction => { value => 'RADIX,' } },
@@ -234,8 +235,9 @@ ASM
       { instruction => { value => 'GTO', operand => { type => 'label', value => 'START' } } },
       { instruction => { value => 'RTN' } },
     ], "display instructions preserve parser base $base" );
-    is( $root->{labels}->{START}->{statement}, 1,
-      'display instruction is a label target; directive is not a statement' );
+    is_deeply( $root->{segments}->[0]->{statements}->[1],
+      { label => { name => 'START' } },
+      'declaration precedes the display instruction without RADIX directive nodes' );
 
     my ($status, $output, $errors) = run_frontend($source, '-s');
     is( $status, 0, "mixed source assembles in base $base" );
@@ -252,6 +254,20 @@ ASM
       'literal after RADIX, retains its base' );
     like( $output, qr/^A007\tGTO A002\t/m,
       'jump targets the display instruction' );
+  }
+};
+
+subtest 'RADIX directive spelling is case-insensitive' => sub {
+  for my $directive ( 'radix 16', 'Radix 16', 'RaDiX 16' ) {
+    for my $source (
+      "MODEL P35S\n$directive\nSEGMENT CODE\nRTN\nENDS\nEND\n",
+      "MODEL P35S\nSEGMENT CODE\n$directive\nRTN\nENDS\nEND\n",
+      "MODEL P35S\nSEGMENT DATA\n$directive\nVALUE EQU 1\nENDS\nEND\n",
+      "MODEL P35S\nSEGMENT STACK\n$directive\nREGX SET 1\nENDS\nEND\n",
+    ) {
+      my $success = eval { Parser::HPC->new->from_string($source); 1 };
+      ok( $success, "$directive is allowed" );
+    }
   }
 };
 

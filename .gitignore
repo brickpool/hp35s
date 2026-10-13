@@ -9,7 +9,7 @@ _gsdata_/
 /.komodotools/
 
 # Ignore wiki directory
-/wiki/
+/wiki
 
 # Ignore extras
 /extras/CBT
@@ -36,9 +36,11 @@ _gsdata_/
 /examples/3rd-party/Isola
 
 # Other
-/src/
-*.old
-*.txt
-debug.log
-MYMETA.*
-MANIFEST.bak
+/src
+/trial
+/*.old
+/*.txt
+/debug.log
+/Makefile
+/MYMETA.*
+/MANIFEST.bak

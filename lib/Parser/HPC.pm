@@ -9,7 +9,7 @@ use strict;
 use warnings;
 
 use version;
-our $VERSION = version->declare('v0.5.0');
+our $VERSION = version->declare('v0.5.1');
 
 # ------------------------------------------------------------------------
 # Imports
@@ -67,7 +67,7 @@ use constant pattern_float   => qr/-?(?:\d*\.\d+|\d+\.)(?:e-?\d+)?|-?\d+e-?\d+/;
 # Constructor
 # -------------------------------------------------------------------------
 
-sub new {
+sub new {    # $parser (%args)
   my $class = shift;
   
   # Call the constructor of the parent class
@@ -106,9 +106,6 @@ sub new {
   $self->{_symbols} = { %constants, %variables, %directives, %opcodes, 
     %equations };
 
-  # Labels allow you to name the positions of specific instructions
-  $self->{_labels} = undef;
-
   # Default numeric radix is decimal
   $self->{_radix} = 10;
 
@@ -123,7 +120,7 @@ sub new {
 # Overload existing Methods
 # -------------------------------------------------------------------------
 
-sub from_string {
+sub from_string {    # $result ($str)
   my ($self, $source) = @_;
   my $macro_parser = Parser::HPC::Macro->new(
     patterns => { ident => $self->{patterns}->{ident} },
@@ -132,10 +129,10 @@ sub from_string {
   return $self->SUPER::from_string($source);
 }
 
-sub parse {
+sub parse {    # $tree ()
   my $self = shift;
 
-  # %title directive
+  # %TITLE directive
   my $title = $self->maybe(
     sub { $self->parse_title }
   );
@@ -153,28 +150,19 @@ sub parse {
     },
   ) or $self->fail( "Expecting SEGMENT keyword" );
 
-  # convert the array_ref to a hash_ref
-  my $ref = { };
-  foreach ( @$result ) {
-    next unless %$_;
-    my ($key, $value) = each %$_;
-    $ref->{$key} = $value;
-  }
-
   # end directive
   my $start = $self->parse_end;
   
   my $root = {
     model     => $language,
-    segments  => $ref,
-    labels    => $self->{_labels},
+    segments  => [ grep { %$_ } @$result ],
   };
-  $root->{title}      = $title if $title;
-  $root->{startaddr}  = $start if $start;
+  $root->{title}     = $title if $title;
+  $root->{startaddr} = $start if $start;
   return $root;
 }
 
-sub token_number {
+sub token_number {    # $value ()
   my $self = shift;
   my $value = $self->any_of(
     \&token_binary,
@@ -219,155 +207,173 @@ sub token_number {
   return $value;
 }
 
+sub warn :method {
+  my ($self, $message) = @_;
+  Parser::MGC->can('warn') 
+    ? $self->SUPER::warn( $message )
+    : warn( Parser::MGC::Failure->new( $message, $self, $self->pos )->STRING );
+}
+
 # -------------------------------------------------------------------------
 # New public Methods
 # -------------------------------------------------------------------------
 
-sub parse_title {
+# parse methods
+
+sub parse_title {    # $title ()
   my $self = shift;
 
-  # %TITLE ...
-  $self->expect( qr/\%TITLE(?=[ \t])/ );
-  $self->commit;
-  my ($line) = $self->where;
-  
   # %TITLE "title"
-  my $pos = $self->pos;
-  $self->skip_ws;
-  my $pos2 = $self->pos;
+  $self->expect( qr/\%TITLE(?=[ \t])/i );
+  $self->commit;
 
-  # get quoted string
+  # retrieve the state immediately after the commit
+  my ($line, $col, $line_text) = $self->where;
+  my $pos = $self->pos;
+
+  # get quoted string (internally skips whitespace)
   my $result = eval { $self->token_string };
 
   # check if quoted string is present
-  defined $result
-    or $self->fail_from($pos + 1, "Need quoted string");
+  if (!defined $result) {
+    my $fail_pos = $pos + 1;
+    $self->fail_from( $fail_pos, "Need quoted string" );
+  }
 
-  # validate quoted string (the built-in variable '@-' holds the start position)
-  $result !~ /\s*\n/
-    or $self->fail_from($pos2 + $-[0]+1, "Missing end quote");
-  
-  # skip whitespace characters and any comments
+  # check whether we have left the line
+  my ($line_after) = $self->where;
+  if ( $line != $line_after ) {
+    my $fail_pos = $pos + length($line_text) - $col;
+    $self->fail_from( $fail_pos, "Missing end quote" );
+  }
+
+  # skip and throw an error if we're still on the same line
   $self->skip_ws;
   my ($next_line) = $self->where;
-  $line ne $next_line or
-    $self->fail( "Extra characters on line" );
+  $line != $next_line
+    or $self->fail( "Extra characters" );    # .. on line
 
   return $result;
 }
 
-sub parse_display {
+sub parse_display {    # $message ()
   my $self = shift;
-
-  defined $self->maybe_expect(qr/DISPLAY(?=[ \t])/)
-    or return;
-  $self->commit;
-  my ($line) = $self->where;
 
   # DISPLAY "message"
-  my $pos = $self->pos;
-  $self->skip_ws;
-  my $pos2 = $self->pos;
+  defined $self->maybe_expect( qr/DISPLAY(?=[ \t])/i )
+    or return;
+  $self->commit;
 
-  # get quoted string
+  # retrieve the state immediately after the commit
+  my ($line, $col, $line_text) = $self->where;
+  my $pos = $self->pos;
+
+  # get quoted string (internally skips whitespace)
   my $result = eval { $self->token_string };
 
   # check if quoted string is present
-  defined $result
-    or $self->fail_from($pos + 1, "Need quoted string");
+  if (!defined $result) {
+    my $fail_pos = $pos + 1;
+    $self->fail_from( $fail_pos, "Need quoted string" );
+  }
 
-  # validate quoted string
-  $result !~ /\s*\n/
-    or $self->fail_from($pos2 + $-[0]+1, "Missing end quote");
+  # check whether we have left the line
+  my ($line_after) = $self->where;
+  if ( $line != $line_after ) {
+    my $fail_pos = $pos + length($line_text) - $col;
+    $self->fail_from( $fail_pos, "Missing end quote" );
+  }
 
-  # skip whitespace characters and any comments
+  # skip and throw an error if we're still on the same line
   $self->skip_ws;
   my ($next_line) = $self->where;
-  $line ne $next_line or
-    $self->fail( "Extra characters on line" );
+  $line != $next_line
+    or $self->fail( "Extra characters" );    # .. on line
 
-  warn "$result\n";
+  $self->warn($result);
 
   return $result;
 }
 
-sub parse_model {
+sub parse_model {    # $language ()
   my $self = shift;
 
-  # MODEL ...
-  $self->maybe_expect( qr/MODEL(?=[ \t])/ )
+  # MODEL ..
+  $self->maybe_expect( qr/MODEL(?=[ \t])/i )
     or $self->fail("Model must be specified first");
+
+  # retrieve the state
+  my ($line) = $self->where;
 
   # MODEL language
   my $result = eval { $self->token_kw_icase( @languages ) };
   defined $result
     or $self->fail("Missing or illegal language ID");
 
-  # skip whitespace characters and any comments
+  # skip and throw an error if we're still on the same line
   $self->skip_ws;
+  my ($next_line) = $self->where;
+  $line != $next_line
+    or $self->fail( "Extra characters" );    # .. on line
 
   return $result;
 }
 
-sub parse_radix {
+sub parse_radix {    # $base ()
   my $self = shift;
 
-  # RADIX ...
-  defined $self->maybe_expect(qr/RADIX(?=[ \t])/)
+  # RADIX ..
+  defined $self->maybe_expect( qr/RADIX(?=[ \t])/i )
     or return;
+
+  # retrieve the state immediately after the commit
   $self->commit;
   my ($line) = $self->where;
 
   # RADIX base
   my $result = eval {
-    $self->generic_token( radix => qr/(?:2|8|10|16)(?=\s|;|\z)/ )
+    $self->generic_token( radix => qr/(?:2|8|10|16)(?=[\s;])/ )
   };
   defined $result
     or $self->fail("Illegal radix");
 
-  # skip whitespace characters and any comments
+  # skip and throw an error if we're still on the same line
   $self->skip_ws;
   my ($next_line) = $self->where;
-  $line ne $next_line or
-    $self->fail( "Extra characters on line" );
+  $line != $next_line
+    or $self->fail( "Extra characters" );    # .. on line
 
   $self->{_radix} = 0+ $result;
   return $self->{_radix};
 }
 
-sub parse_locals {
+sub parse_locals {    # $bool ()
   my $self = shift;
 
-  my $directive = $self->maybe_expect(qr/(?:NOLOCALS|LOCALS)(?=\s|;|\z)/);
-  defined $directive
+  my $result = $self->maybe_expect(qr/(?:NOLOCALS|LOCALS)(?=[\s;])/i);
+  defined $result
     or return;
   $self->commit;
   my ($line) = $self->where;
 
+  # skip and throw an error if we're still on the same line
   $self->skip_ws;
   my ($next_line) = $self->where;
-  $line ne $next_line or
-    $self->fail( "Extra characters on line" );
+  $line != $next_line
+    or $self->fail( "Extra characters" );    # .. on line
 
-  $self->{_locals} = $directive eq 'LOCALS' ? 1 : 0;
+  $self->{_locals} = $result eq 'LOCALS' ? 1 : 0;
   return $self->{_locals};
 }
 
-sub _label_name {
-  my ($self, $ident) = @_;
-  $ident = uc $ident;
-  return $self->{_locals} && $ident =~ /^@@/
-    ? $self->{_local_scope} . ':' . $ident : $ident;
-}
-
-sub parse_segment {
+sub parse_segment {    # $segment ()
   my $self = shift;
 
   my $result;
   my $name;
   my $type;
 
-  # SEGMENT ...
+  # SEGMENT ..
   $self->expect( qr/SEGMENT(?=[ \t])/i );
   $self->commit;
 
@@ -385,7 +391,7 @@ sub parse_segment {
       $result = $self->scope_of(
         undef,
         sub { $self->parse_data_block( $name ) },
-        qr/ENDS/
+        qr/ENDS(?=[\s;])/i,
       );
       last;
     };
@@ -393,7 +399,7 @@ sub parse_segment {
       $result = $self->scope_of(
         undef,
         sub { $self->parse_code_block( $name ) },
-        qr/ENDS/
+        qr/ENDS(?=[\s;])/i,
       );
       last;
     };
@@ -401,7 +407,7 @@ sub parse_segment {
       $result = $self->scope_of(
         undef,
         sub { $self->parse_stack_block( $name ) },
-        qr/ENDS/
+        qr/ENDS(?=[\s;])/i,
       );
       last;
     };
@@ -415,7 +421,7 @@ sub parse_segment {
   return $result;
 }
 
-sub parse_data_block {
+sub parse_data_block {    # $block (|$ident)
   my $self  = shift;
   my $ident = shift || '_DATA';
   my $type  = 'data';
@@ -440,20 +446,11 @@ sub parse_data_block {
     },
   ) or return undef;
 
-  # convert the array_ref to a hash_ref
-  my $ref = { };
-  foreach ( @$result ) {
-    next unless %$_;
-    my ($key, $value) = each %$_;
-    $ref->{$key} = $value;
-  }
-
   # create new entry
   my $entry = {
-    $ident => {
-      type        => $type,
-      definitions => $ref,
-    }
+    name        => $ident,
+    type        => $type,
+    definitions => [ grep { %$_ } @$result ],
   };
 
   # insert symbol into global symbol table
@@ -462,7 +459,7 @@ sub parse_data_block {
   return $entry;
 }
 
-sub parse_data_statement {
+sub parse_data_statement {    # $statement ()
   my $self = shift;
   my $type = 'equation';
 
@@ -491,8 +488,8 @@ sub parse_data_statement {
   };
   $self->commit;
 
-  defined $self->maybe_expect( qr/EQU/i ) or
-    $self->fail( "Expecting segment or group quantity" );
+  defined $self->maybe_expect( qr/EQU(?=[ \t])/i )
+    or $self->fail( "Expecting segment or group quantity" );
 
   my $is_string = 0;
   my $value;
@@ -586,10 +583,9 @@ sub parse_data_statement {
 
   # create new entry
   my $entry = {
-    $ident => {
-      type  => $type,
-      value => $value,
-    }
+    name  => $ident,
+    type  => $type,
+    value => $value,
   };
 
   # insert symbol into global symbol table
@@ -598,7 +594,7 @@ sub parse_data_statement {
   return $entry;
 }
 
-sub parse_code_block {
+sub parse_code_block {    # $block (|$ident)
   my $self  = shift;
   my $ident = shift || '_TEXT';
   my $type  = 'code';
@@ -629,35 +625,23 @@ sub parse_code_block {
   ) or return undef;
   
   my @statements;
-  my @pending_tags;
   for (my $i = 0; $i < @$result; $i++ ) {
+    push @statements, @{ $tags[$i] };
     if ( exists $result->[$i]->{display} 
       || exists $result->[$i]->{radix}
       || exists $result->[$i]->{locals}
     ) {
-      push @pending_tags, @{ $tags[$i] };
       next;
     }
 
-    push @pending_tags, @{ $tags[$i] };
-    my $statement = scalar @statements;
     push @statements, $result->[$i];
-    foreach my $key ( @pending_tags ) {
-      $self->{_labels}->{$key} = {
-        type      => 'near',
-        segment   => $ident,
-        statement => $statement,
-      };
-    }
-    @pending_tags = ();
   }
 
   # create new entry
   my $entry = {
-    $ident => {
-      type        => $type,
-      statements  => \@statements,
-    }
+    name        => $ident,
+    type        => $type,
+    statements  => \@statements,
   };
   
   # insert symbol into global symbol table
@@ -666,7 +650,7 @@ sub parse_code_block {
   return $entry;
 }
 
-sub parse_code_statement {
+sub parse_code_statement {    # $statement ()
   my $self = shift;
 
   $self->skip_ws;
@@ -687,19 +671,19 @@ sub parse_code_statement {
     sub { undef },
   );
   defined $statement
-    or
-  $self->fail( "Illegal instruction" );
-
+    or $self->fail( "Illegal instruction" );
   $self->commit;
+
+  # skip and throw an error if we're still on the same line
   $self->skip_ws;
-  @_ = $self->where;
-  $line ne $_[0] or
-    $self->fail("Extra characters on line");
+  my ($next_line) = $self->where;
+  $line != $next_line
+    or $self->fail( "Extra characters" );    # .. on line
 
   return $statement;
 }
 
-sub parse_code_instruction {
+sub parse_code_instruction {    # $instruction ()
   my $self = shift;
 
   my $mnemonic = $self->token_kw_operation(
@@ -750,7 +734,7 @@ sub parse_code_instruction {
       } else {
         $statement->{instruction}->{operand} = {
           type  => 'label',
-          value => $self->_label_name($operand),
+          value => $self->_qualify_label_name($operand),
         };
       };
       last;
@@ -773,7 +757,7 @@ sub parse_code_instruction {
       # instructions with a number 0 < n < 11: CF, FIX, ...
       my $number = eval { $self->token_int };
       defined $number or
-        $self->fail( "Expected number" );
+        $self->fail( "Illegal number" );
       $operand = $number;
       $operand =~ /^\d+$/ && $operand <= 11 or
         $self->fail( "Expected number from 0 to 11" );
@@ -842,7 +826,7 @@ sub parse_code_instruction {
   return $statement;
 }
 
-sub parse_code_literal {
+sub parse_code_literal {    # $literal ()
   my $self = shift;
 
   my $literal = $self->any_of(
@@ -874,7 +858,7 @@ sub parse_code_literal {
   );
 }
 
-sub parse_label {
+sub parse_label {    # $label ()
   my $self = shift;
   my $type = 'label';
   my $ident;
@@ -900,7 +884,7 @@ sub parse_label {
   $ident =~ s/://;
   $ident = uc $ident;
   my $nonlocal = $ident !~ /^@@/;
-  $ident = $self->_label_name($ident);
+  $ident = $self->_qualify_label_name($ident);
 
   # check if symbol already exists
   if ( defined $self->{_symbols}->{$ident} ) {
@@ -919,10 +903,10 @@ sub parse_label {
 
   $self->{_local_scope} = $ident if $nonlocal;
 
-  return $ident;
+  return { label => { name => $ident } };
 }
 
-sub parse_stack_block {
+sub parse_stack_block {    # $block (|$ident)
   my $self  = shift;
   my $ident = shift || 'STACK';
   my $type  = 'stack';
@@ -958,10 +942,9 @@ sub parse_stack_block {
 
   # create new entry
   my $entry = {
-    $ident => {
-      type        => $type,
-      assignments => $ref,
-    }
+    name        => $ident,
+    type        => $type,
+    assignments => $ref,
   };
 
   # insert symbol into global symbol table
@@ -970,7 +953,7 @@ sub parse_stack_block {
   return $entry;
 }
 
-sub parse_stack_statement {
+sub parse_stack_statement {    # $statement ()
   my $self = shift;
   my $type = 'register';
 
@@ -980,7 +963,7 @@ sub parse_stack_statement {
   my $ident = $self->token_kw( @register );
   $self->commit;
 
-  defined $self->maybe_expect( qr/SET/i ) or
+  defined $self->maybe_expect( qr/SET(?=[ \t])/i ) or
     $self->fail( "Expecting segment or group quantity" );
 
   my $value;
@@ -999,7 +982,7 @@ sub parse_stack_statement {
   return $entry;
 }
 
-sub parse_end {
+sub parse_end {    # $start_addr|undef ()
   my $self = shift;
 
   # error, if at the end of input
@@ -1010,11 +993,11 @@ sub parse_end {
   $self->maybe_expect( qr/END\b/i )
     or $self->fail( "Code or data emission to undeclared segment" );
   
-  # get the startaddress if present
-  my $startaddress = $self->any_of(
+  # get the start address if present
+  my $start_addr = $self->any_of(
     sub {
       my $ident = $self->generic_token( label => qr/\@{0,2}\w+/ );
-      my $name = $self->_label_name($ident);
+      my $name = $self->_qualify_label_name($ident);
       defined $self->{_symbols}->{$name} 
         && $self->{_symbols}->{$name} eq 'label' 
           or $self->fail( "Expected label" );
@@ -1026,37 +1009,38 @@ sub parse_end {
   # ignore any data after END
   $self->substring_before( qr/$/s );
   
-  return uc $startaddress;
+  return undef unless $start_addr;
+  return { type => 'label', value => uc $start_addr };
 }
 
 # token methods
 
-sub token_binary {
+sub token_binary {    # $binary ()
   my $self = shift;
   return $self->generic_token(binary => pattern_binary);
 }
 
-sub token_complex {
+sub token_complex {    # $complex ()
   my $self = shift;
   return $self->generic_token(complex => pattern_complex);
 }
 
-sub token_decimal {
+sub token_decimal {    # $decimal ()
   my $self = shift;
   return $self->generic_token(decimal => pattern_decimal);
 }
 
-sub token_hex {
+sub token_hex {    # $hex ()
   my $self = shift;
   return $self->generic_token(hex => pattern_hex);
 }
 
-sub token_octal {
+sub token_octal {    # $octal ()
   my $self = shift;
   return $self->generic_token(octal => pattern_octal);
 }
 
-sub token_kw_icase {
+sub token_kw_icase {    # $keyword ()
   my $self = shift;
   my @acceptable = @_;
 
@@ -1074,7 +1058,7 @@ sub token_kw_icase {
   return $kw;
 }
 
-sub token_kw_operation {
+sub token_kw_operation {    # $keyword ()
   my $self = shift;
   my @acceptable = @_;
 
@@ -1092,7 +1076,7 @@ sub token_kw_operation {
   return $kw;
 }
 
-sub token_string {
+sub token_string {    # $string ()
   my $self = shift;
 
   $self->fail( "Expected string" ) if $self->at_eos;
@@ -1119,7 +1103,7 @@ sub token_string {
   return $string;
 }
 
-sub token_vector {
+sub token_vector {    # $vector ()
   my $self = shift;
   my $vector = $self->generic_token( vector => pattern_vector );
   return $vector;
@@ -1129,7 +1113,14 @@ sub token_vector {
 # Private Methods
 # -------------------------------------------------------------------------
 
-sub _find_before {
+sub _qualify_label_name {    # $qualified_ident ($ident)
+  my ($self, $ident) = @_;
+  $ident = uc $ident;
+  return $self->{_locals} && $ident =~ /^@@/
+    ? $self->{_local_scope} . ':' . $ident : $ident;
+}
+
+sub _find_before {    # $pos ($substr)
   my $self    = shift;
   my $substr  = reverse shift;
 
@@ -1154,27 +1145,26 @@ sub _find_before {
 
 __END__
 
+=pod
+
 =head1 NAME
 
-Parser::HPC - parse HP-35s assembler source
-
-=head1 DESCRIPTION
-
-C<Parser::HPC> parses assembler source for the HP-35s calculator into a Perl
-data structure. It supports the C<P35S> model and the data, code, and stack
-segment forms described below.
+Parser::HPC - parse HP calculator assembler source code
 
 =head1 SYNOPSIS
 
   use Parser::HPC;
 
   my $parser = Parser::HPC->new;
+
   my $program = $parser->from_string(<<'ASM');
   %TITLE "Example"
   MODEL P35S
+
   SEGMENT DATA
   FORMULA EQU 'A+B'
   ENDS
+
   SEGMENT main CODE
   start:
     LBL A
@@ -1183,79 +1173,754 @@ segment forms described below.
     GTO start
     RTN
   ENDS main
+
   END start
   ASM
 
-C<from_string> is provided by the parent class, L<Parser::MGC>. Parsing errors
-are reported by that parser interface.
+=head1 DESCRIPTION
 
-=head1 INPUT FORMAT
+C<Parser::HPC> is a recursive-descent parser for HP calculator assembler
+source code.
 
-An input file may begin with a C<%TITLE> directive and must specify its model
-with C<MODEL P35S>. It then contains one or more segments, each closed by
-C<ENDS>, and ends with an C<END> directive. The C<END> directive may name a
-code label as the program's start address.
+The parser converts its input into an abstract syntax tree represented
+by Perl hashes, arrays, and scalar values. The root node describes the
+calculator model, optional program metadata, and the data, code, and
+stack segments found in the source.
 
-Segments have the form C<SEGMENT [name] DATA>, C<SEGMENT [name] CODE>, or
-C<SEGMENT [name] STACK>. The name is optional; unnamed data, code, and stack
-segments are named C<_DATA>, C<_TEXT>, and C<STACK> in the result. A named
-segment must be closed with its matching name, for example C<ENDS main>.
+Source passed to L</from_string> is first processed by
+L<Parser::HPC::Macro>. The resulting source is then passed to the
+L<Parser::MGC> parser interface.
 
-Data segments contain C<name EQU value> definitions. Values may be numbers or
-quoted strings. Code segments contain labels, instructions, or literal values,
-with one statement per line. A semicolon begins a comment through the end of
-the line. Stack segments contain register assignments in the form
-C<register SET number>.
+This document describes the parser interface and the AST nodes returned
+by its parsing methods. The complete assembler syntax is documented in
+the project wiki.
 
-C<DISPLAY> followed by a quoted string may appear between segments or within a
-code segment. Its message is written to standard error as it is parsed. The
-unquoted C<%OUT> directive is not supported.
+=head1 ABSTRACT SYNTAX TREE
 
-The parser recognizes directives including C<%TITLE>, C<MODEL>, C<SEGMENT>,
-C<ENDS>, C<END>, C<EQU>, C<SET>, C<DISPLAY>, C<RADIX>, C<LOCALS>, and
-C<NOLOCALS>.
+=head2 AST construction flow
 
-=head1 RETURN VALUE
+The normal entry point expands macros in L</from_string> and then
+parses the source with L</parse>. The AST-producing parser methods are
+composed as follows:
 
-The parse result is a hash reference with a C<model> field and a C<segments>
-hash reference. Each segment entry has a C<type> of C<data>, C<code>, or
-C<stack>. Data definitions are stored in C<definitions>; code statements are
-stored in C<statements>; stack assignments are stored in C<assignments>.
+  source code
+    |
+    v
+  from_string()
+    |
+    v
+  parse()
+    +-- parse_title()                   # optional
+    +-- parse_model()
+    +-- parse_segment()                 # repeated
+    |     |
+    |     +-- parse_data_block()
+    |     |      '-- parse_data_statement()
+    |     |
+    |     +-- parse_code_block()
+    |     |      +-- parse_label()      # zero or more per line
+    |     |      '-- parse_code_statement()
+    |     |              +-- parse_code_instruction()
+    |     |              '-- parse_code_literal()
+    |     |
+    |     '-- parse_stack_block()
+    |            '-- parse_stack_statement()
+    |
+    '-- parse_end()
 
-The C<labels> field is undefined if no labels are declared; otherwise it is a
-hash reference whose entries record each label's segment and zero-based
-statement index. If supplied, the title is returned in C<title>, and the
-upper-case start label is returned in C<startaddr>.
+L<parse_segment> dispatches to the block parser for the declared
+segment type. Each block parser collects the results of its statement
+parser: data definitions and code statements retain source order, while
+stack assignments are merged into a hash. In code blocks, labels are
+collected before each statement and inserted immediately before it in
+the C<statements> array.
 
-Code statements are represented as either C<instruction> or C<literal> entries.
-Instructions carry their mnemonic and, when applicable, a typed operand;
-literals carry a kind and value. For example, C<GTO start> produces an
-instruction operand with type C<label> and value C<START>.
+C<parse_code_statement> selects an instruction or literal parser for
+AST nodes. It also handles directives such as C<RADIX>, C<LOCALS>, and
+C<DISPLAY>; these affect parser state or produce temporary results but
+are not retained in the final AST. C<parse_end> supplies the optional
+C<startaddr> field, while C<parse_title> and C<parse_model> supply the
+program metadata.
 
-Active local labels use qualified names in C<labels>, label operands, and
-C<startaddr>: for example C<@@loop> under C<start:> becomes C<START:@@LOOP>.
-The initial scope uses C<:@@LOOP>. Local names are case-insensitive, and
-duplicate definitions within the same scope are rejected.
+The parser methods build nodes using token methods, which match source
+items and return scalar values rather than AST nodes. Some token methods
+used by this parser, including C<token_ident>, C<token_float>,
+C<token_int>, and C<token_kw>, are inherited from L<Parser::MGC>.
 
-Unsuffixed non-decimal code literals receive an explicit suffix in their
-value, preserving the selected base for the frontend. Numeric instruction
-operands are unsuffixed decimal integers and are not affected by C<RADIX>.
-Explicitly suffixed numeric values in C<EQU> definitions and C<SET> assignments
-retain their spelling. Unsuffixed values in those definitions are interpreted
-using the active radix; unsuffixed decimal floats are accepted only with
-C<RADIX 10>. C<RADIX> emits no statement and does not change label indices.
+=head2 Program node
 
-=head1 LIMITATIONS
+L</parse> returns the root of the abstract syntax tree:
 
-Only the Polish notation mode is supported. Thousand-separator operations are
-not implemented. Custom local-label prefixes are not supported.
+  {
+    model    => $model,
+    segments => [
+      $segment,
+      ...
+    ],
+
+    # Present only when specified by the source
+    title => $title,
+
+    # Present only when END specifies a start label
+    startaddr => {
+      type  => 'label',
+      value => $label,
+    },
+  }
+
+C<model> contains the calculator model parsed from the C<MODEL>
+directive.
+
+C<title> is present when the source contains a C<%TITLE> directive
+whose parsed a valid title.
+
+C<startaddr> is present only when the C<END> directive specifies a
+previously defined label. Its C<value> contains the upper-case,
+qualified label name.
+
+C<segments> is an array reference containing data, code, and stack
+segment nodes in source order.
+
+Directives processed between segments do not produce segment nodes.
+
+=head2 Data segment node
+
+A data segment has the form:
+
+  {
+    name        => $name,
+    type        => 'data',
+    definitions => [
+      $definition,
+      ...
+    ],
+  }
+
+For an unnamed data segment, C<name> is C<_DATA>. Explicit segment names
+are converted to upper case.
+
+C<definitions> contains definition nodes in source order.
+
+A definition node has the form:
+
+  {
+    name  => $name,
+    type  => 'equation',
+    value => $value,
+  }
+
+Definition names retain the spelling returned by the identifier
+tokenizer. C<value> contains either a parsed numeric value or the
+contents of a quoted string.
+
+Parser directives that do not define a symbol are omitted from
+C<definitions>.
+
+=head2 Code segment node
+
+A code segment has the form:
+
+  {
+    name       => $name,
+    type       => 'code',
+    statements => [
+      $statement,
+      ...
+    ],
+  }
+
+For an unnamed code segment, C<name> is C<_TEXT>. Explicit segment names
+are converted to upper case.
+
+C<statements> contains label, instruction, and literal nodes in source
+order.
+
+Labels do not consume calculator program lines. Consecutive label nodes
+therefore refer to the following instruction or literal.
+
+Parser directives handled inside the code segment are not included in
+the final C<statements> array.
+
+=head3 Label node
+
+A label declaration produces:
+
+  {
+    label => {
+      name => $name,
+    },
+  }
+
+Label names are converted to upper case.
+
+When local labels are enabled, a local label name is qualified with its
+active non-local scope. For example, C<@@LOOP> in the scope C<START>
+becomes C<START:@@LOOP>. A local label before the first non-local label
+uses an empty scope and is returned as C<:@@LOOP>.
+
+=head3 Instruction node
+
+An instruction without an operand produces:
+
+  {
+    instruction => {
+      value => $mnemonic,
+    },
+  }
+
+An instruction with an operand produces:
+
+  {
+    instruction => {
+      value   => $mnemonic,
+      operand => {
+        type  => $type,
+        value => $value,
+      },
+    },
+  }
+
+The C<value> field of the instruction contains the parsed mnemonic.
+
+The operand C<type> may be one of the following:
+
+=over 4
+
+=item C<address>
+
+A calculator address such as C<A001>.
+
+=item C<label>
+
+A global or qualified local label name.
+
+=item C<variable>
+
+A direct or indirect calculator variable.
+
+=item C<decimal>
+
+A decimal integer operand used by an instruction that accepts a
+numeric argument.
+
+=item C<equation>
+
+The name of a previously defined equation.
+
+=item C<expression>
+
+The contents of an inline quoted expression.
+
+=back
+
+The operand field is omitted for instructions that do not accept an
+operand.
+
+=head3 Literal node
+
+A calculator literal produces:
+
+  {
+    literal => {
+      kind  => $kind,
+      value => $value,
+    },
+  }
+
+C<kind> may be one of the following:
+
+=over 4
+
+=item C<constant>
+
+A predefined calculator constant.
+
+=item C<vector>
+
+A vector literal.
+
+=item C<complex>
+
+A complex-number literal.
+
+=item C<binary>
+
+A binary numeric literal.
+
+=item C<octal>
+
+An octal numeric literal.
+
+=item C<decimal>
+
+An integer or floating-point decimal literal.
+
+=item C<hex>
+
+A hexadecimal numeric literal.
+
+=back
+
+The representation of C<value> depends on the tokenizer that recognized
+the literal. Consumers must not assume that every numeric value is
+represented by the same Perl scalar form. For example, decimal integer
+values may be numeric scalars while decimal floating-point values may
+retain their textual representation.
+
+Unsuffixed non-decimal code literals receive a suffix in the returned
+value so that the selected radix remains available to the AST consumer.
+
+=head2 Stack segment node
+
+A stack segment has the form:
+
+  {
+    name        => $name,
+    type        => 'stack',
+    assignments => {
+      $register => {
+        type  => 'register',
+        value => $value,
+      },
+      ...
+    },
+  }
+
+For an unnamed stack segment, C<name> is C<STACK>. Explicit segment
+names are converted to upper case.
+
+Unlike data definitions and code statements, stack assignments are
+stored in a hash reference keyed by register name.
+
+If a register occurs more than once, the later assignment replaces the
+earlier entry in the returned hash.
+
+Parser directives that do not assign a register are omitted from
+C<assignments>.
+
+=head2 AST consumer notes
+
+The AST represents parsed source structure rather than the calculator's
+final program layout.
+
+In particular, the AST does not contain a derived label index or
+calculated program addresses. Labels remain individual nodes in the
+C<statements> array. Address calculation and label indexing are the
+responsibility of the AST consumer.
+
+Consumers should inspect the discriminating keys and fields rather than
+relying on Perl scalar representation alone:
+
+=over 4
+
+=item *
+
+A segment is identified by its C<type> field.
+
+=item *
+
+A code statement is identified by the presence of C<label>,
+C<instruction>, or C<literal>.
+
+=item *
+
+An instruction operand is identified by its C<type> field.
+
+=item *
+
+A literal is identified by its C<kind> field.
+
+=item *
+
+Numeric C<value> fields may be returned as numeric or textual Perl
+scalars, depending on the token form.
+
+=back
+
+=head1 CONSTRUCTOR
+
+=head2 new
+
+  my $parser = Parser::HPC->new(%args);
+
+Creates a new HP calculator assembler parser.
+
+Additional arguments are passed to the constructor inherited from
+L<Parser::MGC>. The token patterns required by the HP calculator assembler are
+installed by this constructor.
+
+The initial numeric radix is decimal. Local-label processing is
+initially disabled and the initial local-label scope is empty.
+
+=head1 METHODS
+
+=head2 from_string
+
+  my $tree = $parser->from_string($source);
+
+Processes C<$source> with L<Parser::HPC::Macro> and then parses the
+result using the C<from_string> interface inherited from
+L<Parser::MGC>.
+
+Returns the complete program AST documented under
+L</ABSTRACT SYNTAX TREE>.
+
+Parsing failures are reported through the L<Parser::MGC> parser
+interface.
+
+=head2 parse
+
+  my $tree = $self->parse();
+
+Parses a complete program and returns the program node documented under
+L</Program node>.
+
+The method parses, in order, an optional title, the required calculator
+model, the program segments, and the terminating C<END> directive.
+
+Directives occurring between segments may affect parser state but do
+not create entries in the returned C<segments> array.
+
+=head2 parse_code_block
+
+  my $block = $self->parse_code_block();
+  my $block = $self->parse_code_block($name);
+
+Parses the body of a code segment and returns a code segment node as
+documented under L</Code segment node>.
+
+If C<$name> is omitted or false, the segment name defaults to C<_TEXT>.
+The returned name is converted to upper case.
+
+Label nodes are inserted into C<statements> immediately before the code
+statement to which they apply. Directive nodes returned temporarily by
+L</parse_code_statement> are discarded.
+
+=head2 parse_code_instruction
+
+  my $instruction = $self->parse_code_instruction();
+
+Parses one calculator instruction and returns an instruction node as
+documented under L</Instruction node>.
+
+Depending on the instruction kind, the result may contain no operand or
+an operand of type C<address>, C<label>, C<variable>, C<decimal>,
+C<equation>, or C<expression>.
+
+Label operand values are converted to upper case and are qualified when
+local-label processing applies.
+
+=head2 parse_code_literal
+
+  my $literal = $self->parse_code_literal();
+
+Parses one calculator literal and returns a literal node as documented
+under L</Literal node>. A parse failure is reported if the input does
+not contain a recognized literal in the current parser context.
+
+The returned node is suitable for inclusion in the C<statements> array
+of a code segment.
+
+=head2 parse_code_statement
+
+  my $statement = $self->parse_code_statement();
+
+Parses one statement from a code segment.
+
+For a calculator instruction, returns the node documented under
+L</parse_code_instruction>. For a literal, returns the node documented
+under L</parse_code_literal>.
+
+Directives handled within a code block temporarily produce one of the
+following nodes:
+
+  { locals => $boolean  }
+
+  { radix => $base }
+
+  { display => $message }
+
+These directive nodes are consumed by L</parse_code_block> and are not
+included in the final C<statements> array.
+
+=head2 parse_data_block
+
+  my $block = $self->parse_data_block();
+  my $block = $self->parse_data_block($name);
+
+Parses the body of a data segment and returns a data segment node as
+documented under L</Data segment node>.
+
+If C<$name> is omitted or false, the segment name defaults to C<_DATA>.
+The returned name is converted to upper case.
+
+Definitions are returned in source order. Parser directives that return
+empty nodes are omitted from the C<definitions> array.
+
+=head2 parse_data_statement
+
+  my $definition = $self->parse_data_statement();
+
+Parses one data-segment statement.
+
+A symbol definition returns:
+
+  {
+    name  => $name,
+    type  => 'equation',
+    value => $value,
+  }
+
+C<value> contains either the parsed numeric value or the contents of a
+quoted string.
+
+A C<RADIX>, C<LOCALS>, or C<NOLOCALS> directive returns an empty hash
+reference. Empty nodes are removed by L</parse_data_block> and do not
+appear in the final C<definitions> array.
+
+=head2 parse_display
+
+  my $message = $self->parse_display();
+
+Parses a C<DISPLAY> directive.
+
+Returns the contents of the directive's quoted string and writes the
+same message, followed by a newline, to standard error.
+
+Returns C<undef> if the next input item is not a C<DISPLAY> directive.
+
+The return value may be used temporarily by
+L</parse_code_statement>, but it does not become part of the final
+program AST.
+
+=head2 parse_end
+
+  my $startaddr = $self->parse_end();
+
+Parses the terminating C<END> directive.
+
+If the directive specifies a previously defined label, returns:
+
+  {
+    type  => 'label',
+    value => $name,
+  }
+
+The returned label is upper case and is qualified when local-label
+processing applies.
+
+Returns C<undef> if the directive does not specify a start label.
+
+Input remaining after the C<END> directive is ignored.
+
+=head2 parse_label
+
+  my $label = $self->parse_label();
+
+Parses a label declaration and returns:
+
+  {
+    label => {
+      name => $name,
+    },
+  }
+
+The label name is converted to upper case. Active local labels are
+returned using their qualified names.
+
+The returned node is suitable for inclusion in the C<statements> array
+of a code segment.
+
+=head2 parse_locals
+
+  my $enabled = $self->parse_locals();
+
+Parses a C<LOCALS> or C<NOLOCALS> directive and updates the parser's
+local-label state.
+
+Returns C<1> for C<LOCALS>, C<0> for C<NOLOCALS>, and C<undef> if the
+next input item is neither directive.
+
+The return value represents parser state and is not stored directly in
+the final AST.
+
+=head2 parse_model
+
+  my $model = $self->parse_model();
+
+Parses the required calculator model directive and returns the
+recognized model identifier.
+
+The model value is stored in the C<model> field of the program node.
+
+=head2 parse_radix
+
+  my $base = $self->parse_radix();
+
+Parses a numeric-radix directive and updates the active radix.
+
+Returns C<2>, C<8>, C<10>, or C<16>. Returns C<undef> if the next input
+item is not a radix directive.
+
+The return value represents parser state and is not stored directly in
+the final AST.
+
+=head2 parse_segment
+
+  my $segment = $self->parse_segment();
+
+Parses a segment declaration and dispatches to
+L</parse_data_block>, L</parse_code_block>, or
+L</parse_stack_block>, according to the segment type.
+
+Returns the resulting data, code, or stack segment node.
+
+For a named segment, the closing segment name must match the opening
+name.
+
+=head2 parse_stack_block
+
+  my $block = $self->parse_stack_block();
+  my $block = $self->parse_stack_block($name);
+
+Parses the body of a stack segment and returns a stack segment node as
+documented under L</Stack segment node>.
+
+If C<$name> is omitted or false, the segment name defaults to C<STACK>.
+The returned name is converted to upper case.
+
+The individual hashes returned by L</parse_stack_statement> are merged
+into the segment's C<assignments> hash.
+
+=head2 parse_stack_statement
+
+  my $assignment = $self->parse_stack_statement();
+
+Parses one stack-register assignment and returns:
+
+  {
+    $register => {
+      type  => 'register',
+      value => $value,
+    },
+  }
+
+A C<RADIX>, C<LOCALS>, or C<NOLOCALS> directive returns an empty hash
+reference. Empty nodes are omitted by L</parse_stack_block>.
+
+=head2 parse_title
+
+  my $title = $self->parse_title();
+
+Parses a C<%TITLE> directive and returns the contents of its quoted
+string.
+
+The return value is stored in the optional C<title> field of the
+program node.
+
+The token methods return matched scalar values. Unlike the
+C<parse_*> methods, they do not return AST nodes.
+
+=head1 TOKEN PARSING METHODS
+
+The token methods return matched scalar values. Unlike the
+C<parse_*> methods, they do not return AST nodes.
+=head2 token_binary
+
+  my $binary = $self->token_binary();
+
+Returns a binary literal matched using the parser's binary token
+pattern.
+
+=head2 token_complex
+
+  my $complex = $self->token_complex();
+
+Returns a complex-number literal matched using the parser's complex
+token pattern.
+
+=head2 token_decimal
+
+  my $decimal = $self->token_decimal();
+
+Returns a suffixed decimal literal matched using the parser's decimal
+token pattern.
+
+=head2 token_hex
+
+  my $hex = $self->token_hex();
+
+Returns a hexadecimal literal matched using the parser's hexadecimal
+token pattern.
+
+=head2 token_kw_icase
+
+  my $keyword = $self->token_kw_icase(@acceptable);
+
+Matches an identifier against C<@acceptable> without regard to case and
+returns the spelling found in the source.
+
+Reports a parse failure if an identifier is present but does not match
+an acceptable value.
+
+=head2 token_kw_operation
+
+  my $keyword = $self->token_kw_operation(@acceptable);
+
+Matches an operation token against C<@acceptable> and returns the
+matched operation.
+
+Operation matching is case-sensitive.
+
+=head2 token_number
+
+  my $value = $self->token_number();
+
+Parses a numeric value.
+
+Explicitly suffixed binary, octal, decimal, and hexadecimal values are
+recognized independently of the active radix.
+
+For an unsuffixed value, interpretation depends on the active radix.
+Unsuffixed binary, octal, and hexadecimal integer values are converted
+to signed 36-bit numeric values. Under decimal radix, numeric parsing
+is delegated to the parent parser.
+
+=head2 token_octal
+
+  my $octal = $self->token_octal();
+
+Returns an octal literal matched using the parser's octal token pattern.
+
+=head2 token_string
+
+  my $string = $self->token_string();
+
+Parses a delimited string and returns its contents without the
+surrounding delimiters.
+
+Backslash escape sequences remain part of the returned string.
+
+=head2 token_vector
+
+  my $vector = $self->token_vector();
+
+Returns a vector literal matched using the parser's vector token
+pattern.
 
 =head1 SEE ALSO
 
-L<Parser::MGC>, L<HP35s::Vocabulary>, C<bin/asm2hpc.pl>
+L<Parser::MGC>, L<Parser::HPC::Macro>, L<HP35s::Vocabulary>,
+C<bin/asm2hpc.pl>
 
-The project wiki provides the assembler reference:
-L<Directives|https://github.com/brickpool/hp35s/wiki/Directives> and
-L<Symbols|https://github.com/brickpool/hp35s/wiki/Symbols>.
+The assembler language is documented in the project wiki:
+
+L<Directives|https://github.com/brickpool/hp35s/wiki/Directives>
+
+L<Symbols|https://github.com/brickpool/hp35s/wiki/Symbols>
+
+=head1 AUTHOR
+
+J. Schneider <brickpool@cpan.org>
 
 =cut

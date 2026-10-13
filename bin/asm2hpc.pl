@@ -69,6 +69,7 @@ my $label = '0';  # start with label '0'
 my $response;
 my $jump_targets = {};
 my $addresses = {};
+my $label_addresses = {};
 
 sub parse_options { # $ ($, @)
   my ($argc, @argv) = @_;
@@ -137,7 +138,7 @@ sub main { # $ ()
   $response = $parser->from_file( \*STDIN );
 
   # sort segments in alphabetic order
-  my @segments = sort keys %{ $response->{segments} };
+  my @segments = sort { $a->{name} cmp $b->{name} } @{ $response->{segments} };
 
   if ( $debug ) {
     local $Data::Dumper::Sortkeys = 1;
@@ -151,20 +152,20 @@ sub main { # $ ()
   };
   # get all equations over all segments
   foreach my $seg ( @segments ) {
-    next if $response->{segments}->{$seg}->{type} ne 'data';
+    next if $seg->{type} ne 'data';
 
-    defined $response->{segments}->{$seg}->{definitions} or
-      warn "no definitions for segment '$seg'\n" and next;
+    defined $seg->{definitions} or
+      warn "no definitions for segment '$seg->{name}'\n" and next;
 
-    my $definitions = $response->{segments}->{$seg}->{definitions};
+    my $definitions = $seg->{definitions};
 
-    foreach my $definition ( keys %$definitions ) {
-      next if $definitions->{$definition}->{type} ne 'equation';
-      defined $definitions->{$definition}->{value} or
-        warn "missing 'value' for definition '$definition'\n" and next;
+    foreach my $definition ( @$definitions ) {
+      next if $definition->{type} ne 'equation';
+      defined $definition->{value} or
+        warn "missing 'value' for definition '$definition->{name}'\n" and next;
 
-      my $equation = $definitions->{$definition}->{value};
-      $equations->{$definition} = $equation;
+      my $equation = $definition->{value};
+      $equations->{$definition->{name}} = $equation;
     }
   }
 
@@ -177,10 +178,10 @@ sub main { # $ ()
 
   foreach my $seq ( @segments ) {
     # test if it is a stack segment
-    next unless $response->{segments}->{$seq}->{type} eq 'stack';
+    next unless $seq->{type} eq 'stack';
 
     # get all register assignments
-    my $assignments = $response->{segments}->{$seq}->{assignments};
+    my $assignments = $seq->{assignments};
     my @register = ();
     foreach my $set (keys %$assignments) {
       next unless $assignments->{$set}->{type} eq 'register';
@@ -258,30 +259,47 @@ sub main { # $ ()
 
   #3# now handle all code segments
 
-  foreach my $seq ( @segments ) {
+  foreach my $segment ( @segments ) {
     # test if it is a code segment
-    next unless $response->{segments}->{$seq}->{type} eq 'code';
+    next unless $segment->{type} eq 'code';
+    my $seq = $segment->{name};
     $codename = $seq unless $codename;
 
     # get all statements
-    my $statements = $response->{segments}->{$seq}->{statements};
+    my $statements = $segment->{statements};
     # get 'source lines of code'
     my $sloc = scalar @$statements;
 
+    my @pending_labels;
     # set address for each statement
     for ( my $line = 0; $line < $sloc; $line++ ) {
       my $statement = $statements->[$line];
+      if ( my $declaration = $statement->{label} ) {
+        push @pending_labels, $declaration->{name};
+        next;
+      }
       my $entry = $statement->{instruction} || $statement->{literal};
       if ( exists $statement->{instruction} && $entry->{value} eq 'LBL' ) {
         $label = $entry->{operand}->{value};
         $lloc = 0;
       }
       $addresses->{$seq}->[$line] = sprintf("%s%03d", $label, ++$lloc);
+      foreach my $name ( @pending_labels ) {
+        $label_addresses->{$name} = $addresses->{$seq}->[$line];
+      }
+      @pending_labels = ();
     }
+  }
 
+  foreach my $segment ( @segments ) {
+    next unless $segment->{type} eq 'code';
+    my $seq = $segment->{name};
+    my $statements = $segment->{statements};
+    my $sloc = scalar @$statements;
     # generate output for each statement
     for ( my $line = 0; $line < $sloc; $line++ ) {
       my $statement = $statements->[$line];
+      next if exists $statement->{label};
       my $address = $addresses->{$seq}->[$line];
       if ( my $literal = $statement->{literal} ) {
         my $kind = $literal->{kind};
@@ -323,8 +341,7 @@ sub main { # $ ()
             last;
           };
           /label/ && do {
-            $out .= sprintf_label_instruction( $address, $mnemonic, $value, 
-              $seq );
+            $out .= sprintf_label_instruction( $address, $mnemonic, $value );
             last;
           };
           /variable/ && do {
@@ -721,37 +738,22 @@ sub sprintf_label_instruction {
   my $line = shift;
   my $mnemonic = shift;
   my $label = shift;
-  my $seq = shift;
   my $keystrokes = '';
   
-  defined $response->{labels}->{$label}->{segment} or
+  my $addr = $label_addresses->{$label};
+  defined $addr or
     warn "missing 'label' for instruction '$mnemonic'\n" and return '';
 
   exists $tbl_instr_3graph->{$mnemonic} and
     $mnemonic = $tbl_instr_3graph->{$mnemonic};
 
-  if ( $response->{labels}->{$label}->{type} eq 'near' ) {
-    my $pos = $response->{labels}->{$label}->{statement};
-    my $addr = $addresses->{$seq}->[$pos];
-    return '' unless defined $addr;
-    $jump_targets->{$addr} = $addr;
-    if ($shortcut) {
-      $keystrokes = sprintf("\t; %s ", instruction_keystrokes($mnemonic));
-      $keystrokes .= join(' ', split//, $addr);
-      # optimization for first addr (e.g. 'A 0 0 1' -> 'A ENTER')
-      $keystrokes =~ s/([A-Z]) 0 0 1/$1 ENTER/;
-    }
-    return sprintf("%s\t%s %s%s\n", $line, $mnemonic, $addr, $keystrokes);
+  $jump_targets->{$addr} = $addr;
+  if ($shortcut) {
+    $keystrokes = sprintf("\t; %s ", instruction_keystrokes($mnemonic));
+    $keystrokes .= join(' ', split//, $addr);
+    $keystrokes =~ s/([A-Z]) 0 0 1/$1 ENTER/;
   }
-  else {
-    warn "far 'label' not supported yet\n";
-    my $far = $response->{labels}->{$label}->{segment};
-    my $near = $response->{labels}->{$label}->{statement} + 1;
-    defined $shortcut and
-      $keystrokes = sprintf("\t; %s ...", instruction_keystrokes($mnemonic));
-    return sprintf("%s\t%s %s+%03d%s\n", $line, $mnemonic, $far, $near, 
-      $keystrokes);
-  }
+  return sprintf("%s\t%s %s%s\n", $line, $mnemonic, $addr, $keystrokes);
 }
 
 # instructions with a variable
@@ -972,6 +974,6 @@ Read the assembler source from C<FILE> instead of standard input.
 
 =head1 AUTHOR
 
-J. Schneider L<http://www.brickpool.de/>
+J. Schneider <brickpool@cpan.org>
 
 =cut

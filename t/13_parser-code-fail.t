@@ -67,7 +67,7 @@ subtest 'parse failures' => sub {
   my @cases = (
     [ 'GTO', qr/Illegal origin address/ ],
     [ 'LBL', qr/Expected variable/ ],
-    [ 'FIX', qr/Expected number/ ],
+    [ 'FIX', qr/Illegal number/ ],
     [ 'STO', qr/Expected variable/ ],
     [ 'eqn', qr/Expected expression/ ],
   );
@@ -84,6 +84,23 @@ subtest 'parse failures' => sub {
     ok( !$success, "$code fails" );
     like( $error, $message, 'specific diagnostic preserved' );
   }
+};
+
+subtest 'empty EQU string fails' => sub {
+  my $parser = Parser::HPC->new;
+  my $success = eval {
+    $parser->from_string(<<'ASM');
+MODEL P35S
+SEGMENT DATA
+EMPTY EQU ""
+ENDS
+END
+ASM
+    1;
+  };
+  my $error = "$@";
+  ok( !$success, 'empty EQU string is rejected' );
+  like( $error, qr/Need expression/, 'empty value reports missing expression' );
 };
 
 done_testing;

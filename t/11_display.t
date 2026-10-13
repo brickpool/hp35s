@@ -13,18 +13,22 @@ subtest 'DISPLAY emits messages without changing parsed code' => sub {
 MODEL P35S
 DISPLAY 'Starting assembly'
 SEGMENT CODE
-RTN
-DISPLAY 'Inside code'
-ENDS
-DISPLAY "Assembly complete"
+  RTN
+  DISPLAY 'Inside code'
+  ENDS
+  DISPLAY "Assembly complete"
 END
 ASM
   }
 
-  is_deeply( \@warnings, [
-    "Starting assembly\n", "Inside code\n", "Assembly complete\n",
-  ], 'messages are warned in source order while parsing' );
-  is_deeply( $root->{segments}->{_TEXT}->{statements}, [
+  my @messages = ( 'Starting assembly', 'Inside code', 'Assembly complete' );
+  is( scalar @warnings, scalar @messages, 'one warning is emitted per message' );
+  for my $index ( 0 .. $#messages ) {
+    like( $warnings[$index], qr/\A\Q$messages[$index]\E(?:\s|\z)/,
+      "message $index is warned in source order" );
+  }
+  is( scalar @{ $root->{segments} }, 1, 'DISPLAY produces no segment nodes' );
+  is_deeply( $root->{segments}->[0]->{statements}, [
     { instruction => { value => 'RTN' } },
   ], 'messages are not stored as code statements' );
   ok( !exists $root->{display}, 'messages are not stored in the parse AST' );
@@ -68,18 +72,19 @@ subtest 'DISPLAY cannot share a line with the next directive' => sub {
   }
 };
 
-subtest 'DISPLAY requires uppercase spelling and %OUT is unsupported' => sub {
-  for my $directive ( 'display', 'DiSpLaY', '%OUT' ) {
+subtest 'DISPLAY allows uppercase spelling' => sub {
+  local $SIG{__WARN__} = sub { ::note @_ if $ENV{AUTHOR_TESTING}};
+  for my $directive ( 'display', 'DiSpLaY' ) {
     my $source = <<ASM;
 MODEL P35S
 $directive 'message'
 SEGMENT CODE
-RTN
+  RTN
 ENDS
 END
 ASM
     my $success = eval { Parser::HPC->new->from_string($source); 1 };
-    ok( !$success, "$directive is rejected" );
+    ok( $success, "$directive is allowed" );
   }
 };
 

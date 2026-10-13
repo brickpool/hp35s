@@ -11,8 +11,68 @@ sub parse_statements {
   my $root = $parser->from_string(
     "MODEL P35S\n$data\nSEGMENT CODE\n$code\nENDS\nEND\n"
   );
-  return $root->{segments}->{_TEXT}->{statements};
+  return $root->{segments}->[-1]->{statements};
 }
+
+subtest 'segment ASTs preserve source order' => sub {
+  my $root = Parser::HPC->new->from_string(<<'ASM');
+MODEL P35S
+SEGMENT zebra CODE
+entry:
+  RTN
+ENDS zebra
+RADIX 10
+LOCALS
+NOLOCALS
+SEGMENT DATA
+  FORMULA EQU 'A+B'
+ENDS
+SEGMENT STACK
+  REGX SET 2
+ENDS
+SEGMENT CODE
+  STOP
+ENDS
+END entry
+ASM
+  is_deeply( $root->{segments}, [
+    { name => 'ZEBRA', type => 'code', statements => [
+      { label => { name => 'ENTRY' } },
+      { instruction => { value => 'RTN' } },
+    ] },
+    { name => '_DATA', type => 'data', definitions => [
+      { name => 'FORMULA', type => 'equation', value => 'A+B' },
+    ] },
+    { name => 'STACK', type => 'stack', assignments => {
+      REGX => { type => 'register', value => 2 },
+    } },
+    { name => '_TEXT', type => 'code', statements => [
+      { instruction => { value => 'STOP' } },
+    ] },
+  ], 'named and default segments are explicit nodes in source order' );
+  ok( !exists $root->{labels}, 'AST contains no derived label index' );
+};
+
+subtest 'definition ASTs preserve names and source order' => sub {
+  my $root = Parser::HPC->new->from_string(<<'ASM');
+MODEL P35S
+SEGMENT DATA
+  eqnZulu EQU 'A+B'
+  RADIX 16
+  LOCALS
+  alpha EQU 100
+  NOLOCALS
+  RADIX 10
+  middle EQU 2
+ENDS
+END
+ASM
+  is_deeply( $root->{segments}->[0]->{definitions}, [
+    { name => 'eqnZulu', type => 'equation', value => 'A+B' },
+    { name => 'alpha', type => 'equation', value => 256 },
+    { name => 'middle', type => 'equation', value => 2 },
+  ], 'definitions retain spelling, values and source order without directive entries' );
+};
 
 subtest 'instruction ASTs' => sub {
   my @cases = (
@@ -73,12 +133,53 @@ subtest 'mixed statements and labels' => sub {
   my $root = $parser->from_string(
     "MODEL P35S\nSEGMENT CODE\nentry:\nLBL A\n0 ; zero\n\npi\nGTO entry\nRTN\nENDS\nEND entry\n"
   );
-  is( scalar @{ $root->{segments}->{_TEXT}->{statements} }, 5,
+  is( scalar @{ $root->{segments}->[0]->{statements} }, 6,
     'alternatives parse successive lines and comments' );
-  is_deeply( $root->{labels}->{ENTRY}, {
-    type => 'near', segment => '_TEXT', statement => 0,
-  }, 'label still refers to the first statement' );
-  is( $root->{startaddr}, 'ENTRY', 'start label preserved' );
+  is_deeply( $root->{segments}->[0]->{statements}->[0], {
+    label => { name => 'ENTRY' },
+  }, 'label declaration precedes the first instruction' );
+  is_deeply( $root->{startaddr}, { type => 'label', value => 'ENTRY' },
+    'start label is a typed reference' );
+};
+
+subtest 'label declarations preserve order around directives' => sub {
+  my $root = Parser::HPC->new->from_string(<<'ASM');
+MODEL P35S
+SEGMENT CODE
+start:
+alias:
+  RADIX 16
+  LOCALS
+  @@loop:
+    100
+  NOLOCALS
+last:
+  RTN
+ENDS
+END start
+ASM
+  is_deeply( $root->{segments}->[0]->{statements}, [
+    { label => { name => 'START' } },
+    { label => { name => 'ALIAS' } },
+    { label => { name => 'ALIAS:@@LOOP' } },
+    { literal => { kind => 'hex', value => '100h' } },
+    { label => { name => 'LAST' } },
+    { instruction => { value => 'RTN' } },
+  ], 'declarations are ordered nodes and local names remain qualified' );
+};
+
+subtest 'END start reference is optional' => sub {
+  for my $target ( '', 'entry', 'EnTrY' ) {
+    my $root = Parser::HPC->new->from_string(
+      "MODEL P35S\nSEGMENT CODE\nentry:\nRTN\nENDS\nEND $target\n"
+    );
+    if ( length $target ) {
+      is_deeply( $root->{startaddr}, { type => 'label', value => 'ENTRY' },
+        "END $target normalizes the referenced label" );
+    } else {
+      ok( !exists $root->{startaddr}, 'END without a label omits startaddr' );
+    }
+  }
 };
 
 subtest 'statement line boundary accepts whitespace and comments' => sub {
@@ -108,7 +209,7 @@ ASM
     my $error = "$@";
     ok( $success, "$code accepts whitespace and comments" );
     is( $error, '', 'no parse failure' );
-    is( scalar @{ $root->{segments}->{MAIN}->{statements} }, 3,
+    is( scalar @{ $root->{segments}->[0]->{statements} }, 4,
       'following statement is parsed separately' ) if $success;
   }
 };

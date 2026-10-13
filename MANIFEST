@@ -131,7 +131,7 @@ t/12_parser-code-good.t
 t/13_parser-code-fail.t
 t/14_radix-good.t
 t/15_radix-fail.t
-t/16_title.t
+t/16_stack.t
 t/20_frontend-statements.t
 t/21_frontend-forward-labels.t
 t/22_frontend-locals.t

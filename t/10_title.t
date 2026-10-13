@@ -20,7 +20,7 @@ sub parse_program_error {
   my ($title) = @_;
   my $success = eval { parse_program_with_title($title); 1 };
   my $error = "$@";
-  note $error unless $success;
+  note $error if $ENV{AUTHOR_TESTING} && !$success;
   return $error;
 }
 
@@ -59,9 +59,15 @@ subtest '%TITLE may only be used once' => sub {
 subtest '%TITLE reports string errors' => sub {
   my @cases = (
     [ '%TITLE ', qr/Need quoted string on line 1/, 'missing quoted string' ],
-    [ qq{%TITLE "I/O\nLibrary"},
+    [ 
+      qq{%TITLE "I/O\nLibrary"},
       qr/Missing end quote on line 1 at:\n%TITLE "I\/O\n {11}\^\n/,
-      'newline in title after I/O' ],
+      'newline in title after I/O'
+    ],
+    [ '%TITLE "I/O Library" extra', 
+      qr/Extra characters on line 1/, 
+      'extra characters after title'
+    ],
   );
   for my $case (@cases) {
     my ($title, $message, $description) = @$case;
@@ -70,15 +76,14 @@ subtest '%TITLE reports string errors' => sub {
   }
 };
 
-subtest '%TITLE requires uppercase spelling' => sub {
+subtest '%TITLE allow uppercase spelling' => sub {
   for my $title (
     '%title "I/O Library"',
     '%Title "I/O Library"',
     '%TiTlE "I/O Library"',
   ) {
-    my $error = parse_program_error($title);
-    like( $error, qr/Model must be specified first/,
-      "$title is not recognized as a title directive" );
+    my $program = parse_program_with_title($title);
+    is( $program->{title}, 'I/O Library', "$title is parsed" );
   }
 };
 

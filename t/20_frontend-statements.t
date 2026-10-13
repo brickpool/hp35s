@@ -124,13 +124,42 @@ ASM
     'adds a leading zero to the rendered negative fraction only' );
 };
 
+subtest 'segment nodes retain alphabetical frontend order' => sub {
+  my $source = <<'ASM';
+MODEL P35S
+SEGMENT zulu CODE
+LBL B
+RTN
+ENDS zulu
+SEGMENT alpha CODE
+LBL A
+RTN
+ENDS alpha
+END
+ASM
+  my ($status, $output, $errors) = run_frontend($source);
+  is( $status, 0, 'frontend succeeds' );
+  is( $errors, '', 'no warnings' );
+  is( $output, "%%HP: T(3)A(D)F(.);\nA001\tLBL A\nA002\tRTN\nB001\tLBL B\nB002\tRTN\n",
+    'code segments are still rendered alphabetically, not in source order' );
+};
+
 subtest 'debug shows the parser statement AST without filtering' => sub {
   my ($status, $output, $errors) = run_frontend($source, '--debug');
   is( $status, 0, 'frontend succeeds' );
   is( $output, $expected, 'debug does not change the listing' );
+  like( $errors, qr/'segments'\s*=>\s*\[/, 'segments are a list' );
+  like( $errors, qr/'name'\s*=>\s*'MAIN'/, 'segment names are node properties' );
+  unlike( $errors, qr/'(?:MAIN|_DATA)'\s*=>/, 'no legacy segment keys' );
+  like( $errors, qr/'definitions'\s*=>\s*\[/, 'definitions are a list' );
+  like( $errors, qr/'name'\s*=>\s*'FORMULA'/, 'definition names are node properties' );
+  unlike( $errors, qr/'FORMULA'\s*=>/, 'no legacy definition keys' );
   like( $errors, qr/'instruction'\s*=>/, 'instruction nodes retained' );
   like( $errors, qr/'literal'\s*=>/, 'literal nodes retained' );
   like( $errors, qr/'operand'\s*=>/, 'operands retained' );
+  like( $errors, qr/'label'\s*=>\s*\{\s*'name'\s*=>\s*'START'/,
+    'label declarations are statement nodes' );
+  unlike( $errors, qr/'labels'\s*=>/, 'AST contains no derived label index' );
   unlike( $errors, qr/'(?:LBL|0|pi)'\s*=>/, 'parser emits no legacy statement keys' );
   unlike( $errors, qr/'line'\s*=>/, 'debug still shows the AST before numbering' );
 };

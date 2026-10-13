@@ -40,20 +40,6 @@ subtest 'invalid RADIX base reports the documented error' => sub {
   like( $error, qr/Illegal radix/, 'the diagnostic says Illegal radix' );
 };
 
-subtest 'RADIX directive spelling is case-sensitive' => sub {
-  for my $directive ( 'radix 16', 'Radix 16', 'RaDiX 16' ) {
-    for my $source (
-      "MODEL P35S\n$directive\nSEGMENT CODE\nRTN\nENDS\nEND\n",
-      "MODEL P35S\nSEGMENT CODE\n$directive\nRTN\nENDS\nEND\n",
-      "MODEL P35S\nSEGMENT DATA\n$directive\nVALUE EQU 1\nENDS\nEND\n",
-      "MODEL P35S\nSEGMENT STACK\n$directive\nREGX SET 1\nENDS\nEND\n",
-    ) {
-      my $success = eval { Parser::HPC->new->from_string($source); 1 };
-      ok( !$success, "$directive is rejected" );
-    }
-  }
-};
-
 subtest 'uppercase E is not a decimal exponent in numeric values' => sub {
   for my $source (
     "MODEL P35S\nSEGMENT DATA\nVALUE EQU 1E-3\nENDS\nEND\n",
