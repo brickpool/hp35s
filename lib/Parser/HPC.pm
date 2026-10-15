@@ -110,7 +110,7 @@ sub new {    # $parser (%args)
   $self->{_radix} = 10;
 
   # Local label handling
-  $self->{_locals} = 0;
+  $self->{_locals} = 1;
   $self->{_local_scope} = '';
 
   return $self;

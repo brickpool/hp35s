@@ -6,10 +6,9 @@ use Parser::HPC;
 use lib 't/lib';
 use FrontendTest qw( run_frontend );
 
-subtest 'LOCALS scopes forward and backward jumps by nonlocal labels' => sub {
+subtest 'local labels are enabled by default and scoped by nonlocal labels' => sub {
   my $source = <<'ASM';
 MODEL P35S
-LOCALS ; fixed prefix
 SEGMENT CODE
 start:
   LBL A
@@ -39,7 +38,6 @@ ASM
   is_deeply( $statements->[8], { label => { name => $second } }, 'second local declaration' );
   for my $options ( [], [ '-j' ], [ '-s' ] ) {
     my ($first_scope, $next_scope) = split /(?=^next:)/m, $source;
-    $first_scope =~ s/^LOCALS[^\n]*\n//m;
     $first_scope =~ s/\@\@loop/first_loop/ig;
     $next_scope =~ s/\@\@loop/second_loop/ig;
     my $explicit = $first_scope . $next_scope;
@@ -59,7 +57,6 @@ subtest 'NOLOCALS disables special handling without emitting code' => sub {
 MODEL P35S
 SEGMENT CODE
 start:
-LOCALS
 @@loop:
 GTO @@loop
 NOLOCALS
@@ -90,7 +87,6 @@ ASM
 subtest 'local scope follows labels rather than segments or directives' => sub {
   my $root = Parser::HPC->new->from_string(<<'ASM');
 MODEL P35S
-LOCALS
 SEGMENT first CODE
 @@initial:
 GTO @@initial
@@ -120,7 +116,6 @@ ASM
 subtest 'only double-at prefixes are local and references do not escape scope' => sub {
   my $root = Parser::HPC->new->from_string(<<'ASM');
 MODEL P35S
-LOCALS
 SEGMENT CODE
 start:
 @@A001:
@@ -162,9 +157,8 @@ subtest 'LOCALS and NOLOCALS allow uppercase spelling' => sub {
 
 subtest 'duplicate locals and unsupported directive parameters are rejected' => sub {
   for my $code (
-    "LOCALS\nstart:\n\@\@loop:\nRTN\n\@\@loop:\nRTN",
+    "start:\n\@\@loop:\nRTN\n\@\@loop:\nRTN",
     "NOLOCALS\nstart:\n\@\@loop:\nRTN\nnext:\n\@\@loop:\nRTN",
-    "start:\n\@\@loop:\nRTN\nnext:\n\@\@loop:\nRTN",
     'LOCALS @@', 'NOLOCALS @@', 'LOCALS extra', 'NOLOCALS extra',
   ) {
     my $success = eval {
