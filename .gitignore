@@ -1,5 +1,7 @@
-# Ignore VSCode
+# Ignore VSCode/GH
 .vscode/
+.github/**/*.md
+/*.code-workspace
 
 # Ignore backup directory
 _gsdata_/
@@ -9,7 +11,7 @@ _gsdata_/
 /.komodotools/
 
 # Ignore wiki directory
-/wiki
+/wiki/
 
 # Ignore extras
 /extras/CBT
@@ -27,6 +29,7 @@ _gsdata_/
 /*.mac
 /examples/**/*.mac
 /examples/**/*.md
+!/examples/**/README.md
 /examples/**/*.raw
 /examples/**/*.txt
 /examples/**/*.uu
@@ -37,7 +40,7 @@ _gsdata_/
 
 # Other
 /src
-/trial
+/trial/
 /*.old
 /*.txt
 /debug.log
