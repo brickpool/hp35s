@@ -22,7 +22,7 @@ TARGET_DIR := ${shell echo %APPDATA%}\Hewlett-Packard\hp35s\Macros
 # Tools
 SH = +
 PERL = $(SH)perl
-ASM = $(PERL) -I..\lib ..\asm2hpc.pl
+ASM = $(PERL) -I..\lib ..\bin\asm2hpc.pl
 UUDECODE = $(PERL) ..\extras\tools\uudecode.pl
 RM = $(SH)del /Q
 MV = $(SH)move /Y
@@ -30,7 +30,7 @@ CP = $(SH)xcopy /M /I /Y
 
 all: $(TEXT) $(PLAIN) $(MARKDOWN) $(UNICODE) $(MACRO)
 
-.PHONY: all
+.PHONY: all install clean realclean
 
 # Output with HP character set
 %.txt: %.asm
