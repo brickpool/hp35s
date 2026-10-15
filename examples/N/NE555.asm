@@ -1,5 +1,6 @@
 ; General purpose single bipolar timer IC NE555
 MODEL P35S
+LOCALS
 
 SEGMENT NE555 CODE
 start:
@@ -271,14 +272,14 @@ solveT:
   Rv
   ; IF (FLAG4 <> 0)
   FS? 4
-    GTO @THEN
-    GTO @ELSE
-  @THEN:
+    GTO @@THEN
+    GTO @@ELSE
+  @@THEN:
     Rv
-    GTO @END_IF
-  @ELSE:
+    GTO @@END_IF
+  @@ELSE:
     +
-  @END_IF:
+  @@END_IF:
   *
   STO P
   x<>y
