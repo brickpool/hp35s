@@ -73,6 +73,10 @@ examples/3rd-party/Sunlight/S.txt
 examples/C/C.35s
 examples/C/C.asm
 examples/C/README.md
+examples/Connect4/C.35s
+examples/Connect4/C.asm
+examples/Connect4/prototype.pl
+examples/Connect4/README.md
 examples/J/J.35s
 examples/J/J.asm
 examples/J/README.md
