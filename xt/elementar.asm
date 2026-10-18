@@ -3,9 +3,11 @@
 ; Tricks, tips, and routines for HP-41 series calculators
 ; Chapter 1
 ; Elementary functions and operations
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 
-SEGMENT elementar CODE
+CODESEG
 
 ; 1-1 Displaying standard characters
 ; ---------------------------------------
@@ -182,6 +184,5 @@ RTN
 
 
 
-ENDS elementar
 
 END

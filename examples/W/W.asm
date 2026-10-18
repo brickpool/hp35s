@@ -3,7 +3,7 @@ IDEAL
 P35S
 MODEL TINY
 
-SEGMENT CODE
+CODESEG
 LBL W           ; program W
   ; REGZ = dd
   ; REGY = mm
@@ -63,7 +63,6 @@ LBL W           ; program W
   ; REGX = w
 RTN
 
-ENDS
 
 END
 ; CK=8DE1

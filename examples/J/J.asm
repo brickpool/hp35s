@@ -2,7 +2,7 @@
 IDEAL
 P35S
 MODEL TINY
-SEGMENT CODE
+CODESEG
 start:
 LBL J               ; program J
 
@@ -23,7 +23,6 @@ print:
   VIEW J
 
 RTN
-ENDS
 
 END
 ; CK=A84A

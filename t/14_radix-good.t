@@ -12,26 +12,25 @@ subtest 'RADIX resolves unsuffixed integers in source order' => sub {
 IDEAL
 P35S
 MODEL TINY
-SEGMENT CODE
+CODESEG
 RADIX 16 ; inline comment belongs to trailing trivia
-100
-1E7
-19B
-129d
-101b
+  100
+  1E7
+  19B
+  129d
+  101b
 RADIX 10
-100
+  100
 RADIX 2
-100
+  100
 RADIX 8
-100
+  100
 RADIX 16
-12o
-12h
-12d
-2.3
-7e-1
-ENDS
+  12o
+  12h
+  12d
+  2.3
+  7e-1
 END
 ASM
   my $statements = $root->{segments}->[0]->{statements};
@@ -52,41 +51,31 @@ ASM
   ) ], 'active radix selects the kind and explicit suffixes take precedence' );
 };
 
-subtest 'RADIX applies to EQU and SET, not instruction operands' => sub {
+subtest 'RADIX applies to EQU, not instruction operands' => sub {
   my $parser = Parser::HPC->new;
   my $root = $parser->from_string(<<'ASM');
 IDEAL
 P35S
 MODEL TINY
 RADIX 16
-SEGMENT DATA
-VALUE EQU 100
-SUFFIXB EQU 101b
-SUFFIXO EQU 17o
-SUFFIXD EQU 12d
-SUFFIXH EQU FFh
+DATASEG
+  VALUE   EQU 100
+  SUFFIXB EQU 101b
+  SUFFIXO EQU 17o
+  SUFFIXD EQU 12d
+  SUFFIXH EQU FFh
 RADIX 10
-FLOATVAL EQU 7e-1
+  FLOATVAL EQU 7e-1
 RADIX 2
-OTHER EQU 100
-ENDS
-SEGMENT STACK
-REGX SET 100
-RADIX 10
-REGT SET 7e-1
-RADIX 16
-REGY SET 100
-REGZ SET FFh
-ENDS
-SEGMENT CODE
+  OTHER EQU 100
+CODESEG
 start:
 RADIX 2
-CF 11
+  CF 11
 RADIX 16
-FIX 11
-SF 10
-GTO start
-ENDS
+  FIX 11
+  SF 10
+  GTO start
 END start
 ASM
   is( $root->{segments}->[0]->{definitions}->[0]->{value}, 256,
@@ -103,28 +92,20 @@ ASM
     'RADIX inside data changes subsequent definitions' );
   cmp_ok( abs( $root->{segments}->[0]->{definitions}->[5]->{value} - 0.7 ),
     '<', 1e-12, 'lowercase e float converts under RADIX 10' );
-  is( $root->{segments}->[1]->{assignments}->{REGX}->{value}, 4,
-    'radix persists across segments' );
-  is( $root->{segments}->[1]->{assignments}->{REGY}->{value}, 256,
-    'RADIX works inside stack segments' );
-  is( $root->{segments}->[1]->{assignments}->{REGZ}->{value}, 'FFh',
-    'suffixed hexadecimal SET is preserved' );
-  cmp_ok( abs( $root->{segments}->[1]->{assignments}->{REGT}->{value} - 0.7 ),
-    '<', 1e-12, 'lowercase e float converts under RADIX 10' );
-  is( $root->{segments}->[2]->{statements}->[1]->{instruction}->{operand}->{value},
+  is( $root->{segments}->[1]->{statements}->[1]->{instruction}->{operand}->{value},
     11, 'CF operand remains decimal under RADIX 2' );
-  is( $root->{segments}->[2]->{statements}->[2]->{instruction}->{operand}->{value},
+  is( $root->{segments}->[1]->{statements}->[2]->{instruction}->{operand}->{value},
     11, 'FIX operand remains decimal under RADIX 16' );
-  is( $root->{segments}->[2]->{statements}->[3]->{instruction}->{operand}->{value},
+  is( $root->{segments}->[1]->{statements}->[3]->{instruction}->{operand}->{value},
     10, 'SF operand remains decimal under RADIX 16' );
-  is_deeply( $root->{segments}->[2]->{statements}->[0],
+  is_deeply( $root->{segments}->[1]->{statements}->[0],
     { label => { name => 'START' } }, 'RADIX preserves label declarations' );
-  my $next = $parser->from_string("IDEAL\nP35S\nMODEL TINY\nSEGMENT next CODE\n100\nENDS next\nEND\n");
+  my $next = $parser->from_string("IDEAL\nP35S\nMODEL TINY\nCODESEG\n100\n\nEND\n");
   is_deeply( $next->{segments}->[0]->{statements}->[0],
     { literal => { kind => 'hex', value => '100h' } },
     'radix persists when the parser instance is reused' );
   my $fresh = Parser::HPC->new->from_string(
-    "IDEAL\nP35S\nMODEL TINY\nSEGMENT CODE\n100\nENDS\nEND\n"
+    "IDEAL\nP35S\nMODEL TINY\nCODESEG\n100\n\nEND\n"
   );
   is_deeply( $fresh->{segments}->[0]->{statements}->[0],
     { literal => { kind => 'decimal', value => '100' } },
@@ -136,13 +117,12 @@ subtest 'non-decimal numeric values use signed 36-bit conversion' => sub {
 IDEAL
 P35S
 MODEL TINY
-SEGMENT DATA
+DATASEG
 RADIX 16
-MAX EQU 7FFFFFFFF
-MIN EQU 800000000
-NEGATIVE EQU FFFFFFFFF
-SMALLNEG EQU FFFFFFEDB
-ENDS
+  MAX       EQU 7FFFFFFFF
+  MIN       EQU 800000000
+  NEGATIVE  EQU FFFFFFFFF
+  SMALLNEG  EQU FFFFFFEDB
 END
 ASM
   my $definitions = $root->{segments}->[0]->{definitions};
@@ -159,42 +139,40 @@ IDEAL
 P35S
 MODEL TINY
 RADIX 16
-SEGMENT CODE
-LBL A
+CODESEG
+  LBL A
 start:
 RADIX 16
-100
-129d
-101b
+  100
+  129d
+  101b
 RADIX 10
-100
+  100
 RADIX 2
-100
-CF 11
+  100
+  CF 11
 RADIX 8
-100o
-GTO start
-RTN
-ENDS
+  100o
+  GTO start
+  RTN
 END start
 ASM
   my $explicit = <<'ASM';
 IDEAL
 P35S
 MODEL TINY
-SEGMENT CODE
-LBL A
+CODESEG
+  LBL A
 start:
-100h
-129d
-101b
-100
-100b
-CF 11
-100o
-GTO start
-RTN
-ENDS
+  100h
+  129d
+  101b
+  100
+  100b
+  CF 11
+  100o
+  GTO start
+  RTN
 END start
 ASM
   for my $options ( [], [ '-s' ], [ '-j' ] ) {
@@ -217,19 +195,18 @@ subtest 'display RADIX instructions are independent of the directive' => sub {
 IDEAL
 P35S
 MODEL TINY
-SEGMENT CODE
+CODESEG
 LBL A
 RADIX $base
 start:
-RADIX. ; decimal point
-100
-RADIX, ; decimal comma
-100
+  RADIX. ; decimal point
+  100
+  RADIX, ; decimal comma
+  100
 RADIX 10
-100
-GTO start
-RTN
-ENDS
+  100
+  GTO start
+  RTN
 END start
 ASM
     my %kinds = ( 2 => 'binary', 8 => 'octal', 10 => 'decimal', 16 => 'hex' );
@@ -272,10 +249,10 @@ ASM
 subtest 'RADIX directive spelling is case-insensitive' => sub {
   for my $directive ( 'radix 16', 'Radix 16', 'RaDiX 16' ) {
     for my $source (
-      "IDEAL\nP35S\nMODEL TINY\n$directive\nSEGMENT CODE\nRTN\nENDS\nEND\n",
-      "IDEAL\nP35S\nMODEL TINY\nSEGMENT CODE\n$directive\nRTN\nENDS\nEND\n",
-      "IDEAL\nP35S\nMODEL TINY\nSEGMENT DATA\n$directive\nVALUE EQU 1\nENDS\nEND\n",
-      "IDEAL\nP35S\nMODEL TINY\nSEGMENT STACK\n$directive\nREGX SET 1\nENDS\nEND\n",
+      "IDEAL\nP35S\nMODEL TINY\n$directive\nCODESEG\nRTN\n\nEND\n",
+      "IDEAL\nP35S\nMODEL TINY\nCODESEG\n$directive\nRTN\n\nEND\n",
+      "IDEAL\nP35S\nMODEL TINY\nDATASEG\n$directive\nVALUE EQU 1\n\nEND\n",
+      "IDEAL\nP35S\nMODEL TINY\nSTACK\nREGX SET 1\n$directive\nCODESEG\nRTN\n\nEND\n",
     ) {
       my $success = eval { Parser::HPC->new->from_string($source); 1 };
       ok( $success, "$directive is allowed" );

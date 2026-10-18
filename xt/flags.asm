@@ -3,9 +3,11 @@
 ; Tricks, tips, and routines for HP-41 series calculators
 ; Chapter 6
 ; Flags
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 
-SEGMENT Flags CODE
+CODESEG
 
 DISPLAY '6-1 Flag toggling "FT"'
 ; ------------------------------
@@ -625,6 +627,5 @@ LBL K
   @110:
 RTN
 
-ENDS Flags
 
 END

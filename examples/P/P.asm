@@ -2,11 +2,11 @@
 IDEAL
 P35S
 MODEL TINY
-SEGMENT DATA
+DATASEG
   eqnMenu EQU '1P 2V 3I 4R'
-ENDS
 
-SEGMENT CODE
+
+CODESEG
 start:
 LBL P                 ; program P
 
@@ -134,7 +134,6 @@ displayR:
   VIEW R
 
 RTN
-ENDS
 
 END
 ; CK=1AAF

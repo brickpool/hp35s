@@ -5,7 +5,7 @@ IDEAL
 P35S
 MODEL TINY
 
-SEGMENT CowsAndBulls CODE
+CODESEG
 LBL C
   INPUT L
   RANDOM
@@ -118,6 +118,5 @@ LBL C
     @101:
     VIEW S
   GTO @005
-ENDS CowsAndBulls
 
 END

@@ -4,7 +4,7 @@
 IDEAL
 P35S
 MODEL TINY
-SEGMENT Bowling CODE
+CODESEG
         LBL     B
         ;10 PRINT TAB(34);"BOWL"
         SF      10
@@ -572,6 +572,5 @@ TROW:
         eqn     '+ + + +'
         RTN
         
-ENDS Bowling
 
 END

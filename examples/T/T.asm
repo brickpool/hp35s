@@ -3,7 +3,7 @@ IDEAL
 P35S
 MODEL TINY
 
-SEGMENT CODE
+CODESEG
         LBL     T
 A01:
         RCL     U       ; RCL 4
@@ -99,7 +99,6 @@ R2P:
         LASTx
         ABS
         RTN
-ENDS
 
 END
 ; CK=DE96

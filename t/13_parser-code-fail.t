@@ -12,12 +12,11 @@ subtest 'unknown statement fails after both alternatives' => sub {
 IDEAL
 P35S
 MODEL TINY
-SEGMENT main CODE
+CODESEG
 start:
   LBL C
   $code ; neither an instruction nor a literal
   RTN
-ENDS main
 END start
 ASM
     my $success = eval { $parser->from_string($source); 1 };
@@ -47,14 +46,13 @@ subtest 'statement line boundary rejects extra tokens' => sub {
 IDEAL
 P35S
 MODEL TINY
-SEGMENT main CODE
+CODESEG
 start:
   LBL C
   $code
 
   ; The next statement must remain separate
   STOP
-ENDS main
 END start
 ASM
     my $success = eval { $parser->from_string($source); 1 };
@@ -80,7 +78,7 @@ subtest 'parse failures' => sub {
     my $parser = Parser::HPC->new;
     my $success = eval {
       $parser->from_string(
-        "IDEAL\nP35S\nMODEL TINY\n\nSEGMENT CODE\n$code\nENDS\nEND\n"
+        "IDEAL\nP35S\nMODEL TINY\n\nCODESEG\n$code\n\nEND\n"
       );
       1;
     };
@@ -97,9 +95,8 @@ subtest 'empty EQU string fails' => sub {
 IDEAL
 P35S
 MODEL TINY
-SEGMENT DATA
+DATASEG
 EMPTY EQU ""
-ENDS
 END
 ASM
     1;
@@ -107,6 +104,17 @@ ASM
   my $error = "$@";
   ok( !$success, 'empty EQU string is rejected' );
   like( $error, qr/Need expression/, 'empty value reports missing expression' );
+};
+
+subtest 'legacy segment and MASM simplified syntax are rejected' => sub {
+  for my $source (
+    "IDEAL\nP35S\nMODEL TINY\nSEGMENT CODE\nRTN\nENDS\nEND\n",
+    "IDEAL\nP35S\nMODEL TINY\nCODESEG\nRTN\nENDS\nEND\n",
+    "IDEAL\nP35S\nMODEL TINY\n.DATA\n.CODE\n.STACK 4\nEND\n",
+  ) {
+    my $success = eval { Parser::HPC->new->from_string($source); 1 };
+    ok( !$success, 'unsupported segment spelling is rejected' );
+  }
 };
 
 done_testing;

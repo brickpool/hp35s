@@ -94,7 +94,8 @@ sub new {    # $parser (%args)
   my %variables   = map { $_ => 'variable'  } 'A'..'Z',
                                               @register;
   my %directives  = map { $_ => 'directive' } @directives,
-                                              @languages;
+                                              @languages,
+                                              @segments;
   my %opcodes     = map { $_ => 'opcode'    } @instructions,
                                               @with_address,
                                               @with_digits,
@@ -137,11 +138,12 @@ sub parse {    # $tree ()
     sub { $self->parse_title }
   );
 
-  $self->parse_ideal;
+  my $mode     = $self->parse_mode;
   my $language = $self->parse_language;
-  my $model = $self->parse_model;
+  my $model    = $self->parse_model;
 
   # list of segments
+  $self->{_assignments} = {};
   my $result = $self->sequence_of(
     sub {
       return { } if defined $self->parse_locals;
@@ -151,14 +153,48 @@ sub parse {    # $tree ()
     },
   ) or $self->fail( "Expecting SEGMENT keyword" );
 
+  my @segments;
+  my %content_key = (
+    data  => 'definitions',
+    code  => 'statements',
+    stack => 'assignments',
+  );
+  my %section_by_type;
+  for my $segment ( grep { %$_ } @$result ) {
+    my $type     = $segment->{type};
+    my $key      = $content_key{$type};
+    my $existing = $section_by_type{$type};
+
+    if ( defined $key && $existing ) {
+      if ( ref $segment->{$key} eq 'HASH' ) {
+        @{$existing->{$key}}{ keys %{ $segment->{$key} } }
+          = values %{ $segment->{$key} };
+      }
+      else {
+        push @{ $existing->{$key} }, @{ $segment->{$key} };
+      }
+      next;
+    } 
+
+    push @segments, $segment;
+    $section_by_type{$type} = $segment if defined $key;
+  }
+
   # end directive
   my $start = $self->parse_end;
   
   my $root = {
     language  => $language,
     model     => $model,
-    segments  => [ grep { %$_ } @$result ],
+    segments  => \@segments,
   };
+  if ( keys %{ $self->{_assignments} } ) {
+    push @segments, {
+      name        => 'STACK',
+      type        => 'stack',
+      assignments => $self->{_assignments},
+    };
+  }
   $root->{title}     = $title if $title;
   $root->{startaddr} = $start if $start;
   return $root;
@@ -297,7 +333,7 @@ sub parse_display {    # $message ()
   return $result;
 }
 
-sub parse_ideal {   # $mode ()
+sub parse_mode {   # $bool ()
   my $self = shift;
 
   $self->maybe_expect( qr/IDEAL(?=[\s;])/ )
@@ -308,7 +344,7 @@ sub parse_ideal {   # $mode ()
   $line != $next_line
     or $self->fail("Extra characters");
 
-  return 'IDEAL';
+  return 1;
 }
 
 sub parse_language {    # $language ()
@@ -333,7 +369,7 @@ sub parse_language {    # $language ()
 # 3 = MEDIUM 
 # 4 = LARGE 
 # 5 = HUGE 
-sub parse_model {    # $memorymodel ()
+sub parse_model {    # $model ()
   my $self = shift;
 
   $self->maybe_expect( qr/MODEL(?=[ \t])/ )
@@ -404,54 +440,42 @@ sub parse_segment {    # $segment ()
   my $self = shift;
 
   my $result;
-  my $name;
-  my $type;
 
-  # SEGMENT ..
-  $self->expect( qr/SEGMENT(?=[ \t])/i );
+  # DATASEG or CODESEG or STACK
+  my $segment = $self->token_kw_icase( @segments );
   $self->commit;
 
-  # SEGMENT [name] type
-  eval { $type = $self->token_kw_icase( @segments ) };
-  unless ( $type ) {
-    # SEGMENT name type
-    $name = $self->token_ident;
-    $type = $self->token_kw_icase( @segments );
-  }
-    
-  # call specific segment type
-  SWITCH: for ($type) {
-    /DATA/i and do {
+  my $ends = qr/(?=(?:DATASEG|CODESEG|STACK|END)\b)/i;
+  SWITCH: for ($segment) {
+    /^DATASEG$/i and do {
       $result = $self->scope_of(
-        undef,
-        sub { $self->parse_data_block( $name ) },
-        qr/ENDS(?=[\s;])/i,
+        undef, 
+        sub { $self->parse_data_block }, 
+        $ends
       );
       last;
     };
-    /CODE/i and do {
+    /^CODESEG$/i and do {
       $result = $self->scope_of(
-        undef,
-        sub { $self->parse_code_block( $name ) },
-        qr/ENDS(?=[\s;])/i,
+        undef, 
+        sub { $self->parse_code_block }, 
+        $ends
       );
       last;
     };
-    /STACK/i and do {
+    /^STACK$/i and do {
       $result = $self->scope_of(
-        undef,
-        sub { $self->parse_stack_block( $name ) },
-        qr/ENDS(?=[\s;])/i,
+        undef, 
+        sub { $self->parse_stack_block }, 
+        $ends
       );
       last;
+    };
+    DEFAULT: {
+      $self->fail("Bad keyword In SEGMENT statement");
     };
   }
 
-  if ( $name ) {
-    $self->maybe_expect( $name ) or
-      $self->fail( "Unmatched ENDS" );
-  }
-  
   return $result;
 }
 
@@ -461,18 +485,6 @@ sub parse_data_block {    # $block (|$ident)
   my $type  = 'data';
   
   $ident = uc $ident;
-  # check if symbol already exists
-  if ( defined $self->{_symbols}->{$ident} ) {
-    $self->fail_from(
-      $self->_find_before($ident),
-      $self->{_symbols}->{$ident} eq $type
-        ?
-      "Symbol already defined"
-        :
-      "Symbol already different kind"
-    )
-  }
-
   my $result = $self->sequence_of(
     sub {
       $self->commit;
@@ -503,8 +515,8 @@ sub parse_data_statement {    # $statement ()
   my $ident = $self->token_ident;
   my $fail_pos = $self->pos - length $ident;
 
-  # check if new segment is defined or end has been reached
-  if ( $ident =~ /^(?:SEGMENT|END)$/ ) {
+  # check if a new segment is defined or end has been reached
+  if ( $ident =~ /^(?:DATASEG|CODESEG|STACK|END)$/i ) {
     $self->commit;
     $self->fail_from($fail_pos, "Open segment");
   }
@@ -634,18 +646,6 @@ sub parse_code_block {    # $block (|$ident)
   my $type  = 'code';
 
   $ident = uc $ident;
-  # check if symbol already exists
-  if ( defined $self->{_symbols}->{$ident} ) {
-    $self->fail_from(
-      $self->_find_before($ident),
-      $self->{_symbols}->{$ident} eq $type
-        ?
-      "Symbol already defined"
-        :
-      "Symbol already different kind"
-    )
-  }
-
   # call each code line
   my @tags = ();
   my $result = $self->sequence_of(
@@ -945,26 +945,12 @@ sub parse_stack_block {    # $block (|$ident)
   my $ident = shift || 'STACK';
   my $type  = 'stack';
 
-  $ident = uc $ident;
-  # check if symbol already exists
-  if ( defined $self->{_symbols}->{$ident} ) {
-    $self->fail_from(
-      $self->_find_before($ident),
-      $self->{_symbols}->{$ident} eq $type
-        ?
-      "Symbol already defined"
-        :
-      "Symbol already different kind"
-    )
-  }
-
   my $result = $self->sequence_of(
     sub {
       $self->commit;
       $self->parse_stack_statement;
     },
-  )
-    or return undef;
+  ) or return undef;
 
   # convert the array_ref to a hash_ref
   my $ref = { };
@@ -997,13 +983,19 @@ sub parse_stack_statement {    # $statement ()
   my $ident = $self->token_kw( @register );
   $self->commit;
 
-  defined $self->maybe_expect( qr/SET(?=[ \t])/i ) or
-    $self->fail( "Expecting segment or group quantity" );
+  defined $self->maybe_expect( qr/SET(?=[ \t])/i )
+    or $self->fail( "Expecting segment or group quantity" );
 
   my $value;
   eval { $value = $self->token_number };
   defined $value
     or $self->fail( "Need expression" );
+
+  my ($line) = $self->where;
+  $self->skip_ws;
+  my ($next_line) = $self->where;
+  $line != $next_line 
+    or $self->fail( "Extra characters" );
 
   # create new entry
   my $entry = {
@@ -1023,7 +1015,7 @@ sub parse_end {    # $start_addr|undef ()
   $self->at_eos and
     $self->fail( "Unexpected end of file (no END directive)" );
   
-  # error, if statements outside of any segment
+  # error, if statements appear outside a declared segment
   $self->maybe_expect( qr/END\b/i )
     or $self->fail( "Code or data emission to undeclared segment" );
   
@@ -1196,50 +1188,59 @@ Parser::HPC - parse HP calculator assembler source code
     IDEAL
     P35S
     MODEL TINY
+    STACK
+      REGX SET 4
 
-  SEGMENT DATA
+  DATASEG
     FORMULA EQU 'A+B'
-  ENDS
 
-  SEGMENT main CODE
+  CODESEG
   start:
     LBL A
     0
     EQN FORMULA
     GTO start
     RTN
-  ENDS main
 
   END start
   ASM
 
 =head1 DESCRIPTION
 
-C<Parser::HPC> is a recursive-descent parser for HP calculator assembler source 
+C<Parser::HPC> is a recursive-descent parser for HP calculator assembler source
 code.
 
-The parser converts its input into an abstract syntax tree represented by Perl 
-hashes, arrays, and scalar values. The root node describes the calculator 
-language, memory model, optional program metadata, and the data, code, and 
-stack segments found in the source.
+The parser converts its input into an abstract syntax tree represented by Perl
+hashes, arrays, and scalar values. The root node describes the calculator
+language, memory model, optional program metadata, and the stack, data, and
+code sections found in the source.
 
 After an optional C<%TITLE> directive, the source must contain C<IDEAL>,
-C<P35S>, and C<MODEL TINY>, in that order and on separate lines. These header 
-keywords are case-sensitive. Only C<IDEAL> mode, the C<P35S> language, and the 
-C<TINY> memory model are supported. 
+C<P35S>, and C<MODEL TINY>, in that order and on separate lines. These header
+keywords are case-sensitive. Only C<IDEAL> mode, the C<P35S> language, and the
+C<TINY> memory model are supported.
 
-Source passed to L</from_string> is first processed by L<Parser::HPC::Macro>. 
+The assembler uses TASM-inspired simplified section directives. C<STACK>,
+C<DATASEG>, and C<CODESEG> select the meaning of the statements that follow;
+they do not represent separate HP-35s address spaces. A new section directive
+implicitly ends the preceding section.
+
+C<SET> assignments are accepted only in C<STACK>, C<EQU> definitions only in
+C<DATASEG>, and executable calculator statements only in C<CODESEG>. Explicit
+C<SEGMENT> and C<ENDS> syntax is not supported.
+
+Source passed to L</from_string> is first processed by L<Parser::HPC::Macro>.
 The resulting source is then passed to the L<Parser::MGC> parser interface.
 
-This document describes the parser interface and the AST nodes returned by its 
-parsing methods. The complete assembler syntax is documented in the project 
+This document describes the parser interface and the AST nodes returned by its
+parsing methods. The complete assembler syntax is documented in the project
 wiki.
 
 =head1 ABSTRACT SYNTAX TREE
 
 =head2 AST construction flow
 
-The normal entry point expands macros in L</from_string> and then parses the 
+The normal entry point expands macros in L</from_string> and then parses the
 source with L</parse>. The parser methods are composed as follows:
 
   source code
@@ -1250,10 +1251,10 @@ source with L</parse>. The parser methods are composed as follows:
     v
   parse()
     +-- parse_title()                   # optional
-    +-- parse_ideal()
+    +-- parse_mode()
     +-- parse_language()
     +-- parse_model()
-    +-- parse_segment()                 # repeated
+    +-- parse_segment()                 # repeated section selectors
     |     |
     |     +-- parse_data_block()
     |     |      '-- parse_data_statement()
@@ -1269,24 +1270,35 @@ source with L</parse>. The parser methods are composed as follows:
     |
     '-- parse_end()
 
-L<parse_segment> dispatches to the block parser for the declared segment type. 
-Each block parser collects the results of its statement parser: data 
-definitions and code statements retain source order, while stack assignments 
-are merged into a hash. In code blocks, labels are collected before each 
-statement and inserted immediately before it in the C<statements> array.
+L</parse_segment> handles the C<STACK>, C<DATASEG>, and C<CODESEG> section
+directives and dispatches to the corresponding block parser. Each section
+continues until another section directive or C<END> is encountered.
 
-C<parse_code_statement> selects an instruction or literal parser for AST nodes. 
-It also handles directives such as C<RADIX>, C<LOCALS>, and C<DISPLAY>; these 
-affect parser state or produce temporary results but are not retained in the 
-final AST. C<parse_end> supplies the optional C<startaddr> field, while 
-C<parse_title>, C<parse_language>, and C<parse_model> supply the program 
-metadata. C<parse_ideal> validates the required syntax mode but does not add a 
-field to the AST.
+The block parsers restrict statements according to their section. C<STACK>
+accepts register C<SET> assignments, C<DATASEG> accepts C<EQU> definitions,
+and C<CODESEG> accepts labels, calculator instructions, and literals.
+C<RADIX> and local-label directives are handled where supported by the
+corresponding block parser.
 
-The parser methods build nodes using token methods, which match source items 
-and return scalar values rather than AST nodes. Some token methods used by this 
-parser, including C<token_ident>, C<token_float>, C<token_int>, and 
-C<token_kw>, are inherited from L<Parser::MGC>.
+Each block parser collects the results of its statement parser. Data
+definitions and code statements retain source order, while stack assignments
+are stored by register name. Repeated sections of the same type are combined
+in the program AST.
+
+In code sections, labels are collected before each statement and inserted
+immediately before it in the C<statements> array. Parser directives handled
+within a code section may affect parser state or produce temporary results but
+are not retained in the final C<statements> array.
+
+L</parse_end> supplies the optional C<startaddr> field, while L</parse_title>,
+L</parse_language>, and L</parse_model> supply program metadata.
+L</parse_mode> validates the required syntax mode but does not add a field to
+the AST.
+
+The parser methods build nodes using token methods, which match source items
+and return scalar values rather than AST nodes. Some token methods used by this
+parser, including C<token_ident>, C<token_float>, C<token_int>, and C<token_kw>,
+are inherited from L<Parser::MGC>.
 
 =head2 Program node
 
@@ -1312,24 +1324,33 @@ L</parse> returns the root of the abstract syntax tree:
 
 C<language> contains the calculator language identifier, currently C<P35S>.
 
-C<model> contains the numeric memory-model identifier parsed from the C<MODEL> 
-directive. The only supported model is C<TINY>, represented by the integer C<0>.
+C<model> contains the numeric memory-model identifier parsed from the C<MODEL>
+directive. The only supported model is C<TINY>, represented by the integer 
+value C<0>.
 
-C<title> is present when the source contains a C<%TITLE> directive
-whose parsed a valid title.
+C<title> is present when the source contains a valid C<%TITLE> directive.
 
-C<startaddr> is present only when the C<END> directive specifies a
-previously defined label. Its C<value> contains the upper-case,
-qualified label name.
+C<startaddr> is present only when the C<END> directive specifies a previously
+defined label. Its C<value> contains the upper-case, qualified label name.
 
-C<segments> is an array reference containing data, code, and stack
-segment nodes in source order.
+C<segments> is an array reference containing the parsed stack, data, and code
+sections. The field name C<segments> is retained for AST compatibility. The
+source-language directives C<STACK>, C<DATASEG>, and C<CODESEG> select parsing
+contexts and do not imply separate HP-35s address spaces.
 
-Directives processed between segments do not produce segment nodes.
+Repeated sections of the same type are combined into a single corresponding AST 
+node. Data definitions and code statements retain source order, while stack 
+assignments are stored by register name.
+
+A stack segment node is present only when the parsed source contains stack
+assignments. C<STACK> itself does not allocate a fixed-size stack; it selects
+the context in which C<SET> assignments are parsed.
+
+Directives processed between sections do not produce segment nodes.
 
 =head2 Data segment node
 
-A data segment has the form:
+A data segment node has the form:
 
   {
     name        => $name,
@@ -1340,10 +1361,11 @@ A data segment has the form:
     ],
   }
 
-For an unnamed data segment, C<name> is C<_DATA>. Explicit segment names are 
-converted to upper case.
+C<name> is the internal identifier C<_DATA>. Explicit segment names are not
+supported.
 
-C<definitions> contains definition nodes in source order.
+C<definitions> contains C<EQU> definition nodes in source order. C<EQU>
+definitions are accepted only while C<DATASEG> is active.
 
 A definition node has the form:
 
@@ -1353,16 +1375,20 @@ A definition node has the form:
     value => $value,
   }
 
-Definition names retain the spelling returned by the identifier
-tokenizer. C<value> contains either a parsed numeric value or the
-contents of a quoted string.
+Definition names retain the spelling returned by the identifier tokenizer.
+C<value> contains either a parsed numeric value or the contents of a quoted
+string.
+
+C<EQU> definitions represent data used by the target program. Although
+C<DATASEG> selects a distinct parsing context, it does not create a separate
+HP-35s address space.
 
 Parser directives that do not define a symbol are omitted from
 C<definitions>.
 
 =head2 Code segment node
 
-A code segment has the form:
+A code segment node has the form:
 
   {
     name       => $name,
@@ -1373,16 +1399,17 @@ A code segment has the form:
     ],
   }
 
-For an unnamed code segment, C<name> is C<_TEXT>. Explicit segment names are 
-converted to upper case.
+C<name> is the internal identifier C<_TEXT>. Explicit segment names are not
+supported.
 
 C<statements> contains label, instruction, and literal nodes in source order.
+Executable calculator statements are accepted only while C<CODESEG> is active.
 
 Labels do not consume calculator program lines. Consecutive label nodes
 therefore refer to the following instruction or literal.
 
-Parser directives handled inside the code segment are not included in the final 
-C<statements> array.
+Parser directives handled inside C<CODESEG> may affect parser state but are not
+included in the final C<statements> array.
 
 =head3 Label node
 
@@ -1396,9 +1423,9 @@ A label declaration produces:
 
 Label names are converted to upper case.
 
-When local labels are enabled, a local label name is qualified with its active 
-non-local scope. For example, C<@@LOOP> in the scope C<START> becomes 
-C<START:@@LOOP>. A local label before the first non-local label uses an empty 
+When local labels are enabled, a local label name is qualified with its active
+non-local scope. For example, C<@@LOOP> in the scope C<START> becomes
+C<START:@@LOOP>. A local label before the first non-local label uses an empty
 scope and is returned as C<:@@LOOP>.
 
 =head3 Instruction node
@@ -1443,8 +1470,8 @@ A direct or indirect calculator variable.
 
 =item C<decimal>
 
-A decimal integer operand used by an instruction that accepts a
-numeric argument.
+A decimal integer operand used by an instruction that accepts a numeric
+argument.
 
 =item C<equation>
 
@@ -1456,8 +1483,7 @@ The contents of an inline quoted expression.
 
 =back
 
-The operand field is omitted for instructions that do not accept an
-operand.
+The operand field is omitted for instructions that do not accept an operand.
 
 =head3 Literal node
 
@@ -1504,18 +1530,18 @@ A hexadecimal numeric literal.
 
 =back
 
-The representation of C<value> depends on the tokenizer that recognized the 
-literal. Consumers must not assume that every numeric value is represented by 
-the same Perl scalar form. For example, decimal integer values may be numeric 
-scalars while decimal floating-point values may retain their textual 
+The representation of C<value> depends on the tokenizer that recognized the
+literal. Consumers must not assume that every numeric value is represented by
+the same Perl scalar form. For example, decimal integer values may be numeric
+scalars while decimal floating-point values may retain their textual
 representation.
 
-Unsuffixed non-decimal code literals receive a suffix in the returned value so 
+Unsuffixed non-decimal code literals receive a suffix in the returned value so
 that the selected radix remains available to the AST consumer.
 
 =head2 Stack segment node
 
-A stack segment has the form:
+A stack segment node has the form:
 
   {
     name        => $name,
@@ -1529,40 +1555,52 @@ A stack segment has the form:
     },
   }
 
-For an unnamed stack segment, C<name> is C<STACK>. Explicit segment names are 
-converted to upper case.
+C<name> is the internal identifier C<STACK>. Explicit segment names are not
+supported.
 
-Unlike data definitions and code statements, stack assignments are stored in a 
-hash reference keyed by register name.
+C<STACK> selects the section in which register C<SET> assignments are
+accepted. It does not take a size argument and does not allocate a fixed-size
+stack.
 
-If a register occurs more than once, the later assignment replaces the earlier 
-entry in the returned hash.
+C<assignments> is a hash reference keyed by register name. Each entry contains
+the value assigned to that register by C<SET>.
 
-Parser directives that do not assign a register are omitted from the 
+Unlike data definitions and code statements, stack assignments do not retain
+source order. If a register occurs more than once, the later C<SET> assignment
+replaces the earlier entry in the returned hash.
+
+C<SET> assignments are accepted only while C<STACK> is active. Their numeric
+values are interpreted using the active radix.
+
+Parser directives that do not assign a register are omitted from
 C<assignments>.
 
 =head2 AST consumer notes
 
-The AST represents parsed source structure rather than the calculator's final 
-program layout.
+The AST represents parsed source structure rather than the calculator's final
+program or memory layout.
 
-In particular, the AST does not contain a derived label index or calculated 
-program addresses. Labels remain individual nodes in the C<statements> array. 
-Address calculation and label indexing are the responsibility of the AST 
-consumer.
+The C<segments> array contains nodes produced from C<STACK>, C<DATASEG>, and
+C<CODESEG> sections. These nodes represent source organization and must not be
+interpreted as separate HP-35s address spaces.
 
-Consumers should inspect the discriminating keys and fields rather than relying 
-on Perl scalar representation alone:
+The AST does not contain a derived label index or calculated program
+addresses. Labels remain individual nodes in the C<statements> array. Address
+calculation and label indexing are the responsibility of the AST consumer.
+
+Consumers should inspect the discriminating keys and fields rather than
+relying on Perl scalar representation alone:
 
 =over 4
 
 =item *
 
-A segment is identified by its C<type> field.
+A segment node is identified by its C<type> field: C<stack>, C<data>, or
+C<code>.
 
 =item *
 
-A code statement is identified by the presence of C<label>, C<instruction>, or 
+A code statement is identified by the presence of C<label>, C<instruction>, or
 C<literal>.
 
 =item *
@@ -1575,7 +1613,7 @@ A literal is identified by its C<kind> field.
 
 =item *
 
-Numeric C<value> fields may be returned as numeric or textual Perl scalars, 
+Numeric C<value> fields may be returned as numeric or textual Perl scalars,
 depending on the token form.
 
 =back
@@ -1592,8 +1630,8 @@ Additional arguments are passed to the constructor inherited from
 L<Parser::MGC>. The token patterns required by the HP calculator assembler are
 installed by this constructor.
 
-The initial numeric radix is decimal. Local-label processing is initially 
-disabled and the initial local-label scope is empty.
+The initial numeric radix is decimal. Local-label processing is initially
+enabled and the initial local-label scope is empty.
 
 =head1 METHODS
 
@@ -1615,27 +1653,31 @@ Parsing failures are reported through the L<Parser::MGC> parser interface.
 Parses a complete program and returns the program node documented under
 L</Program node>.
 
-The method parses, in order, an optional title, the required C<IDEAL>, C<P35S>, 
-and C<MODEL TINY> header lines, the program segments, and the terminating 
+The method parses, in order, an optional title, the required C<IDEAL>, C<P35S>,
+and C<MODEL TINY> header lines, the program sections, and the terminating
 C<END> directive.
 
-Directives occurring between segments may affect parser state but do not create 
-entries in the returned C<segments> array.
+C<STACK>, C<DATASEG>, and C<CODESEG> select the parser context for the
+statements that follow. Repeated sections of the same type are combined into
+the corresponding node in the C<segments> array.
+
+Directives between sections may affect parser state but do not create entries
+in the returned C<segments> array.
 
 =head2 parse_code_block
 
   my $block = $self->parse_code_block();
   my $block = $self->parse_code_block($name);
 
-Parses the body of a code segment and returns a code segment node as
-documented under L</Code segment node>.
+Parses the statements in the current C<CODESEG> section and returns a code
+segment node as documented under L</Code segment node>.
 
-If C<$name> is omitted or false, the segment name defaults to C<_TEXT>. The 
-returned name is converted to upper case.
+If C<$name> is omitted or false, the internal node name is C<_TEXT>.
 
 Label nodes are inserted into C<statements> immediately before the code
-statement to which they apply. Directive nodes returned temporarily by
-L</parse_code_statement> are discarded.
+statement to which they apply. Parser directives handled within the code
+section may affect parser state or produce temporary nodes; these nodes are
+discarded and are not included in the final C<statements> array.
 
 =head2 parse_code_instruction
 
@@ -1659,52 +1701,56 @@ Parses one calculator literal and returns a literal node as documented under
 L</Literal node>. A parse failure is reported if the input does not contain a 
 recognized literal in the current parser context.
 
-The returned node is suitable for inclusion in the C<statements> array of a 
+The returned node is suitable for inclusion in the C<statements> array of a
 code segment.
 
 =head2 parse_code_statement
 
   my $statement = $self->parse_code_statement();
 
-Parses one statement from a code segment.
+Parses one statement from the current C<CODESEG> section.
 
 For a calculator instruction, returns the node documented under
-L</parse_code_instruction>. For a literal, returns the node documented under 
+L</parse_code_instruction>. For a literal, returns the node documented under
 L</parse_code_literal>.
 
-Directives handled within a code block temporarily produce one of the following 
-nodes:
+The following directives are also accepted within C<CODESEG> and temporarily
+produce these nodes:
 
-  { locals => $boolean  }
+  { locals  => $boolean }
 
-  { radix => $base }
+  { radix   => $base }
 
   { display => $message }
 
-These directive nodes are consumed by L</parse_code_block> and are not included 
-in the final C<statements> array.
+These directive nodes may affect parser state or produce diagnostic output.
+They are consumed by L</parse_code_block> and are not included in the final
+C<statements> array.
+
+C<EQU> definitions and C<SET> assignments are not accepted in C<CODESEG>.
+They belong to C<DATASEG> and C<STACK>, respectively.
 
 =head2 parse_data_block
 
   my $block = $self->parse_data_block();
   my $block = $self->parse_data_block($name);
 
-Parses the body of a data segment and returns a data segment node as documented 
-under L</Data segment node>.
+Parses the definitions in the current C<DATASEG> section and returns a data
+segment node as documented under L</Data segment node>.
 
-If C<$name> is omitted or false, the segment name defaults to C<_DATA>. The 
-returned name is converted to upper case.
+If C<$name> is omitted or false, the internal node name is C<_DATA>.
 
-Definitions are returned in source order. Parser directives that return empty 
-nodes are omitted from the C<definitions> array.
+C<EQU> definitions are returned in source order. Parser directives handled
+within the data section may affect parser state or produce empty nodes; these
+nodes are omitted from the final C<definitions> array.
 
 =head2 parse_data_statement
 
   my $definition = $self->parse_data_statement();
 
-Parses one data-segment statement.
+Parses one statement from the current C<DATASEG> section.
 
-A symbol definition returns:
+An C<EQU> definition returns:
 
   {
     name  => $name,
@@ -1712,12 +1758,15 @@ A symbol definition returns:
     value => $value,
   }
 
-C<value> contains either the parsed numeric value or the contents of a quoted 
+C<value> contains either the parsed numeric value or the contents of a quoted
 string.
 
-A C<RADIX>, C<LOCALS>, or C<NOLOCALS> directive returns an empty hash
-reference. Empty nodes are removed by L</parse_data_block> and do not appear 
-in the final C<definitions> array.
+C<EQU> definitions are accepted only within C<DATASEG>. C<SET> assignments are
+not accepted in this section and belong to C<STACK>.
+
+C<RADIX>, C<LOCALS>, and C<NOLOCALS> directives may affect parser state and
+return an empty hash reference. Empty nodes are removed by L</parse_data_block> 
+and do not appear in the final C<definitions> array.
 
 =head2 parse_display
 
@@ -1753,15 +1802,15 @@ Returns C<undef> if the directive does not specify a start label.
 
 Input remaining after the C<END> directive is ignored.
 
-=head2 parse_ideal
+=head2 parse_mode
 
-  my $mode = $self->parse_ideal();
+  my $bool = $self->parse_mode();
 
-Parses the required C<IDEAL> directive and returns C<IDEAL>.
+Parses the required C<IDEAL> directive and returns true for success.
 
-IDEAL is the only supported syntax mode. The directive must occupy its own 
-line, apart from whitespace and a comment. Its return value is not stored in 
-the program AST.
+IDEAL is the only supported syntax mode. The directive must occupy its own
+line, apart from whitespace and a comment. Its return value represents parser
+state and is not stored directly in the program AST.
 
 =head2 parse_label
 
@@ -1778,7 +1827,7 @@ Parses a label declaration and returns:
 The label name is converted to upper case. Active local labels are returned 
 using their qualified names.
 
-The returned node is suitable for inclusion in the C<statements> array of a 
+The returned node is suitable for inclusion in the C<statements> array of a
 code segment.
 
 =head2 parse_language
@@ -1833,32 +1882,42 @@ final AST.
 
   my $segment = $self->parse_segment();
 
-Parses a segment declaration and dispatches to L</parse_data_block>, 
-L</parse_code_block>, or L</parse_stack_block>, according to the segment type.
+Parses one of the C<STACK>, C<DATASEG>, or C<CODESEG> section directives and
+dispatches to the corresponding block parser.
 
-Returns the resulting data, code, or stack segment node.
+Each directive selects the parsing context for the statements that follow.
+The selected section continues until another C<STACK>, C<DATASEG>, or
+C<CODESEG> directive, or the terminating C<END> directive, is encountered.
 
-For a named segment, the closing segment name must match the opening name.
+C<STACK> selects C<SET> assignments, C<DATASEG> selects C<EQU> definitions,
+and C<CODESEG> selects executable calculator statements.
+
+Explicit C<SEGMENT> and C<ENDS> syntax is not supported.
 
 =head2 parse_stack_block
 
   my $block = $self->parse_stack_block();
-  my $block = $self->parse_stack_block($name);
 
-Parses the body of a stack segment and returns a stack segment node as
-documented under L</Stack segment node>.
+Parses the assignments in the current C<STACK> section and returns a stack
+segment node as documented under L</Stack segment node>.
 
-If C<$name> is omitted or false, the segment name defaults to C<STACK>. The 
-returned name is converted to upper case.
+C<STACK> is a section selector and does not take a size argument. Register
+C<SET> assignments are accepted only while this section is active.
 
-The individual hashes returned by L</parse_stack_statement> are merged into the 
-segment's C<assignments> hash.
+Assignments are stored by register name rather than in source order. If the
+same register is assigned more than once, the later C<SET> assignment replaces
+the earlier value.
+
+C<RADIX>, C<LOCALS>, and C<NOLOCALS> directives may affect parser state and do
+not produce entries in the final C<assignments> hash.
 
 =head2 parse_stack_statement
 
-  my $assignment = $self->parse_stack_statement();
+  my $statement = $self->parse_stack_statement();
 
-Parses one stack-register assignment and returns:
+Parses one statement from the current C<STACK> section.
+
+A register C<SET> assignment returns:
 
   {
     $register => {
@@ -1867,8 +1926,15 @@ Parses one stack-register assignment and returns:
     },
   }
 
-A C<RADIX>, C<LOCALS>, or C<NOLOCALS> directive returns an empty hash 
-reference. Empty nodes are omitted by L</parse_stack_block>.
+The register must be one of the registers accepted by the target vocabulary.
+C<value> is parsed using the active numeric radix.
+
+C<SET> assignments are accepted only within C<STACK>. Repeated assignments to
+the same register are permitted; when the stack block is assembled into its
+AST node, the later assignment replaces the earlier value.
+
+C<RADIX>, C<LOCALS>, and C<NOLOCALS> directives may affect parser state and
+return an empty hash reference.
 
 =head2 parse_title
 

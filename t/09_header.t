@@ -7,7 +7,7 @@ use Parser::HPC;
 sub parse_header {
   my ($header) = @_;
   return Parser::HPC->new->from_string(
-    "$header\nSEGMENT CODE\nRTN\nENDS\nEND\n"
+    "$header\nCODESEG\nRTN\n\nEND\n"
   );
 }
 

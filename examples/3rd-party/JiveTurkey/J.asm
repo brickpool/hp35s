@@ -4,7 +4,7 @@
 IDEAL
 P35S
 MODEL TINY
-SEGMENT JiveTurkey CODE
+CODESEG
         LBL     J
         ;100 DISPLAY AT(6)"* JIVE TURKEY GAME *":PAUSE 2
         SF      10
@@ -129,6 +129,5 @@ SEGMENT JiveTurkey CODE
 INTRND:
         eqn     'IP(RAND*IP(REGX+1/2))+1'
         RTN
-ENDS JiveTurkey
 
 END

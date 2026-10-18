@@ -2,11 +2,11 @@
 IDEAL
 P35S
 MODEL TINY
-SEGMENT DATA
+DATASEG
   eqnMenu EQU '1T\->\pi 2\pi\->T 3S\->D 4D\->S'
-ENDS
 
-SEGMENT CODE
+
+CODESEG
 start:
 LBL Y
 
@@ -124,7 +124,6 @@ delta2star:
   VIEW R
 
 RTN
-ENDS
 
 END start
 ; CK=1171

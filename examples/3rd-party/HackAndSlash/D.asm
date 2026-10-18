@@ -4,7 +4,7 @@
 IDEAL
 P35S
 MODEL TINY
-SEGMENT HackAndSlash CODE
+CODESEG
         LBL     D
         ALL
         XEQ     @702
@@ -803,5 +803,5 @@ SEGMENT HackAndSlash CODE
         CF 4
         CF 10
         RTN
-ENDS    HackAndSlash
+
 END

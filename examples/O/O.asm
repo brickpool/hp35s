@@ -2,7 +2,7 @@
 IDEAL
 P35S
 MODEL TINY
-SEGMENT CODE
+CODESEG
 start:
 LBL O           ; program O
 
@@ -46,7 +46,6 @@ calcV:
   STO V
   VIEW V
 RTN
-ENDS
 
 END
 ; CK=F15D

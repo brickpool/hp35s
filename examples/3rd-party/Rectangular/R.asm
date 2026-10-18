@@ -5,7 +5,7 @@ IDEAL
 P35S
 MODEL TINY
 
-SEGMENT Rectangular     CODE
+CODESEG
         LBL     R
         ARG
         LASTx
@@ -24,6 +24,5 @@ SEGMENT Rectangular     CODE
         LASTx
         *
         RTN
-ENDS    Rectangular
 
 END

@@ -11,7 +11,7 @@ subtest 'local labels are enabled by default and scoped by nonlocal labels' => s
 IDEAL
 P35S
 MODEL TINY
-SEGMENT CODE
+CODESEG
 start:
   LBL A
   GTO @@loop
@@ -23,12 +23,12 @@ next:
 @@loop:
   RTN
   GTO @@loop
-ENDS
 END start
 ASM
   my $root = Parser::HPC->new->from_string($source);
   my $statements = $root->{segments}->[0]->{statements};
-  is( scalar @$statements, 11, 'seven instructions and four declarations, no LOCALS node' );
+  is( scalar @$statements,
+    11, 'seven instructions and four declarations, no LOCALS node' );
   my $first = $statements->[2]->{instruction}->{operand}->{value};
   my $second = $statements->[7]->{instruction}->{operand}->{value};
   isnt( $first, $second, 'same local spelling has distinct scoped identities' );
@@ -36,8 +36,16 @@ ASM
     'case-insensitive backward reference retains first scope' );
   is( $statements->[10]->{instruction}->{operand}->{value}, $second,
     'backward reference retains second scope' );
-  is_deeply( $statements->[3], { label => { name => $first } }, 'first local declaration' );
-  is_deeply( $statements->[8], { label => { name => $second } }, 'second local declaration' );
+  is_deeply(
+    $statements->[3],
+    { label => { name => $first } },
+    'first local declaration'
+  );
+  is_deeply(
+    $statements->[8],
+    { label => { name => $second } },
+    'second local declaration'
+  );
   for my $options ( [], [ '-j' ], [ '-s' ] ) {
     my ($first_scope, $next_scope) = split /(?=^next:)/m, $source;
     $first_scope =~ s/\@\@loop/first_loop/ig;
@@ -50,7 +58,8 @@ ASM
     is( $errors, '', 'no missing local targets' );
     is( $expected_status, 0, 'global reference assembles' );
     is( $expected_errors, '', 'global reference has no warnings' );
-    is( $output, $expected, 'local and explicit targets produce identical output' );
+    is( $output, $expected, 
+      'local and explicit targets produce identical output' );
   }
 };
 
@@ -59,33 +68,37 @@ subtest 'NOLOCALS disables special handling without emitting code' => sub {
 IDEAL
 P35S
 MODEL TINY
-SEGMENT CODE
+CODESEG
 start:
 @@loop:
-GTO @@loop
+  GTO @@loop
 NOLOCALS
 @@loop:
-GTO @@loop
+  GTO @@loop
 next:
-XEQ @@loop
+  XEQ @@loop
 LOCALS
 @@loop:
-GTO @@loop
-ENDS
+  GTO @@loop
 END @@loop
 ASM
   my $statements = $root->{segments}->[0]->{statements};
-  is( scalar @$statements, 9, 'four instructions and five declarations, no directive nodes' );
+  is( scalar @$statements, 9, 
+    'four instructions and five declarations, no directive nodes' );
   is( $statements->[4]->{instruction}->{operand}->{value}, '@@LOOP',
     'disabled local name remains global' );
   is( $statements->[6]->{instruction}->{operand}->{value}, '@@LOOP',
     'nonlocal label does not restrict ordinary global reference' );
   is_deeply( $statements->[3], { label => { name => '@@LOOP' } },
     'global declaration is retained' );
-  is_deeply( $root->{startaddr}, {
-    type => 'label', value => $statements->[8]->{instruction}->{operand}->{value},
-  },
-    'END resolves a local label in the current scope' );
+  is_deeply(
+    $root->{startaddr},
+    {
+      type  => 'label',
+      value => $statements->[8]->{instruction}->{operand}->{value},
+    },
+    'END resolves a local label in the current scope'
+  );
 };
 
 subtest 'local scope follows labels rather than segments or directives' => sub {
@@ -93,25 +106,23 @@ subtest 'local scope follows labels rather than segments or directives' => sub {
 IDEAL
 P35S
 MODEL TINY
-SEGMENT first CODE
+CODESEG
 @@initial:
-GTO @@initial
+  GTO @@initial
 start:
-GTO @@target
-ENDS first
+  GTO @@target
 NOLOCALS
 LOCALS
-SEGMENT second CODE
+CODESEG
 @@target:
-RTN
-ENDS second
+  RTN
 END
 ASM
   my $target = $root->{segments}->[0]->{statements}->[3]
     ->{instruction}->{operand}->{value};
-  is_deeply( $root->{segments}->[1]->{statements}->[0],
+  is_deeply( $root->{segments}->[0]->{statements}->[4],
     { label => { name => $target } },
-    'segment and mode changes do not start a new scope' );
+    'section and mode changes do not start a new scope' );
   my $initial = $root->{segments}->[0]->{statements}->[1]
     ->{instruction}->{operand}->{value};
   is_deeply( $root->{segments}->[0]->{statements}->[0],
@@ -124,17 +135,16 @@ subtest 'only double-at prefixes are local and references do not escape scope' =
 IDEAL
 P35S
 MODEL TINY
-SEGMENT CODE
+CODESEG
 start:
 @@A001:
-RTN
-GTO @@A001
+  RTN
+  GTO @@A001
 @shared:
-RPN
+  RPN
 next:
-GTO @@A001
-GTO @shared
-ENDS
+  GTO @@A001
+  GTO @shared
 END start
 ASM
   my $statements = $root->{segments}->[0]->{statements};
@@ -152,10 +162,10 @@ ASM
 subtest 'LOCALS and NOLOCALS allow uppercase spelling' => sub {
   for my $directive ( 'locals', 'Locals', 'nolocals', 'Nolocals' ) {
     for my $source (
-      "IDEAL\nP35S\nMODEL TINY\n$directive\nSEGMENT CODE\nRTN\nENDS\nEND\n",
-      "IDEAL\nP35S\nMODEL TINY\nSEGMENT CODE\n$directive\nRTN\nENDS\nEND\n",
-      "IDEAL\nP35S\nMODEL TINY\nSEGMENT DATA\n$directive\nVALUE EQU 1\nENDS\nEND\n",
-      "IDEAL\nP35S\nMODEL TINY\nSEGMENT STACK\n$directive\nREGX SET 1\nENDS\nEND\n",
+      "IDEAL\nP35S\nMODEL TINY\n$directive\nCODESEG\nRTN\n\nEND\n",
+      "IDEAL\nP35S\nMODEL TINY\nCODESEG\n$directive\nRTN\n\nEND\n",
+      "IDEAL\nP35S\nMODEL TINY\nDATASEG\n$directive\nVALUE EQU 1\n\nEND\n",
+      "IDEAL\nP35S\nMODEL TINY\nSTACK\nREGX SET 1\n$directive\nCODESEG\nRTN\n\nEND\n",
     ) {
       my $success = eval { Parser::HPC->new->from_string($source); 1 };
       ok( $success, "$directive is allowed" );
@@ -171,7 +181,7 @@ subtest 'duplicate locals and unsupported directive parameters are rejected' => 
   ) {
     my $success = eval {
       Parser::HPC->new->from_string(
-        "IDEAL\nP35S\nMODEL TINY\nSEGMENT CODE\n$code\nENDS\nEND\n"
+        "IDEAL\nP35S\nMODEL TINY\nCODESEG\n$code\n\nEND\n"
       );
       1;
     };

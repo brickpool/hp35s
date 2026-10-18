@@ -4,7 +4,7 @@
 IDEAL
 P35S
 MODEL TINY
-SEGMENT MUGWUMP CODE
+CODESEG
         LBL     M
         ;1 PRINT TAB(33);"MUGWUMP"
         SF      10
@@ -204,6 +204,5 @@ SEGMENT MUGWUMP CODE
         GTO     @1020
         RTN
 
-ENDS MUGWUMP
 
 END

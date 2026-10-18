@@ -5,7 +5,7 @@ IDEAL
 P35S
 MODEL TINY
 
-SEGMENT Sunlight CODE
+CODESEG
         LBL     S
         DEG
         INPUT   D
@@ -29,6 +29,5 @@ SEGMENT Sunlight CODE
         /
         ->HMS
         RTN
-ENDS    Sunlight
 
 END

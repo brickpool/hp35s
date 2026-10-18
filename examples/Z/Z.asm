@@ -5,11 +5,11 @@ IDEAL
 P35S
 MODEL TINY
 
-SEGMENT DATA
+DATASEG
   eqnMenu EQU '1HF 2SW 3CO 4\Gl4'
-ENDS
 
-SEGMENT CODE
+
+CODESEG
 start:
 LBL Z       ; program Z
 
@@ -135,6 +135,5 @@ print:
   VIEW  Z   ; Show surge impedance Z
 
 RTN
-ENDS
 
 END

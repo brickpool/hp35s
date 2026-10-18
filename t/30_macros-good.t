@@ -20,11 +20,9 @@ ENDM
 IDEAL
 P35S
 MODEL TINY
-SEGMENT CODE
-
+CODESEG
   RTN
-LATE target
-ENDS
+  LATE target
 END
 ASM
   my $statements = $root->{segments}->[0]->{statements};
@@ -50,9 +48,8 @@ ENDM
 IDEAL
 P35S
 MODEL TINY
-SEGMENT CODE
-TEST
-ENDS
+CODESEG
+  TEST
 END
 ASM
   my $statements = $root->{segments}->[0]->{statements};
@@ -79,12 +76,11 @@ ENDM
 IDEAL
 P35S
 MODEL TINY
-SEGMENT CODE
+CODESEG
 target:
   RTN
-TEST target
-TEST target
-ENDS
+  TEST target
+  TEST target
 END
 ASM
   my $statements = $root->{segments}->[0]->{statements};
@@ -118,11 +114,10 @@ ENDM
 IDEAL
 P35S
 MODEL TINY
-SEGMENT CODE
+CODESEG
 target:
   RTN
-CALL target
-ENDS
+  CALL target
 END
 ASM
   is( $root->{segments}->[0]->{statements}->[2]->{instruction}->{operand}->{value},
@@ -137,13 +132,12 @@ ENDM
 IDEAL
 P35S
 MODEL TINY
-SEGMENT CODE
-ACTION
+CODESEG
+  ACTION
 MACRO ACTION
   STOP
 ENDM
-ACTION
-ENDS
+  ACTION
 END
 ASM
   my $statements = $root->{segments}->[0]->{statements};
@@ -160,11 +154,10 @@ ENDM
 IDEAL
 P35S
 MODEL TINY
-SEGMENT CODE
+CODESEG
 target:
   RTN
 @CALL target
-ENDS
 END
 ASM
   is( $root->{segments}->[0]->{statements}->[2]->{instruction}->{operand}->{value},
@@ -179,9 +172,8 @@ ENDM
 IDEAL
 P35S
 MODEL TINY
-SEGMENT CODE
+CODESEG
   eqn 'MYMAC' ; MYMAC is a comment
-ENDS
 END
 ASM
   is( $root->{segments}->[0]->{statements}->[0]->{instruction}->{operand}->{value},
@@ -261,7 +253,7 @@ MACRO INNER
   ; LOCAL is only a comment
 label:
 ENDM
-OUTER
+  OUTER
 ASM
   is( $parser->from_string($source), <<'ASM', 'only LOCAL is interpreted' );
 MACRO INNER
@@ -284,8 +276,8 @@ target: GTO target
   STO target
   eqn 'target' ; GTO target
 ENDM
-MIXED A
-MIXED B
+  MIXED A
+  MIXED B
 ASM
   is( $parser->from_string($source), <<'ASM', 'locals apply only to declarations and address operands' );
 ??0000: GTO ??0000

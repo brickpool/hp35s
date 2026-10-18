@@ -16,8 +16,8 @@ our @EXPORT_OK = qw(
 );
 
 our @directives = (
-  'DISPLAY', 'ENDS', 'END', 'ENDM', 'EQU', 'IDEAL', 'LOCALS', 'MACRO', 'MODEL',
-  'NOLOCALS', 'RADIX', 'SEGMENT', 'SET', '%TITLE',
+  'DISPLAY', 'END', 'ENDM', 'EQU', 'IDEAL', 'LOCALS', 'MACRO', 'MODEL', 
+  'NOLOCALS', 'RADIX', 'SET', '%TITLE',
 );
 
 our @predefined = (
@@ -29,7 +29,7 @@ our @languages = (
 );
 
 our @segments = (
-  'DATA', 'CODE', 'STACK',
+  'DATASEG', 'CODESEG', 'STACK',
 );
 
 1;
@@ -42,14 +42,14 @@ Parser::HPC::Vocabulary - HPC-specific assembler vocabulary
 
 =head1 DESCRIPTION
 
-This module provides the directives, predefined symbols, language names, and
-segment names used by the HPC assembler parser. 
+This module provides the directives, predefined symbols, language names, and 
+segment names used by the HPC assembler parser.
 
 HP-35s instructions and constants are provided by L<HP35s::Vocabulary>.
 
 =head1 EXPORTS
 
-C<@directives>, C<@predefined>, C<@languages>, and C<@segments> are available
-on request.
+C<@directives>, C<@predefined>, C<@languages> and C<@segments> are available on 
+request.
 
 =cut

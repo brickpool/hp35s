@@ -14,10 +14,9 @@ IDEAL
 P35S
 MODEL TINY
 DISPLAY 'Starting assembly'
-SEGMENT CODE
+CODESEG
   RTN
   DISPLAY 'Inside code'
-  ENDS
   DISPLAY "Assembly complete"
 END
 ASM
@@ -38,9 +37,9 @@ ASM
 
 subtest 'DISPLAY reports string errors at the source position' => sub {
   my @cases = (
-    [ "IDEAL\nP35S\nMODEL TINY\nDISPLAY \nSEGMENT CODE\nRTN\nENDS\nEND\n",
+    [ "IDEAL\nP35S\nMODEL TINY\nDISPLAY \nCODESEG\nRTN\n\nEND\n",
       qr/Need quoted string on line 4/, 'missing message' ],
-    [ "IDEAL\nP35S\nMODEL TINY\nDISPLAY \"I\/O\nLibrary\"\nSEGMENT CODE\nRTN\nENDS\nEND\n",
+    [ "IDEAL\nP35S\nMODEL TINY\nDISPLAY \"I\/O\nLibrary\"\nCODESEG\nRTN\n\nEND\n",
       qr/Missing end quote on line 4 at:\nDISPLAY \"I\/O\n {12}\^/,
       'newline in message after I/O' ],
   );
@@ -56,9 +55,9 @@ subtest 'DISPLAY reports string errors at the source position' => sub {
 subtest 'DISPLAY cannot share a line with the next directive' => sub {
   my @cases = (
     [ 'between segments',
-      "IDEAL\nP35S\nMODEL TINY\nDISPLAY 'message' SEGMENT CODE\nRTN\nENDS\nEND\n" ],
+      "IDEAL\nP35S\nMODEL TINY\nDISPLAY 'message' CODESEG\nRTN\n\nEND\n" ],
     [ 'inside code',
-      "IDEAL\nP35S\nMODEL TINY\nSEGMENT CODE\nDISPLAY 'message' RTN\nENDS\nEND\n" ],
+      "IDEAL\nP35S\nMODEL TINY\nCODESEG\nDISPLAY 'message' RTN\n\nEND\n" ],
   );
   for my $case (@cases) {
     my ($context, $source) = @$case;
@@ -82,9 +81,9 @@ IDEAL
 P35S
 MODEL TINY
 $directive 'message'
-SEGMENT CODE
+CODESEG
   RTN
-ENDS
+
 END
 ASM
     my $success = eval { Parser::HPC->new->from_string($source); 1 };

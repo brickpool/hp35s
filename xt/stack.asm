@@ -3,9 +3,11 @@
 ; Tricks, tips, and routines for HP-41 series calculators
 ; Chapter 7
 ; Working with the stack
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 
-SEGMENT Stapel CODE
+CODESEG
 
 
 ; 7-1 Using X to operate on REGX
@@ -430,6 +432,5 @@ RTN
 ; LN=15
 ; (15 Bytes)
 
-ENDS Stapel
 
 END

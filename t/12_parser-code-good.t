@@ -9,49 +9,38 @@ sub parse_statements {
   my $data = shift || '';
   my $parser = Parser::HPC->new;
   my $root = $parser->from_string(
-    "IDEAL\nP35S\nMODEL TINY\n$data\nSEGMENT CODE\n$code\nENDS\nEND\n"
+    "IDEAL\nP35S\nMODEL TINY\n$data\nCODESEG\n$code\n\nEND\n"
   );
   return $root->{segments}->[-1]->{statements};
 }
 
-subtest 'segment ASTs preserve source order' => sub {
+subtest 'section ASTs preserve source order and share code namespace' => sub {
   my $root = Parser::HPC->new->from_string(<<'ASM');
 IDEAL
 P35S
 MODEL TINY
-SEGMENT zebra CODE
+CODESEG
 entry:
   RTN
-ENDS zebra
 RADIX 10
 LOCALS
 NOLOCALS
-SEGMENT DATA
+DATASEG
   FORMULA EQU 'A+B'
-ENDS
-SEGMENT STACK
-  REGX SET 2
-ENDS
-SEGMENT CODE
+CODESEG
   STOP
-ENDS
 END entry
 ASM
   is_deeply( $root->{segments}, [
-    { name => 'ZEBRA', type => 'code', statements => [
+    { name => '_TEXT', type => 'code', statements => [
       { label => { name => 'ENTRY' } },
       { instruction => { value => 'RTN' } },
+      { instruction => { value => 'STOP' } },
     ] },
     { name => '_DATA', type => 'data', definitions => [
       { name => 'FORMULA', type => 'equation', value => 'A+B' },
     ] },
-    { name => 'STACK', type => 'stack', assignments => {
-      REGX => { type => 'register', value => 2 },
-    } },
-    { name => '_TEXT', type => 'code', statements => [
-      { instruction => { value => 'STOP' } },
-    ] },
-  ], 'named and default segments are explicit nodes in source order' );
+  ], 'section changes retain one shared code node and source order' );
   ok( !exists $root->{labels}, 'AST contains no derived label index' );
 };
 
@@ -60,7 +49,7 @@ subtest 'definition ASTs preserve names and source order' => sub {
 IDEAL
 P35S
 MODEL TINY
-SEGMENT DATA
+DATASEG
   eqnZulu EQU 'A+B'
   RADIX 16
   LOCALS
@@ -68,7 +57,6 @@ SEGMENT DATA
   NOLOCALS
   RADIX 10
   middle EQU 2
-ENDS
 END
 ASM
   is_deeply( $root->{segments}->[0]->{definitions}, [
@@ -107,7 +95,7 @@ subtest 'instruction ASTs' => sub {
     my $instruction = { value => $mnemonic };
     $instruction->{operand} = $operand if defined $operand;
     is_deeply( parse_statements($code,
-      "SEGMENT DATA\nFORMULA EQU 'A+B'\nENDS")->[0], {
+      "DATASEG\nFORMULA EQU 'A+B'\n")->[0], {
         instruction => $instruction,
       }, $code );
   }
@@ -135,7 +123,7 @@ subtest 'literal ASTs' => sub {
 subtest 'mixed statements and labels' => sub {
   my $parser = Parser::HPC->new;
   my $root = $parser->from_string(
-    "IDEAL\nP35S\nMODEL TINY\nSEGMENT CODE\nentry:\nLBL A\n0 ; zero\n\npi\nGTO entry\nRTN\nENDS\nEND entry\n"
+    "IDEAL\nP35S\nMODEL TINY\nCODESEG\nentry:\nLBL A\n0 ; zero\n\npi\nGTO entry\nRTN\n\nEND entry\n"
   );
   is( scalar @{ $root->{segments}->[0]->{statements} }, 6,
     'alternatives parse successive lines and comments' );
@@ -151,7 +139,7 @@ subtest 'label declarations preserve order around directives' => sub {
 IDEAL
 P35S
 MODEL TINY
-SEGMENT CODE
+CODESEG
 start:
 alias:
   RADIX 16
@@ -161,7 +149,6 @@ alias:
   NOLOCALS
 last:
   RTN
-ENDS
 END start
 ASM
   is_deeply( $root->{segments}->[0]->{statements}, [
@@ -177,7 +164,7 @@ ASM
 subtest 'END start reference is optional' => sub {
   for my $target ( '', 'entry', 'EnTrY' ) {
     my $root = Parser::HPC->new->from_string(
-      "IDEAL\nP35S\nMODEL TINY\nSEGMENT CODE\nentry:\nRTN\nENDS\nEND $target\n"
+      "IDEAL\nP35S\nMODEL TINY\nCODESEG\nentry:\nRTN\n\nEND $target\n"
     );
     if ( length $target ) {
       is_deeply( $root->{startaddr}, { type => 'label', value => 'ENTRY' },
@@ -202,14 +189,13 @@ subtest 'statement line boundary accepts whitespace and comments' => sub {
 IDEAL
 P35S
 MODEL TINY
-SEGMENT main CODE
+CODESEG
 start:
   LBL C
   $code
 
   ; The next statement must remain separate
   STOP
-ENDS main
 END start
 ASM
     my $root;

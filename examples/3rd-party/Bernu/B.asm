@@ -5,7 +5,7 @@
 IDEAL
 P35S
 MODEL TINY
-SEGMENT BERN    CODE
+CODESEG
         LBL     B
         STO     C
         1
@@ -102,5 +102,5 @@ ZETA:
         /
         ABS
         RTN
-ENDS    BERN
+
 END

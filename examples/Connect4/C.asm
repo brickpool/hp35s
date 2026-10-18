@@ -5,7 +5,7 @@
         MODEL TINY
         LOCALS
 
-SEGMENT DATA
+DATASEG
 
 ;-----  Insert EOU and = equates here
 
@@ -21,7 +21,7 @@ SEGMENT DATA
 ; seven-digit values.
 ;---------------------------------------------------------------
 
-ENDS
+
 
 ;---------------------------------------------------------------
 ; print         Macro for printing messages
@@ -39,7 +39,7 @@ MACRO   print   msg
         CF 10                   ; End equation mode
 ENDM
 
-SEGMENT CODE
+CODESEG
 start:
         LBL C
         RPN
@@ -565,5 +565,4 @@ undo:
         XEQ set_cell
         RTN
 
-ENDS
 END start

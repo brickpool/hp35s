@@ -14,9 +14,9 @@ subtest 'macro errors reject invalid source and preserve known diagnostics' => s
     [ "MACRO TESTMACRO\nLOCAL 123\nENDM\n", "Illegal local argument\n" ],
     [ "MACRO OUTER\nMACRO INNER\nENDM\nENDM\n", undef ],
     [ "ENDM\n", "Can't use this outside macro\n" ],
-    [ "MACRO TESTMACRO\nENDM\nIDEAL\nP35S\nMODEL TINY\nSEGMENT CODE\nXEQ TESTMACRO\nENDS\nEND\n",
+    [ "MACRO TESTMACRO\nENDM\nIDEAL\nP35S\nMODEL TINY\nCODESEG\nXEQ TESTMACRO\n\nEND\n",
       "Can't use macro name in expression: TESTMACRO\n" ],
-    [ "MACRO TESTMACRO\nENDM\nIDEAL\nP35S\nMODEL TINY\nSEGMENT CODE\nXEQ testmacro\nENDS\nEND\n",
+    [ "MACRO TESTMACRO\nENDM\nIDEAL\nP35S\nMODEL TINY\nCODESEG\nXEQ testmacro\n\nEND\n",
       "Can't use macro name in expression: testmacro\n" ],
   );
   for my $case (@cases) {
@@ -41,11 +41,10 @@ subtest 'MASM macro syntax is rejected' => sub {
 IDEAL
 P35S
 MODEL TINY
-SEGMENT CODE
+CODESEG
 M MACRO
   RTN
 ENDM
-ENDS
 END
 ASM
   my $success = eval { Parser::HPC->new->from_string($source); 1 };
@@ -57,9 +56,8 @@ subtest 'EXITM is not a supported directive' => sub {
 IDEAL
 P35S
 MODEL TINY
-SEGMENT CODE
+CODESEG
 EXITM
-ENDS
 END
 ASM
   my $success = eval { Parser::HPC->new->from_string($source); 1 };

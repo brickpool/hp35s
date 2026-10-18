@@ -9,10 +9,10 @@ my $source = <<'ASM';
 IDEAL
 P35S
 MODEL TINY
-SEGMENT DATA
+DATASEG
   FORMULA EQU 'A+B'
-ENDS
-SEGMENT main CODE
+
+CODESEG
 start:
   LBL A
   RPN
@@ -41,7 +41,6 @@ value:
   GTO start
   RTN
   CLZ
-ENDS main
 END start
 ASM
 
@@ -93,20 +92,41 @@ subtest 'jump markers resolve instruction and literal targets' => sub {
   is( $output, $marked, 'both target nodes retain their line addresses' );
 };
 
+subtest 'SET in STACK initializes registers before the code section' => sub {
+  my $program = <<'ASM';
+IDEAL
+P35S
+MODEL TINY
+STACK
+  REGX SET 1
+  REGX SET 2
+CODESEG
+start:
+  LBL A
+  RTN
+END start
+ASM
+  my ($status, $output, $errors) = run_frontend($program);
+  is( $status, 0, 'frontend succeeds' );
+  is( $errors, '', 'no warnings' );
+  is( $output,
+    "%%HP: T(3)A(D)F(.);\n0001\tRv\n0002\t2\nA001\tLBL A\nA002\tRTN\n",
+    'the final SET value is emitted before program instructions' );
+};
+
 subtest 'decimal literals use the fewest numeric keystrokes' => sub {
   my $numbers = <<'ASM';
 IDEAL
 P35S
 MODEL TINY
-SEGMENT CODE
-1e-9
-1000
-3.0
-0.0000012
-0.001
-0.5
--0.5
-ENDS
+CODESEG
+  1e-9
+  1000
+  3.0
+  0.0000012
+  0.001
+  0.5
+  -0.5
 END
 ASM
   my ($status, $output, $errors) = run_frontend($numbers, '-s');
@@ -128,26 +148,24 @@ ASM
     'adds a leading zero to the rendered negative fraction only' );
 };
 
-subtest 'segment nodes retain alphabetical frontend order' => sub {
+subtest 'code sections share the source-order address namespace' => sub {
   my $source = <<'ASM';
 IDEAL
 P35S
 MODEL TINY
-SEGMENT zulu CODE
-LBL B
-RTN
-ENDS zulu
-SEGMENT alpha CODE
-LBL A
-RTN
-ENDS alpha
+CODESEG
+  LBL B
+  RTN
+CODESEG
+  LBL A
+  RTN
 END
 ASM
   my ($status, $output, $errors) = run_frontend($source);
   is( $status, 0, 'frontend succeeds' );
   is( $errors, '', 'no warnings' );
-  is( $output, "%%HP: T(3)A(D)F(.);\nA001\tLBL A\nA002\tRTN\nB001\tLBL B\nB002\tRTN\n",
-    'code segments are still rendered alphabetically, not in source order' );
+  is( $output, "%%HP: T(3)A(D)F(.);\nB001\tLBL B\nB002\tRTN\nA001\tLBL A\nA002\tRTN\n",
+    're-entering CODESEG retains one shared address namespace' );
 };
 
 subtest 'debug shows the parser statement AST without filtering' => sub {
@@ -155,8 +173,8 @@ subtest 'debug shows the parser statement AST without filtering' => sub {
   is( $status, 0, 'frontend succeeds' );
   is( $output, $expected, 'debug does not change the listing' );
   like( $errors, qr/'segments'\s*=>\s*\[/, 'segments are a list' );
-  like( $errors, qr/'name'\s*=>\s*'MAIN'/, 'segment names are node properties' );
-  unlike( $errors, qr/'(?:MAIN|_DATA)'\s*=>/, 'no legacy segment keys' );
+  like( $errors, qr/'name'\s*=>\s*'_TEXT'/, 'code section uses its internal AST name' );
+  unlike( $errors, qr/'(?:MAIN|_DATA)'\s*=>/, 'no named segment keys' );
   like( $errors, qr/'definitions'\s*=>\s*\[/, 'definitions are a list' );
   like( $errors, qr/'name'\s*=>\s*'FORMULA'/, 'definition names are node properties' );
   unlike( $errors, qr/'FORMULA'\s*=>/, 'no legacy definition keys' );

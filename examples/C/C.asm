@@ -2,14 +2,14 @@
 IDEAL
 P35S
 MODEL TINY
-SEGMENT DATA
+DATASEG
   eqnMain EQU '1PAR 2SER'
   eqnPar  EQU '1R 2C 3L 4P 5I 6G 7Z'
   eqnSer  EQU '1R 2C 3L 4P 5V 6G'
   eqnToI  EQU '\|>(I)'
-ENDS
 
-SEGMENT CODE
+
+CODESEG
 start:
 LBL C           ; Program C
 
@@ -124,7 +124,6 @@ print:
   VIEW V
 
 RTN
-ENDS
 
 END start
 ; CK=E81C

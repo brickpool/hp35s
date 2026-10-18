@@ -4,7 +4,7 @@ P35S
 MODEL TINY
 LOCALS
 
-SEGMENT NE555 CODE
+CODESEG
 start:
 LBL N           ; program N
 
@@ -355,7 +355,6 @@ solveC:
   VIEW C
 RTN
 
-ENDS NE555
 
 END
 ; LBL N: CK=1285, LN=334

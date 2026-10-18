@@ -5,7 +5,7 @@ IDEAL
 P35S
 MODEL TINY
 LOCALS
-SEGMENT Mancala CODE
+CODESEG
 ; Main Mancala program
 LBL M
   XEQ init                          ; Init the game registers
@@ -287,5 +287,4 @@ cleanup:
   DEG
 RTN
 
-ENDS Mancala
 END

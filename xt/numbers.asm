@@ -1,6 +1,8 @@
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 
-SEGMENT numbers CODE
+CODESEG
 
 LBL A
   ; -27
@@ -383,6 +385,5 @@ VIEW_X:
   VIEW X
 RTN
 
-ENDS numbers
 
 END

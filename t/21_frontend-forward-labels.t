@@ -10,13 +10,12 @@ subtest 'forward labels resolve before output generation' => sub {
 IDEAL
 P35S
 MODEL TINY
-SEGMENT main CODE
+CODESEG
 start:
   LBL A
   GTO later
   XEQ value
   GTO second
-
 later:
 alias:
   RPN
@@ -27,7 +26,6 @@ second:
   LBL B
   XEQ alias
   RTN
-ENDS main
 END start
 ASM
   my @listing = (
@@ -57,43 +55,41 @@ ASM
   }
 };
 
-subtest 'label references resolve across code segments' => sub {
+subtest 'label references resolve across code section switches' => sub {
   my $program = <<'ASM';
 IDEAL
 P35S
 MODEL TINY
-SEGMENT zulu CODE
+CODESEG
 later:
 alias:
-LBL B
-XEQ start
-RTN
-ENDS zulu
-SEGMENT alpha CODE
+  LBL B
+  XEQ start
+  RTN
+CODESEG
 start:
-LBL A
-GTO later
-XEQ alias
-RTN
-ENDS alpha
+  LBL A
+  GTO later
+  XEQ alias
+  RTN
 END start
 ASM
   my $expected = "%%HP: T(3)A(D)F(.);\n"
-    . "A001\tLBL A\nA002\tGTO B001\nA003\tXEQ B001\nA004\tRTN\n"
-    . "B001\tLBL B\nB002\tXEQ A001\nB003\tRTN\n";
+    . "B001\tLBL B\nB002\tXEQ A001\nB003\tRTN\n"
+    . "A001\tLBL A\nA002\tGTO B001\nA003\tXEQ B001\nA004\tRTN\n";
   for my $options ( [], [ '-j' ], [ '-s' ] ) {
     my ($status, $output, $errors) = run_frontend($program, @$options);
     is( $status, 0, 'frontend succeeds' );
-    is( $errors, '', 'all segment targets resolve' );
+    is( $errors, '', 'all labels resolve in the shared namespace' );
     if ( @$options && $options->[0] eq '-s' ) {
       like( $output, qr/^A002\tGTO B001\t; GTO B ENTER$/m,
-        'shortcut resolves the forward segment target' );
+        'shortcut resolves the forward section target' );
       like( $output, qr/^B002\tXEQ A001\t; XEQ A ENTER$/m,
-        'shortcut resolves the backward segment target' );
+        'shortcut resolves the backward section target' );
     } else {
       my $listing = $expected;
       $listing =~ s/^(A001|B001)\t/$1*\t/gm if @$options;
-      is( $output, $listing, 'aliases and segment targets use computed addresses' );
+      is( $output, $listing, 'aliases and labels use computed addresses' );
     }
   }
 };

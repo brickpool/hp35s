@@ -7,7 +7,7 @@ IDEAL
 P35S
 MODEL TINY
 
-SEGMENT IC555 CODE
+CODESEG
 
 @TM:            ; LBL "TM"
 LBL A
@@ -323,6 +323,5 @@ done:
 exit:
   RTN
 
-ENDS IC555
 
 END
