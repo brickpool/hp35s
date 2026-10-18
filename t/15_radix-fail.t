@@ -20,7 +20,7 @@ subtest 'RADIX rejects unsupported syntax and invalid values' => sub {
     my $parser = Parser::HPC->new;
     my $success = eval {
       $parser->from_string(
-        "MODEL P35S\nSEGMENT CODE\n$code\nENDS\nEND\n"
+        "IDEAL\nP35S\nMODEL TINY\nSEGMENT CODE\n$code\nENDS\nEND\n"
       );
       1;
     };
@@ -31,7 +31,7 @@ subtest 'RADIX rejects unsupported syntax and invalid values' => sub {
 subtest 'invalid RADIX base reports the documented error' => sub {
   my $success = eval {
     Parser::HPC->new->from_string(
-      "MODEL P35S\nSEGMENT CODE\nRADIX 7\nENDS\nEND\n"
+      "IDEAL\nP35S\nMODEL TINY\nSEGMENT CODE\nRADIX 7\nENDS\nEND\n"
     );
     1;
   };
@@ -42,8 +42,8 @@ subtest 'invalid RADIX base reports the documented error' => sub {
 
 subtest 'uppercase E is not a decimal exponent in numeric values' => sub {
   for my $source (
-    "MODEL P35S\nSEGMENT DATA\nVALUE EQU 1E-3\nENDS\nEND\n",
-    "MODEL P35S\nSEGMENT STACK\nREGX SET 1E-3\nENDS\nEND\n",
+    "IDEAL\nP35S\nMODEL TINY\nSEGMENT DATA\nVALUE EQU 1E-3\nENDS\nEND\n",
+    "IDEAL\nP35S\nMODEL TINY\nSEGMENT STACK\nREGX SET 1E-3\nENDS\nEND\n",
   ) {
     my $success = eval { Parser::HPC->new->from_string($source); 1 };
     ok( !$success, 'uppercase E exponent is rejected' );
@@ -55,7 +55,7 @@ subtest 'non-decimal RADIX rejects unsuffixed decimal floats' => sub {
     for my $segment ( 'DATA', 'STACK' ) {
       my $statement = $segment eq 'DATA'
         ? 'VALUE EQU 7e-1' : 'REGX SET 7e-1';
-      my $source = "MODEL P35S\nSEGMENT $segment\n"
+      my $source = "IDEAL\nP35S\nMODEL TINY\nSEGMENT $segment\n"
         . "RADIX $base\n$statement\nENDS\nEND\n";
       my $success = eval { Parser::HPC->new->from_string($source); 1 };
       ok( !$success, "RADIX $base rejects $segment float value" );

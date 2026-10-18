@@ -2,7 +2,9 @@
 ; This program is Copyright 2004, 2006 by Jean-Marc Baillard and is used here by permission.
 ; https://www.hpmuseum.org/software/41/41bernu.htm
 ; https://www.hpmuseum.org/software/41/41rizeta.htm
-MODEL   P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT BERN    CODE
         LBL     B
         STO     C

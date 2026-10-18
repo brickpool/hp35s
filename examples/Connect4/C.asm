@@ -1,6 +1,8 @@
 %TITLE "Connect Four for the HP-35s -- by J. Schneider"
 
-        MODEL P35S
+        IDEAL
+        P35S
+        MODEL TINY
         LOCALS
 
 SEGMENT DATA

@@ -1,5 +1,7 @@
 ; Series and Parallel circuits
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT DATA
   eqnMain EQU '1PAR 2SER'
   eqnPar  EQU '1R 2C 3L 4P 5I 6G 7Z'

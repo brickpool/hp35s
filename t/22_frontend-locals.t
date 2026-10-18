@@ -8,7 +8,9 @@ use FrontendTest qw( run_frontend );
 
 subtest 'local labels are enabled by default and scoped by nonlocal labels' => sub {
   my $source = <<'ASM';
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT CODE
 start:
   LBL A
@@ -54,7 +56,9 @@ ASM
 
 subtest 'NOLOCALS disables special handling without emitting code' => sub {
   my $root = Parser::HPC->new->from_string(<<'ASM');
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT CODE
 start:
 @@loop:
@@ -86,7 +90,9 @@ ASM
 
 subtest 'local scope follows labels rather than segments or directives' => sub {
   my $root = Parser::HPC->new->from_string(<<'ASM');
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT first CODE
 @@initial:
 GTO @@initial
@@ -115,7 +121,9 @@ ASM
 
 subtest 'only double-at prefixes are local and references do not escape scope' => sub {
   my $root = Parser::HPC->new->from_string(<<'ASM');
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT CODE
 start:
 @@A001:
@@ -144,10 +152,10 @@ ASM
 subtest 'LOCALS and NOLOCALS allow uppercase spelling' => sub {
   for my $directive ( 'locals', 'Locals', 'nolocals', 'Nolocals' ) {
     for my $source (
-      "MODEL P35S\n$directive\nSEGMENT CODE\nRTN\nENDS\nEND\n",
-      "MODEL P35S\nSEGMENT CODE\n$directive\nRTN\nENDS\nEND\n",
-      "MODEL P35S\nSEGMENT DATA\n$directive\nVALUE EQU 1\nENDS\nEND\n",
-      "MODEL P35S\nSEGMENT STACK\n$directive\nREGX SET 1\nENDS\nEND\n",
+      "IDEAL\nP35S\nMODEL TINY\n$directive\nSEGMENT CODE\nRTN\nENDS\nEND\n",
+      "IDEAL\nP35S\nMODEL TINY\nSEGMENT CODE\n$directive\nRTN\nENDS\nEND\n",
+      "IDEAL\nP35S\nMODEL TINY\nSEGMENT DATA\n$directive\nVALUE EQU 1\nENDS\nEND\n",
+      "IDEAL\nP35S\nMODEL TINY\nSEGMENT STACK\n$directive\nREGX SET 1\nENDS\nEND\n",
     ) {
       my $success = eval { Parser::HPC->new->from_string($source); 1 };
       ok( $success, "$directive is allowed" );
@@ -163,7 +171,7 @@ subtest 'duplicate locals and unsupported directive parameters are rejected' => 
   ) {
     my $success = eval {
       Parser::HPC->new->from_string(
-        "MODEL P35S\nSEGMENT CODE\n$code\nENDS\nEND\n"
+        "IDEAL\nP35S\nMODEL TINY\nSEGMENT CODE\n$code\nENDS\nEND\n"
       );
       1;
     };

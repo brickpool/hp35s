@@ -1,5 +1,7 @@
 ; Day of the week for any date since September 14, 1752
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 
 SEGMENT CODE
 LBL W           ; program W

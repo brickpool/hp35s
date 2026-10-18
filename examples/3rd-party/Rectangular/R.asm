@@ -1,7 +1,9 @@
 ; Barry Moore, April 10, 2016
 ; Program to convert a Complex number to polar and then Rectangular parts
 ; http://www.stefanv.com/calculators/hp35s.html#programming
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 
 SEGMENT Rectangular     CODE
         LBL     R

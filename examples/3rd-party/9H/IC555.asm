@@ -3,7 +3,9 @@
 ; Copyright: 1989, Heldermann Verlag
 ; Autor: Burkhard Oerttel
 ; Portierung: J. Schneider
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 
 SEGMENT IC555 CODE
 

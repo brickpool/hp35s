@@ -1,7 +1,9 @@
 ; Cows and Bulls (Mastermind) for the HP-35s/33s
 ; This program is by Bill Harrington and is used here by permission.
 ; https://www.hpmuseum.org/software/35cowbul.htm
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 
 SEGMENT CowsAndBulls CODE
 LBL C

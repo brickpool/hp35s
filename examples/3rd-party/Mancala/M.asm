@@ -1,7 +1,9 @@
 ; Mancala for the HP-35s
 ; This program is by Dan B. (brianddk) and is used here by permission.
 ; https://brianddk.github.io/prog/mancala/mancala.asm
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 LOCALS
 SEGMENT Mancala CODE
 ; Main Mancala program

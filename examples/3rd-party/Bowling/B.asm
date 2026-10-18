@@ -1,7 +1,9 @@
 ; Bowling for the HP-35s
 ; This program is from Paul Peraino and is used here by permission.
 ; http://www.vintage-basic.net/bcg/bowling.bas
-MODEL   P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT Bowling CODE
         LBL     B
         ;10 PRINT TAB(34);"BOWL"

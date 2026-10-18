@@ -9,7 +9,9 @@ use FrontendTest qw( run_frontend );
 subtest 'RADIX resolves unsuffixed integers in source order' => sub {
   my $parser = Parser::HPC->new;
   my $root = $parser->from_string(<<'ASM');
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT CODE
 RADIX 16 ; inline comment belongs to trailing trivia
 100
@@ -53,7 +55,9 @@ ASM
 subtest 'RADIX applies to EQU and SET, not instruction operands' => sub {
   my $parser = Parser::HPC->new;
   my $root = $parser->from_string(<<'ASM');
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 RADIX 16
 SEGMENT DATA
 VALUE EQU 100
@@ -115,12 +119,12 @@ ASM
     10, 'SF operand remains decimal under RADIX 16' );
   is_deeply( $root->{segments}->[2]->{statements}->[0],
     { label => { name => 'START' } }, 'RADIX preserves label declarations' );
-  my $next = $parser->from_string("MODEL P35S\nSEGMENT next CODE\n100\nENDS next\nEND\n");
+  my $next = $parser->from_string("IDEAL\nP35S\nMODEL TINY\nSEGMENT next CODE\n100\nENDS next\nEND\n");
   is_deeply( $next->{segments}->[0]->{statements}->[0],
     { literal => { kind => 'hex', value => '100h' } },
     'radix persists when the parser instance is reused' );
   my $fresh = Parser::HPC->new->from_string(
-    "MODEL P35S\nSEGMENT CODE\n100\nENDS\nEND\n"
+    "IDEAL\nP35S\nMODEL TINY\nSEGMENT CODE\n100\nENDS\nEND\n"
   );
   is_deeply( $fresh->{segments}->[0]->{statements}->[0],
     { literal => { kind => 'decimal', value => '100' } },
@@ -129,7 +133,9 @@ ASM
 
 subtest 'non-decimal numeric values use signed 36-bit conversion' => sub {
   my $root = Parser::HPC->new->from_string(<<'ASM');
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT DATA
 RADIX 16
 MAX EQU 7FFFFFFFF
@@ -149,7 +155,9 @@ ASM
 
 subtest 'RADIX listings match explicit suffixes without changing operands' => sub {
   my $source = <<'ASM';
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 RADIX 16
 SEGMENT CODE
 LBL A
@@ -171,7 +179,9 @@ ENDS
 END start
 ASM
   my $explicit = <<'ASM';
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT CODE
 LBL A
 start:
@@ -204,7 +214,9 @@ ASM
 subtest 'display RADIX instructions are independent of the directive' => sub {
   for my $base ( 2, 8, 10, 16 ) {
     my $source = <<ASM;
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT CODE
 LBL A
 RADIX $base
@@ -260,10 +272,10 @@ ASM
 subtest 'RADIX directive spelling is case-insensitive' => sub {
   for my $directive ( 'radix 16', 'Radix 16', 'RaDiX 16' ) {
     for my $source (
-      "MODEL P35S\n$directive\nSEGMENT CODE\nRTN\nENDS\nEND\n",
-      "MODEL P35S\nSEGMENT CODE\n$directive\nRTN\nENDS\nEND\n",
-      "MODEL P35S\nSEGMENT DATA\n$directive\nVALUE EQU 1\nENDS\nEND\n",
-      "MODEL P35S\nSEGMENT STACK\n$directive\nREGX SET 1\nENDS\nEND\n",
+      "IDEAL\nP35S\nMODEL TINY\n$directive\nSEGMENT CODE\nRTN\nENDS\nEND\n",
+      "IDEAL\nP35S\nMODEL TINY\nSEGMENT CODE\n$directive\nRTN\nENDS\nEND\n",
+      "IDEAL\nP35S\nMODEL TINY\nSEGMENT DATA\n$directive\nVALUE EQU 1\nENDS\nEND\n",
+      "IDEAL\nP35S\nMODEL TINY\nSEGMENT STACK\n$directive\nREGX SET 1\nENDS\nEND\n",
     ) {
       my $success = eval { Parser::HPC->new->from_string($source); 1 };
       ok( $success, "$directive is allowed" );

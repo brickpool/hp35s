@@ -9,7 +9,9 @@ subtest 'unknown statement fails after both alternatives' => sub {
     my $parser = Parser::HPC->new;
     my $source = <<ASM;
 ; Unknown statement inside a declared code segment
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT main CODE
 start:
   LBL C
@@ -42,7 +44,9 @@ subtest 'statement line boundary rejects extra tokens' => sub {
     my $parser = Parser::HPC->new;
     my $source = <<ASM;
 ; One statement per line; comments and whitespace are permitted
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT main CODE
 start:
   LBL C
@@ -76,7 +80,7 @@ subtest 'parse failures' => sub {
     my $parser = Parser::HPC->new;
     my $success = eval {
       $parser->from_string(
-        "MODEL P35S\n\nSEGMENT CODE\n$code\nENDS\nEND\n"
+        "IDEAL\nP35S\nMODEL TINY\n\nSEGMENT CODE\n$code\nENDS\nEND\n"
       );
       1;
     };
@@ -90,7 +94,9 @@ subtest 'empty EQU string fails' => sub {
   my $parser = Parser::HPC->new;
   my $success = eval {
     $parser->from_string(<<'ASM');
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT DATA
 EMPTY EQU ""
 ENDS

@@ -8,7 +8,9 @@ sub parse_program_with_title {
   my ($title) = @_;
   return Parser::HPC->new->from_string(<<ASM);
 $title
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT CODE
 RTN
 ENDS
@@ -43,7 +45,7 @@ subtest '%TITLE rejects invalid delimiters' => sub {
     '%TITLE_ "I/O Library"',
   ) {
     my $error = parse_program_error($title);
-    like( $error, qr/Model must be specified first/,
+    like( $error, qr/IDEAL must be specified first/,
       "$title is not recognized as a title directive" );
   }
 };
@@ -52,8 +54,8 @@ subtest '%TITLE may only be used once' => sub {
   my $error = parse_program_error(
     "%TITLE \"First\"\n%TITLE \"Second\""
   );
-  like( $error, qr/Model must be specified first/,
-    'the second %TITLE is rejected where MODEL is required' );
+  like( $error, qr/IDEAL must be specified first/,
+    'the second %TITLE is rejected where IDEAL is required' );
 };
 
 subtest '%TITLE reports string errors' => sub {

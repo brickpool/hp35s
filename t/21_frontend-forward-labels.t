@@ -7,7 +7,9 @@ use FrontendTest qw( run_frontend );
 
 subtest 'forward labels resolve before output generation' => sub {
   my $program = <<'ASM';
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT main CODE
 start:
   LBL A
@@ -57,7 +59,9 @@ ASM
 
 subtest 'label references resolve across code segments' => sub {
   my $program = <<'ASM';
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT zulu CODE
 later:
 alias:

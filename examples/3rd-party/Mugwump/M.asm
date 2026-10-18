@@ -1,7 +1,9 @@
 ; Mugwump for the HP-35s
 ; This program is from Bob Albrecht and is used here by permission.
 ; http://www.vintage-basic.net/bcg/mugwump.bas
-MODEL   P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT MUGWUMP CODE
         LBL     M
         ;1 PRINT TAB(33);"MUGWUMP"

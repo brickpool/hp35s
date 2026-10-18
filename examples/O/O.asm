@@ -1,5 +1,7 @@
 ; Ohms Law
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT CODE
 start:
 LBL O           ; program O

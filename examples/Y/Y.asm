@@ -1,5 +1,7 @@
 ; Wye-Delta or Star-delta Transformation Y
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT DATA
   eqnMenu EQU '1T\->\pi 2\pi\->T 3S\->D 4D\->S'
 ENDS

@@ -17,7 +17,9 @@ MACRO LATE target
 again:
   GTO target
 ENDM
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT CODE
 
   RTN
@@ -45,7 +47,9 @@ first:
 second:
   RTN
 ENDM
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT CODE
 TEST
 ENDS
@@ -72,7 +76,9 @@ again:
 done:
   GTO again
 ENDM
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT CODE
 target:
   RTN
@@ -109,7 +115,9 @@ subtest 'simple dummy arguments are substituted' => sub {
 MACRO CALL target
   XEQ target
 ENDM
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT CODE
 target:
   RTN
@@ -126,7 +134,9 @@ subtest 'multiline macros can be redefined' => sub {
 MACRO ACTION
   RTN
 ENDM
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT CODE
 ACTION
 MACRO ACTION
@@ -147,7 +157,9 @@ subtest 'macro identifiers use the HPC identifier pattern' => sub {
 MACRO @CALL target
   XEQ target
 ENDM
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT CODE
 target:
   RTN
@@ -164,7 +176,9 @@ subtest 'macro names in strings and comments are not expression references' => s
 MACRO MYMAC
   RTN
 ENDM
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT CODE
   eqn 'MYMAC' ; MYMAC is a comment
 ENDS

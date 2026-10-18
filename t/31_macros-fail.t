@@ -14,9 +14,9 @@ subtest 'macro errors reject invalid source and preserve known diagnostics' => s
     [ "MACRO TESTMACRO\nLOCAL 123\nENDM\n", "Illegal local argument\n" ],
     [ "MACRO OUTER\nMACRO INNER\nENDM\nENDM\n", undef ],
     [ "ENDM\n", "Can't use this outside macro\n" ],
-    [ "MACRO TESTMACRO\nENDM\nMODEL P35S\nSEGMENT CODE\nXEQ TESTMACRO\nENDS\nEND\n",
+    [ "MACRO TESTMACRO\nENDM\nIDEAL\nP35S\nMODEL TINY\nSEGMENT CODE\nXEQ TESTMACRO\nENDS\nEND\n",
       "Can't use macro name in expression: TESTMACRO\n" ],
-    [ "MACRO TESTMACRO\nENDM\nMODEL P35S\nSEGMENT CODE\nXEQ testmacro\nENDS\nEND\n",
+    [ "MACRO TESTMACRO\nENDM\nIDEAL\nP35S\nMODEL TINY\nSEGMENT CODE\nXEQ testmacro\nENDS\nEND\n",
       "Can't use macro name in expression: testmacro\n" ],
   );
   for my $case (@cases) {
@@ -38,7 +38,9 @@ subtest 'macro errors reject invalid source and preserve known diagnostics' => s
 
 subtest 'MASM macro syntax is rejected' => sub {
   my $source = <<'ASM';
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT CODE
 M MACRO
   RTN
@@ -52,7 +54,9 @@ ASM
 
 subtest 'EXITM is not a supported directive' => sub {
   my $source = <<'ASM';
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT CODE
 EXITM
 ENDS

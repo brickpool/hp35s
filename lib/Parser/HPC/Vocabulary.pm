@@ -16,7 +16,7 @@ our @EXPORT_OK = qw(
 );
 
 our @directives = (
-  'DISPLAY', 'ENDS', 'END', 'ENDM', 'EQU', 'LOCALS', 'MACRO', 'MODEL',
+  'DISPLAY', 'ENDS', 'END', 'ENDM', 'EQU', 'IDEAL', 'LOCALS', 'MACRO', 'MODEL',
   'NOLOCALS', 'RADIX', 'SEGMENT', 'SET', '%TITLE',
 );
 

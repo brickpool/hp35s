@@ -1,7 +1,9 @@
 ; Hack and Slash Adventure for the HP-35s
 ; This program is by Paul Dale and is used here by permission.
 ; https://www.hpmuseum.org/software/35hacksl.htm
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT HackAndSlash CODE
         LBL     D
         ALL

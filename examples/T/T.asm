@@ -1,5 +1,7 @@
 ; This program calculates the sides, angles and area of a triangle
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 
 SEGMENT CODE
         LBL     T

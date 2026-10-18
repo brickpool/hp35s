@@ -10,7 +10,9 @@ subtest 'DISPLAY emits messages without changing parsed code' => sub {
   {
     local $SIG{__WARN__} = sub { push @warnings, @_ };
     $root = $parser->from_string(<<'ASM');
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 DISPLAY 'Starting assembly'
 SEGMENT CODE
   RTN
@@ -36,10 +38,10 @@ ASM
 
 subtest 'DISPLAY reports string errors at the source position' => sub {
   my @cases = (
-    [ "MODEL P35S\nDISPLAY \nSEGMENT CODE\nRTN\nENDS\nEND\n",
-      qr/Need quoted string on line 2/, 'missing message' ],
-    [ "MODEL P35S\nDISPLAY \"I\/O\nLibrary\"\nSEGMENT CODE\nRTN\nENDS\nEND\n",
-      qr/Missing end quote on line 2 at:\nDISPLAY \"I\/O\n {12}\^/,
+    [ "IDEAL\nP35S\nMODEL TINY\nDISPLAY \nSEGMENT CODE\nRTN\nENDS\nEND\n",
+      qr/Need quoted string on line 4/, 'missing message' ],
+    [ "IDEAL\nP35S\nMODEL TINY\nDISPLAY \"I\/O\nLibrary\"\nSEGMENT CODE\nRTN\nENDS\nEND\n",
+      qr/Missing end quote on line 4 at:\nDISPLAY \"I\/O\n {12}\^/,
       'newline in message after I/O' ],
   );
   for my $case (@cases) {
@@ -54,9 +56,9 @@ subtest 'DISPLAY reports string errors at the source position' => sub {
 subtest 'DISPLAY cannot share a line with the next directive' => sub {
   my @cases = (
     [ 'between segments',
-      "MODEL P35S\nDISPLAY 'message' SEGMENT CODE\nRTN\nENDS\nEND\n" ],
+      "IDEAL\nP35S\nMODEL TINY\nDISPLAY 'message' SEGMENT CODE\nRTN\nENDS\nEND\n" ],
     [ 'inside code',
-      "MODEL P35S\nSEGMENT CODE\nDISPLAY 'message' RTN\nENDS\nEND\n" ],
+      "IDEAL\nP35S\nMODEL TINY\nSEGMENT CODE\nDISPLAY 'message' RTN\nENDS\nEND\n" ],
   );
   for my $case (@cases) {
     my ($context, $source) = @$case;
@@ -76,7 +78,9 @@ subtest 'DISPLAY allows uppercase spelling' => sub {
   local $SIG{__WARN__} = sub { ::note @_ if $ENV{AUTHOR_TESTING}};
   for my $directive ( 'display', 'DiSpLaY' ) {
     my $source = <<ASM;
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 $directive 'message'
 SEGMENT CODE
   RTN

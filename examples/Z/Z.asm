@@ -1,7 +1,9 @@
 ; Formulary for the exam of a german radio license
 ; 18. Characteristic impedance
 ;
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 
 SEGMENT DATA
   eqnMenu EQU '1HF 2SW 3CO 4\Gl4'

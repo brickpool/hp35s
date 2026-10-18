@@ -9,14 +9,16 @@ sub parse_statements {
   my $data = shift || '';
   my $parser = Parser::HPC->new;
   my $root = $parser->from_string(
-    "MODEL P35S\n$data\nSEGMENT CODE\n$code\nENDS\nEND\n"
+    "IDEAL\nP35S\nMODEL TINY\n$data\nSEGMENT CODE\n$code\nENDS\nEND\n"
   );
   return $root->{segments}->[-1]->{statements};
 }
 
 subtest 'segment ASTs preserve source order' => sub {
   my $root = Parser::HPC->new->from_string(<<'ASM');
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT zebra CODE
 entry:
   RTN
@@ -55,7 +57,9 @@ ASM
 
 subtest 'definition ASTs preserve names and source order' => sub {
   my $root = Parser::HPC->new->from_string(<<'ASM');
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT DATA
   eqnZulu EQU 'A+B'
   RADIX 16
@@ -131,7 +135,7 @@ subtest 'literal ASTs' => sub {
 subtest 'mixed statements and labels' => sub {
   my $parser = Parser::HPC->new;
   my $root = $parser->from_string(
-    "MODEL P35S\nSEGMENT CODE\nentry:\nLBL A\n0 ; zero\n\npi\nGTO entry\nRTN\nENDS\nEND entry\n"
+    "IDEAL\nP35S\nMODEL TINY\nSEGMENT CODE\nentry:\nLBL A\n0 ; zero\n\npi\nGTO entry\nRTN\nENDS\nEND entry\n"
   );
   is( scalar @{ $root->{segments}->[0]->{statements} }, 6,
     'alternatives parse successive lines and comments' );
@@ -144,7 +148,9 @@ subtest 'mixed statements and labels' => sub {
 
 subtest 'label declarations preserve order around directives' => sub {
   my $root = Parser::HPC->new->from_string(<<'ASM');
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT CODE
 start:
 alias:
@@ -171,7 +177,7 @@ ASM
 subtest 'END start reference is optional' => sub {
   for my $target ( '', 'entry', 'EnTrY' ) {
     my $root = Parser::HPC->new->from_string(
-      "MODEL P35S\nSEGMENT CODE\nentry:\nRTN\nENDS\nEND $target\n"
+      "IDEAL\nP35S\nMODEL TINY\nSEGMENT CODE\nentry:\nRTN\nENDS\nEND $target\n"
     );
     if ( length $target ) {
       is_deeply( $root->{startaddr}, { type => 'label', value => 'ENTRY' },
@@ -193,7 +199,9 @@ subtest 'statement line boundary accepts whitespace and comments' => sub {
     my $parser = Parser::HPC->new;
     my $source = <<ASM;
 ; One statement per line; comments and whitespace are permitted
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT main CODE
 start:
   LBL C

@@ -137,8 +137,9 @@ sub parse {    # $tree ()
     sub { $self->parse_title }
   );
 
-  # model directive
-  my $language = $self->parse_model;
+  $self->parse_ideal;
+  my $language = $self->parse_language;
+  my $model = $self->parse_model;
 
   # list of segments
   my $result = $self->sequence_of(
@@ -154,7 +155,8 @@ sub parse {    # $tree ()
   my $start = $self->parse_end;
   
   my $root = {
-    model     => $language,
+    language  => $language,
+    model     => $model,
     segments  => [ grep { %$_ } @$result ],
   };
   $root->{title}     = $title if $title;
@@ -295,28 +297,60 @@ sub parse_display {    # $message ()
   return $result;
 }
 
-sub parse_model {    # $language ()
+sub parse_ideal {   # $mode ()
   my $self = shift;
 
-  # MODEL ..
-  $self->maybe_expect( qr/MODEL(?=[ \t])/i )
-    or $self->fail("Model must be specified first");
-
-  # retrieve the state
+  $self->maybe_expect( qr/IDEAL(?=[\s;])/ )
+    or $self->fail("IDEAL must be specified first");
   my ($line) = $self->where;
-
-  # MODEL language
-  my $result = eval { $self->token_kw_icase( @languages ) };
-  defined $result
-    or $self->fail("Missing or illegal language ID");
-
-  # skip and throw an error if we're still on the same line
   $self->skip_ws;
   my ($next_line) = $self->where;
   $line != $next_line
-    or $self->fail( "Extra characters" );    # .. on line
+    or $self->fail("Extra characters");
+
+  return 'IDEAL';
+}
+
+sub parse_language {    # $language ()
+  my $self = shift;
+
+  my $result = eval { $self->token_kw( @languages ) };
+  defined $result
+    or $self->fail("Missing or illegal language ID");
+  my ($line) = $self->where;
+  $self->skip_ws;
+  my ($next_line) = $self->where;
+  $line != $next_line
+    or $self->fail("Extra characters");
 
   return $result;
+}
+
+# Model returns an integer indicating the current model: 
+# 0 = TINY 
+# 1 = SMALL 
+# 2 = COMPACT 
+# 3 = MEDIUM 
+# 4 = LARGE 
+# 5 = HUGE 
+sub parse_model {    # $memorymodel ()
+  my $self = shift;
+
+  $self->maybe_expect( qr/MODEL(?=[ \t])/ )
+    or $self->fail("MODEL must follow language ID");
+  my ($line) = $self->where;
+
+  my $result = $self->maybe_expect( qr/TINY(?=[\s;])/ );
+  my ($model_line) = $self->where;
+  defined $result && $line == $model_line
+    or $self->fail("Missing or illegal model ID");
+
+  $self->skip_ws;
+  my ($next_line) = $self->where;
+  $line != $next_line
+    or $self->fail("Extra characters");
+
+  return 0;
 }
 
 sub parse_radix {    # $base ()
@@ -1159,10 +1193,12 @@ Parser::HPC - parse HP calculator assembler source code
 
   my $program = $parser->from_string(<<'ASM');
   %TITLE "Example"
-  MODEL P35S
+    IDEAL
+    P35S
+    MODEL TINY
 
   SEGMENT DATA
-  FORMULA EQU 'A+B'
+    FORMULA EQU 'A+B'
   ENDS
 
   SEGMENT main CODE
@@ -1179,29 +1215,32 @@ Parser::HPC - parse HP calculator assembler source code
 
 =head1 DESCRIPTION
 
-C<Parser::HPC> is a recursive-descent parser for HP calculator assembler
-source code.
+C<Parser::HPC> is a recursive-descent parser for HP calculator assembler source 
+code.
 
-The parser converts its input into an abstract syntax tree represented
-by Perl hashes, arrays, and scalar values. The root node describes the
-calculator model, optional program metadata, and the data, code, and
+The parser converts its input into an abstract syntax tree represented by Perl 
+hashes, arrays, and scalar values. The root node describes the calculator 
+language, memory model, optional program metadata, and the data, code, and 
 stack segments found in the source.
 
-Source passed to L</from_string> is first processed by
-L<Parser::HPC::Macro>. The resulting source is then passed to the
-L<Parser::MGC> parser interface.
+After an optional C<%TITLE> directive, the source must contain C<IDEAL>,
+C<P35S>, and C<MODEL TINY>, in that order and on separate lines. These header 
+keywords are case-sensitive. Only C<IDEAL> mode, the C<P35S> language, and the 
+C<TINY> memory model are supported. 
 
-This document describes the parser interface and the AST nodes returned
-by its parsing methods. The complete assembler syntax is documented in
-the project wiki.
+Source passed to L</from_string> is first processed by L<Parser::HPC::Macro>. 
+The resulting source is then passed to the L<Parser::MGC> parser interface.
+
+This document describes the parser interface and the AST nodes returned by its 
+parsing methods. The complete assembler syntax is documented in the project 
+wiki.
 
 =head1 ABSTRACT SYNTAX TREE
 
 =head2 AST construction flow
 
-The normal entry point expands macros in L</from_string> and then
-parses the source with L</parse>. The AST-producing parser methods are
-composed as follows:
+The normal entry point expands macros in L</from_string> and then parses the 
+source with L</parse>. The parser methods are composed as follows:
 
   source code
     |
@@ -1211,6 +1250,8 @@ composed as follows:
     v
   parse()
     +-- parse_title()                   # optional
+    +-- parse_ideal()
+    +-- parse_language()
     +-- parse_model()
     +-- parse_segment()                 # repeated
     |     |
@@ -1228,30 +1269,31 @@ composed as follows:
     |
     '-- parse_end()
 
-L<parse_segment> dispatches to the block parser for the declared
-segment type. Each block parser collects the results of its statement
-parser: data definitions and code statements retain source order, while
-stack assignments are merged into a hash. In code blocks, labels are
-collected before each statement and inserted immediately before it in
-the C<statements> array.
+L<parse_segment> dispatches to the block parser for the declared segment type. 
+Each block parser collects the results of its statement parser: data 
+definitions and code statements retain source order, while stack assignments 
+are merged into a hash. In code blocks, labels are collected before each 
+statement and inserted immediately before it in the C<statements> array.
 
-C<parse_code_statement> selects an instruction or literal parser for
-AST nodes. It also handles directives such as C<RADIX>, C<LOCALS>, and
-C<DISPLAY>; these affect parser state or produce temporary results but
-are not retained in the final AST. C<parse_end> supplies the optional
-C<startaddr> field, while C<parse_title> and C<parse_model> supply the
-program metadata.
+C<parse_code_statement> selects an instruction or literal parser for AST nodes. 
+It also handles directives such as C<RADIX>, C<LOCALS>, and C<DISPLAY>; these 
+affect parser state or produce temporary results but are not retained in the 
+final AST. C<parse_end> supplies the optional C<startaddr> field, while 
+C<parse_title>, C<parse_language>, and C<parse_model> supply the program 
+metadata. C<parse_ideal> validates the required syntax mode but does not add a 
+field to the AST.
 
-The parser methods build nodes using token methods, which match source
-items and return scalar values rather than AST nodes. Some token methods
-used by this parser, including C<token_ident>, C<token_float>,
-C<token_int>, and C<token_kw>, are inherited from L<Parser::MGC>.
+The parser methods build nodes using token methods, which match source items 
+and return scalar values rather than AST nodes. Some token methods used by this 
+parser, including C<token_ident>, C<token_float>, C<token_int>, and 
+C<token_kw>, are inherited from L<Parser::MGC>.
 
 =head2 Program node
 
 L</parse> returns the root of the abstract syntax tree:
 
   {
+    language => $language,
     model    => $model,
     segments => [
       $segment,
@@ -1268,8 +1310,10 @@ L</parse> returns the root of the abstract syntax tree:
     },
   }
 
-C<model> contains the calculator model parsed from the C<MODEL>
-directive.
+C<language> contains the calculator language identifier, currently C<P35S>.
+
+C<model> contains the numeric memory-model identifier parsed from the C<MODEL> 
+directive. The only supported model is C<TINY>, represented by the integer C<0>.
 
 C<title> is present when the source contains a C<%TITLE> directive
 whose parsed a valid title.
@@ -1296,8 +1340,8 @@ A data segment has the form:
     ],
   }
 
-For an unnamed data segment, C<name> is C<_DATA>. Explicit segment names
-are converted to upper case.
+For an unnamed data segment, C<name> is C<_DATA>. Explicit segment names are 
+converted to upper case.
 
 C<definitions> contains definition nodes in source order.
 
@@ -1329,17 +1373,16 @@ A code segment has the form:
     ],
   }
 
-For an unnamed code segment, C<name> is C<_TEXT>. Explicit segment names
-are converted to upper case.
+For an unnamed code segment, C<name> is C<_TEXT>. Explicit segment names are 
+converted to upper case.
 
-C<statements> contains label, instruction, and literal nodes in source
-order.
+C<statements> contains label, instruction, and literal nodes in source order.
 
 Labels do not consume calculator program lines. Consecutive label nodes
 therefore refer to the following instruction or literal.
 
-Parser directives handled inside the code segment are not included in
-the final C<statements> array.
+Parser directives handled inside the code segment are not included in the final 
+C<statements> array.
 
 =head3 Label node
 
@@ -1353,10 +1396,10 @@ A label declaration produces:
 
 Label names are converted to upper case.
 
-When local labels are enabled, a local label name is qualified with its
-active non-local scope. For example, C<@@LOOP> in the scope C<START>
-becomes C<START:@@LOOP>. A local label before the first non-local label
-uses an empty scope and is returned as C<:@@LOOP>.
+When local labels are enabled, a local label name is qualified with its active 
+non-local scope. For example, C<@@LOOP> in the scope C<START> becomes 
+C<START:@@LOOP>. A local label before the first non-local label uses an empty 
+scope and is returned as C<:@@LOOP>.
 
 =head3 Instruction node
 
@@ -1461,14 +1504,14 @@ A hexadecimal numeric literal.
 
 =back
 
-The representation of C<value> depends on the tokenizer that recognized
-the literal. Consumers must not assume that every numeric value is
-represented by the same Perl scalar form. For example, decimal integer
-values may be numeric scalars while decimal floating-point values may
-retain their textual representation.
+The representation of C<value> depends on the tokenizer that recognized the 
+literal. Consumers must not assume that every numeric value is represented by 
+the same Perl scalar form. For example, decimal integer values may be numeric 
+scalars while decimal floating-point values may retain their textual 
+representation.
 
-Unsuffixed non-decimal code literals receive a suffix in the returned
-value so that the selected radix remains available to the AST consumer.
+Unsuffixed non-decimal code literals receive a suffix in the returned value so 
+that the selected radix remains available to the AST consumer.
 
 =head2 Stack segment node
 
@@ -1486,30 +1529,30 @@ A stack segment has the form:
     },
   }
 
-For an unnamed stack segment, C<name> is C<STACK>. Explicit segment
-names are converted to upper case.
+For an unnamed stack segment, C<name> is C<STACK>. Explicit segment names are 
+converted to upper case.
 
-Unlike data definitions and code statements, stack assignments are
-stored in a hash reference keyed by register name.
+Unlike data definitions and code statements, stack assignments are stored in a 
+hash reference keyed by register name.
 
-If a register occurs more than once, the later assignment replaces the
-earlier entry in the returned hash.
+If a register occurs more than once, the later assignment replaces the earlier 
+entry in the returned hash.
 
-Parser directives that do not assign a register are omitted from
+Parser directives that do not assign a register are omitted from the 
 C<assignments>.
 
 =head2 AST consumer notes
 
-The AST represents parsed source structure rather than the calculator's
-final program layout.
+The AST represents parsed source structure rather than the calculator's final 
+program layout.
 
-In particular, the AST does not contain a derived label index or
-calculated program addresses. Labels remain individual nodes in the
-C<statements> array. Address calculation and label indexing are the
-responsibility of the AST consumer.
+In particular, the AST does not contain a derived label index or calculated 
+program addresses. Labels remain individual nodes in the C<statements> array. 
+Address calculation and label indexing are the responsibility of the AST 
+consumer.
 
-Consumers should inspect the discriminating keys and fields rather than
-relying on Perl scalar representation alone:
+Consumers should inspect the discriminating keys and fields rather than relying 
+on Perl scalar representation alone:
 
 =over 4
 
@@ -1519,8 +1562,8 @@ A segment is identified by its C<type> field.
 
 =item *
 
-A code statement is identified by the presence of C<label>,
-C<instruction>, or C<literal>.
+A code statement is identified by the presence of C<label>, C<instruction>, or 
+C<literal>.
 
 =item *
 
@@ -1532,8 +1575,8 @@ A literal is identified by its C<kind> field.
 
 =item *
 
-Numeric C<value> fields may be returned as numeric or textual Perl
-scalars, depending on the token form.
+Numeric C<value> fields may be returned as numeric or textual Perl scalars, 
+depending on the token form.
 
 =back
 
@@ -1549,8 +1592,8 @@ Additional arguments are passed to the constructor inherited from
 L<Parser::MGC>. The token patterns required by the HP calculator assembler are
 installed by this constructor.
 
-The initial numeric radix is decimal. Local-label processing is
-initially disabled and the initial local-label scope is empty.
+The initial numeric radix is decimal. Local-label processing is initially 
+disabled and the initial local-label scope is empty.
 
 =head1 METHODS
 
@@ -1558,15 +1601,12 @@ initially disabled and the initial local-label scope is empty.
 
   my $tree = $parser->from_string($source);
 
-Processes C<$source> with L<Parser::HPC::Macro> and then parses the
-result using the C<from_string> interface inherited from
-L<Parser::MGC>.
+Processes C<$source> with L<Parser::HPC::Macro> and then parses the result 
+using the C<from_string> interface inherited from L<Parser::MGC>.
 
-Returns the complete program AST documented under
-L</ABSTRACT SYNTAX TREE>.
+Returns the complete program AST documented under L</ABSTRACT SYNTAX TREE>.
 
-Parsing failures are reported through the L<Parser::MGC> parser
-interface.
+Parsing failures are reported through the L<Parser::MGC> parser interface.
 
 =head2 parse
 
@@ -1575,11 +1615,12 @@ interface.
 Parses a complete program and returns the program node documented under
 L</Program node>.
 
-The method parses, in order, an optional title, the required calculator
-model, the program segments, and the terminating C<END> directive.
+The method parses, in order, an optional title, the required C<IDEAL>, C<P35S>, 
+and C<MODEL TINY> header lines, the program segments, and the terminating 
+C<END> directive.
 
-Directives occurring between segments may affect parser state but do
-not create entries in the returned C<segments> array.
+Directives occurring between segments may affect parser state but do not create 
+entries in the returned C<segments> array.
 
 =head2 parse_code_block
 
@@ -1589,8 +1630,8 @@ not create entries in the returned C<segments> array.
 Parses the body of a code segment and returns a code segment node as
 documented under L</Code segment node>.
 
-If C<$name> is omitted or false, the segment name defaults to C<_TEXT>.
-The returned name is converted to upper case.
+If C<$name> is omitted or false, the segment name defaults to C<_TEXT>. The 
+returned name is converted to upper case.
 
 Label nodes are inserted into C<statements> immediately before the code
 statement to which they apply. Directive nodes returned temporarily by
@@ -1603,23 +1644,23 @@ L</parse_code_statement> are discarded.
 Parses one calculator instruction and returns an instruction node as
 documented under L</Instruction node>.
 
-Depending on the instruction kind, the result may contain no operand or
-an operand of type C<address>, C<label>, C<variable>, C<decimal>,
-C<equation>, or C<expression>.
+Depending on the instruction kind, the result may contain no operand or an 
+operand of type C<address>, C<label>, C<variable>, C<decimal>, C<equation>, 
+or C<expression>.
 
-Label operand values are converted to upper case and are qualified when
+Label operand values are converted to upper case and are qualified when 
 local-label processing applies.
 
 =head2 parse_code_literal
 
   my $literal = $self->parse_code_literal();
 
-Parses one calculator literal and returns a literal node as documented
-under L</Literal node>. A parse failure is reported if the input does
-not contain a recognized literal in the current parser context.
+Parses one calculator literal and returns a literal node as documented under 
+L</Literal node>. A parse failure is reported if the input does not contain a 
+recognized literal in the current parser context.
 
-The returned node is suitable for inclusion in the C<statements> array
-of a code segment.
+The returned node is suitable for inclusion in the C<statements> array of a 
+code segment.
 
 =head2 parse_code_statement
 
@@ -1628,11 +1669,11 @@ of a code segment.
 Parses one statement from a code segment.
 
 For a calculator instruction, returns the node documented under
-L</parse_code_instruction>. For a literal, returns the node documented
-under L</parse_code_literal>.
+L</parse_code_instruction>. For a literal, returns the node documented under 
+L</parse_code_literal>.
 
-Directives handled within a code block temporarily produce one of the
-following nodes:
+Directives handled within a code block temporarily produce one of the following 
+nodes:
 
   { locals => $boolean  }
 
@@ -1640,22 +1681,22 @@ following nodes:
 
   { display => $message }
 
-These directive nodes are consumed by L</parse_code_block> and are not
-included in the final C<statements> array.
+These directive nodes are consumed by L</parse_code_block> and are not included 
+in the final C<statements> array.
 
 =head2 parse_data_block
 
   my $block = $self->parse_data_block();
   my $block = $self->parse_data_block($name);
 
-Parses the body of a data segment and returns a data segment node as
-documented under L</Data segment node>.
+Parses the body of a data segment and returns a data segment node as documented 
+under L</Data segment node>.
 
-If C<$name> is omitted or false, the segment name defaults to C<_DATA>.
-The returned name is converted to upper case.
+If C<$name> is omitted or false, the segment name defaults to C<_DATA>. The 
+returned name is converted to upper case.
 
-Definitions are returned in source order. Parser directives that return
-empty nodes are omitted from the C<definitions> array.
+Definitions are returned in source order. Parser directives that return empty 
+nodes are omitted from the C<definitions> array.
 
 =head2 parse_data_statement
 
@@ -1671,12 +1712,12 @@ A symbol definition returns:
     value => $value,
   }
 
-C<value> contains either the parsed numeric value or the contents of a
-quoted string.
+C<value> contains either the parsed numeric value or the contents of a quoted 
+string.
 
 A C<RADIX>, C<LOCALS>, or C<NOLOCALS> directive returns an empty hash
-reference. Empty nodes are removed by L</parse_data_block> and do not
-appear in the final C<definitions> array.
+reference. Empty nodes are removed by L</parse_data_block> and do not appear 
+in the final C<definitions> array.
 
 =head2 parse_display
 
@@ -1684,14 +1725,13 @@ appear in the final C<definitions> array.
 
 Parses a C<DISPLAY> directive.
 
-Returns the contents of the directive's quoted string and writes the
-same message, followed by a newline, to standard error.
+Returns the contents of the directive's quoted string and writes the same 
+message, followed by a newline, to standard error.
 
 Returns C<undef> if the next input item is not a C<DISPLAY> directive.
 
-The return value may be used temporarily by
-L</parse_code_statement>, but it does not become part of the final
-program AST.
+The return value may be used temporarily by L</parse_code_statement>, but it 
+does not become part of the final program AST.
 
 =head2 parse_end
 
@@ -1706,12 +1746,22 @@ If the directive specifies a previously defined label, returns:
     value => $name,
   }
 
-The returned label is upper case and is qualified when local-label
-processing applies.
+The returned label is upper case and is qualified when local-label processing 
+applies.
 
 Returns C<undef> if the directive does not specify a start label.
 
 Input remaining after the C<END> directive is ignored.
+
+=head2 parse_ideal
+
+  my $mode = $self->parse_ideal();
+
+Parses the required C<IDEAL> directive and returns C<IDEAL>.
+
+IDEAL is the only supported syntax mode. The directive must occupy its own 
+line, apart from whitespace and a comment. Its return value is not stored in 
+the program AST.
 
 =head2 parse_label
 
@@ -1725,11 +1775,21 @@ Parses a label declaration and returns:
     },
   }
 
-The label name is converted to upper case. Active local labels are
-returned using their qualified names.
+The label name is converted to upper case. Active local labels are returned 
+using their qualified names.
 
-The returned node is suitable for inclusion in the C<statements> array
-of a code segment.
+The returned node is suitable for inclusion in the C<statements> array of a 
+code segment.
+
+=head2 parse_language
+
+  my $language = $self->parse_language();
+
+Parses the required calculator language identifier following C<IDEAL>.
+Currently, only C<P35S> is accepted. The identifier must occupy its own line, 
+apart from whitespace and a comment.
+
+The returned identifier is stored in the C<language> field of the program node.
 
 =head2 parse_locals
 
@@ -1738,18 +1798,22 @@ of a code segment.
 Parses a C<LOCALS> or C<NOLOCALS> directive and updates the parser's
 local-label state.
 
-Returns C<1> for C<LOCALS>, C<0> for C<NOLOCALS>, and C<undef> if the
-next input item is neither directive.
+Returns C<1> for C<LOCALS>, C<0> for C<NOLOCALS>, and C<undef> if the next 
+input item is neither directive.
 
-The return value represents parser state and is not stored directly in
-the final AST.
+The return value represents parser state and is not stored directly in the 
+final AST.
 
 =head2 parse_model
 
   my $model = $self->parse_model();
 
-Parses the required calculator model directive and returns the
-recognized model identifier.
+Parses the required C<MODEL TINY> directive following the language identifier 
+and returns the integer C<0> for the TINY memory model. No other memory model 
+is currently supported.
+
+The keyword and its argument must occur on the same line, with no additional 
+content apart from whitespace and a comment.
 
 The model value is stored in the C<model> field of the program node.
 
@@ -1759,24 +1823,22 @@ The model value is stored in the C<model> field of the program node.
 
 Parses a numeric-radix directive and updates the active radix.
 
-Returns C<2>, C<8>, C<10>, or C<16>. Returns C<undef> if the next input
-item is not a radix directive.
+Returns C<2>, C<8>, C<10>, or C<16>. Returns C<undef> if the next input item is 
+not a radix directive.
 
-The return value represents parser state and is not stored directly in
-the final AST.
+The return value represents parser state and is not stored directly in the 
+final AST.
 
 =head2 parse_segment
 
   my $segment = $self->parse_segment();
 
-Parses a segment declaration and dispatches to
-L</parse_data_block>, L</parse_code_block>, or
-L</parse_stack_block>, according to the segment type.
+Parses a segment declaration and dispatches to L</parse_data_block>, 
+L</parse_code_block>, or L</parse_stack_block>, according to the segment type.
 
 Returns the resulting data, code, or stack segment node.
 
-For a named segment, the closing segment name must match the opening
-name.
+For a named segment, the closing segment name must match the opening name.
 
 =head2 parse_stack_block
 
@@ -1786,11 +1848,11 @@ name.
 Parses the body of a stack segment and returns a stack segment node as
 documented under L</Stack segment node>.
 
-If C<$name> is omitted or false, the segment name defaults to C<STACK>.
-The returned name is converted to upper case.
+If C<$name> is omitted or false, the segment name defaults to C<STACK>. The 
+returned name is converted to upper case.
 
-The individual hashes returned by L</parse_stack_statement> are merged
-into the segment's C<assignments> hash.
+The individual hashes returned by L</parse_stack_statement> are merged into the 
+segment's C<assignments> hash.
 
 =head2 parse_stack_statement
 
@@ -1805,70 +1867,68 @@ Parses one stack-register assignment and returns:
     },
   }
 
-A C<RADIX>, C<LOCALS>, or C<NOLOCALS> directive returns an empty hash
+A C<RADIX>, C<LOCALS>, or C<NOLOCALS> directive returns an empty hash 
 reference. Empty nodes are omitted by L</parse_stack_block>.
 
 =head2 parse_title
 
   my $title = $self->parse_title();
 
-Parses a C<%TITLE> directive and returns the contents of its quoted
-string.
+Parses a C<%TITLE> directive and returns the contents of its quoted string.
 
-The return value is stored in the optional C<title> field of the
-program node.
+The return value is stored in the optional C<title> field of the program node.
 
-The token methods return matched scalar values. Unlike the
-C<parse_*> methods, they do not return AST nodes.
+The token methods return matched scalar values. Unlike the C<parse_*> methods, 
+they do not return AST nodes.
 
 =head1 TOKEN PARSING METHODS
 
-The token methods return matched scalar values. Unlike the
-C<parse_*> methods, they do not return AST nodes.
+The token methods return matched scalar values. Unlike the C<parse_*> methods, 
+they do not return AST nodes.
+
 =head2 token_binary
 
   my $binary = $self->token_binary();
 
-Returns a binary literal matched using the parser's binary token
-pattern.
+Returns a binary literal matched using the parser's binary token pattern.
 
 =head2 token_complex
 
   my $complex = $self->token_complex();
 
-Returns a complex-number literal matched using the parser's complex
-token pattern.
+Returns a complex-number literal matched using the parser's complex token 
+pattern.
 
 =head2 token_decimal
 
   my $decimal = $self->token_decimal();
 
-Returns a suffixed decimal literal matched using the parser's decimal
-token pattern.
+Returns a suffixed decimal literal matched using the parser's decimal token 
+pattern.
 
 =head2 token_hex
 
   my $hex = $self->token_hex();
 
-Returns a hexadecimal literal matched using the parser's hexadecimal
-token pattern.
+Returns a hexadecimal literal matched using the parser's hexadecimal token 
+pattern.
 
 =head2 token_kw_icase
 
   my $keyword = $self->token_kw_icase(@acceptable);
 
-Matches an identifier against C<@acceptable> without regard to case and
-returns the spelling found in the source.
+Matches an identifier against C<@acceptable> without regard to case and returns 
+the spelling found in the source.
 
-Reports a parse failure if an identifier is present but does not match
-an acceptable value.
+Reports a parse failure if an identifier is present but does not match an 
+acceptable value.
 
 =head2 token_kw_operation
 
   my $keyword = $self->token_kw_operation(@acceptable);
 
-Matches an operation token against C<@acceptable> and returns the
-matched operation.
+Matches an operation token against C<@acceptable> and returns the matched 
+operation.
 
 Operation matching is case-sensitive.
 
@@ -1881,10 +1941,10 @@ Parses a numeric value.
 Explicitly suffixed binary, octal, decimal, and hexadecimal values are
 recognized independently of the active radix.
 
-For an unsuffixed value, interpretation depends on the active radix.
-Unsuffixed binary, octal, and hexadecimal integer values are converted
-to signed 36-bit numeric values. Under decimal radix, numeric parsing
-is delegated to the parent parser.
+For an unsuffixed value, interpretation depends on the active radix. Unsuffixed 
+binary, octal, and hexadecimal integer values are converted to signed 36-bit 
+numeric values. Under decimal radix, numeric parsing is delegated to the parent 
+parser.
 
 =head2 token_octal
 
@@ -1896,8 +1956,8 @@ Returns an octal literal matched using the parser's octal token pattern.
 
   my $string = $self->token_string();
 
-Parses a delimited string and returns its contents without the
-surrounding delimiters.
+Parses a delimited string and returns its contents without the surrounding 
+delimiters.
 
 Backslash escape sequences remain part of the returned string.
 
@@ -1905,8 +1965,7 @@ Backslash escape sequences remain part of the returned string.
 
   my $vector = $self->token_vector();
 
-Returns a vector literal matched using the parser's vector token
-pattern.
+Returns a vector literal matched using the parser's vector token pattern.
 
 =head1 SEE ALSO
 

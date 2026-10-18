@@ -1,5 +1,7 @@
 ; General purpose single bipolar timer IC NE555
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 LOCALS
 
 SEGMENT NE555 CODE

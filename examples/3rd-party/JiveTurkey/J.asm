@@ -1,7 +1,9 @@
 ; Jive Turkey for the HP-35s
 ; This program is from Maurice E.T. Suinnen and is used here by permission.
 ; http://ftp.whtech.com/hexbus_cc40_ti74/a-collection-of-information-on-the-ti-cc40-computer.pdf
-MODEL   P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT JiveTurkey CODE
         LBL     J
         ;100 DISPLAY AT(6)"* JIVE TURKEY GAME *":PAUSE 2

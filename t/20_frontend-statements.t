@@ -6,7 +6,9 @@ use lib 't/lib';
 use FrontendTest qw( run_frontend );
 
 my $source = <<'ASM';
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT DATA
   FORMULA EQU 'A+B'
 ENDS
@@ -93,7 +95,9 @@ subtest 'jump markers resolve instruction and literal targets' => sub {
 
 subtest 'decimal literals use the fewest numeric keystrokes' => sub {
   my $numbers = <<'ASM';
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT CODE
 1e-9
 1000
@@ -126,7 +130,9 @@ ASM
 
 subtest 'segment nodes retain alphabetical frontend order' => sub {
   my $source = <<'ASM';
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT zulu CODE
 LBL B
 RTN

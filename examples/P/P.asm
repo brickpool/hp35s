@@ -1,5 +1,7 @@
 ; Electric power P
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT DATA
   eqnMenu EQU '1P 2V 3I 4R'
 ENDS

@@ -5,7 +5,9 @@ use Test::More;
 use Parser::HPC;
 
 my $source = <<'ASM';
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT CODE
 start:
   RTN
@@ -37,7 +39,9 @@ subtest 'STACK assignments parse in a minimal program' => sub {
 
 subtest 'STACK requires SET before its value' => sub {
   my $invalid = <<'ASM';
-MODEL P35S
+IDEAL
+P35S
+MODEL TINY
 SEGMENT STACK
   REGX  2
 ENDS
