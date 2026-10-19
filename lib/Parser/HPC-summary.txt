@@ -1,0 +1,82 @@
+Summary: Parser::HPC directive parsing consistency
+
+Context
+- File: lib/Parser/HPC.pm
+- Goal: make directive handling (TITLE, DISPLAY, RADIX, LOCALS, MODE/LANGUAGE/MODEL) consistent by separating
+  grammar structure, scope rules, and state storage.
+
+Observed inconsistencies
+1) Optionality is expressed in multiple ways:
+   - Caller-side optionality via maybe(...) (e.g. parse_title in parse)
+   - Callee-side optionality via maybe_expect(... ) or return (e.g. parse_display, parse_radix, parse_locals)
+   - Required token parsing wrapped in eval for message remapping (e.g. parse_language)
+
+2) Scope checks are implicit via call path, not explicit parser state.
+   - Whether a directive is legal depends on where it is called, not on a central scope model.
+
+3) State fields exist but are not fully standardized/documented.
+   - Present: _radix, _locals, _local_scope, _symbols
+   - Missing/implicit candidates: _title, _scope
+
+4) Top-level parse() currently mixes structural parsing and directive probing.
+
+Recommended design rule
+Define each directive by:
+- Scope: where allowed (global, data, code, stack)
+- Cardinality: 0..1, 1, or 0..n
+- Effect: persistent parser state vs side effect only
+
+Proposed scope model
+- Use explicit scope in object state:
+  - _scope = global | data | code | stack
+- Enter/leave segment scopes in parse_segment / block parsers (prefer local() for safe unwind).
+
+Directive policy (suggested)
+- %TITLE:
+  - Scope: global
+  - Cardinality: 0..1
+  - State: _title (undef => not set)
+  - Second occurrence: hard fail (duplicate title)
+- DISPLAY:
+  - Scope: configurable (currently treated broadly)
+  - Cardinality: 0..n
+  - Effect: side-effect only (warn), no required persistent field
+- RADIX:
+  - Scope: configurable (currently broad)
+  - Cardinality: 0..n
+  - State: _radix
+- LOCALS/NOLOCALS:
+  - If policy is “only in CODESEG”, enforce by scope check and fail in data/stack/global
+  - Cardinality: 0..n
+  - State: _locals
+- IDEAL/LANGUAGE/MODEL:
+  - Structural header requirements (required, ordered)
+  - Parse as required grammar, not as optional directives
+
+Parser-structure recommendation
+- Keep root parser focused on structure:
+  - parse_global_section (0..n directives valid in global scope)
+  - required header sequence (IDEAL, LANGUAGE, MODEL) if grammar requires fixed order
+  - segment sequence
+  - END
+- Keep block parsers focused on scope-local alternatives:
+  - inside CODESEG/DATASEG/STACK use any_of over legal statements/directives for that scope
+
+Why this helps
+- One consistent rule for where optionality is handled
+- Better error messages (“directive not allowed in this scope”, “duplicate title”)
+- Less duplicated conditional probing in callers
+- Easier future maintenance and documentation
+
+Important implementation note (sequence_of + duplicates)
+- In Parser::MGC flows, commit controls backtracking/propagation.
+- For duplicate %TITLE, if you want a hard syntax error, commit before failing so the failure is not silently treated as sequence termination.
+
+Minimal state additions
+- Add _title (undef initially)
+- Add _scope (global initially)
+
+Documentation recommendation (POD)
+- Add/extend an INTERNAL STATE section documenting each internal field:
+  - name, type, initial value, meaning, and where mutated
+- Explicitly document directive scope + cardinality policy.
