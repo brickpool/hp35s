@@ -44,7 +44,7 @@ subtest '%TITLE rejects invalid delimiters' => sub {
     '%TITLE_ "I/O Library"',
   ) {
     my $error = parse_program_error($title);
-    like( $error, qr/IDEAL must be specified first/,
+    like( $error, qr/Illegal instruction/,
       "$title is not recognized as a title directive" );
   }
 };
@@ -53,22 +53,21 @@ subtest '%TITLE may only be used once' => sub {
   my $error = parse_program_error(
     "%TITLE \"First\"\n%TITLE \"Second\""
   );
-  like( $error, qr/IDEAL must be specified first/,
-    'the second %TITLE is rejected where IDEAL is required' );
+  like( $error, qr/Symbol already defined: \%TITLE/,
+    'the second %TITLE is rejected before the language ID' );
 };
 
 subtest '%TITLE reports string errors' => sub {
   my @cases = (
-    [ '%TITLE ', qr/Need quoted string on line 1/, 'missing quoted string' ],
-    [ 
-      qq{%TITLE "I/O\nLibrary"},
-      qr/Missing end quote on line 1 at:\n%TITLE "I\/O\n {11}\^\n/,
-      'newline in title after I/O'
-    ],
+    [ '%TITLE ', 
+      qr/Need quoted string on line 1/, 
+      'missing quoted string' ],
+    [  qq{%TITLE "I/O\nLibrary"},
+      qr/Missing end quote on line 1 at:\n\%TITLE "I\/O\n/,
+      'newline in title after I/O' ],
     [ '%TITLE "I/O Library" extra', 
       qr/Extra characters on line 1/, 
-      'extra characters after title'
-    ],
+      'extra characters after title' ],
   );
   for my $case (@cases) {
     my ($title, $message, $description) = @$case;

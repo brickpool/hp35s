@@ -1,8 +1,23 @@
+0.5.2   2026-10-21
+        [ADDED]
+         * Added source tracking support for generated listings
+
+        [CHANGES]
+         * Simplified section parsing using Parser::MGC scope_of and explicit
+           section boundaries
+         * Refactored CODESEG, DATASEG and STACK parsing with consistent
+           directive handling and commit boundaries
+
+        [BUGFIXES]
+         * Preserved specific errors when parsing committed alternatives
+         * Prevented section markers and partial lines from being parsed as
+           regular statements
+
 0.5.1   2026-10-11
         [ADDED]
          * Regression tests comparing assembled examples with their .35s
            reference listings
-        * Extended tests for TITLE, DISPLAY, RADIX and numeric keystroke
+         * Extended tests for TITLE, DISPLAY, RADIX and numeric keystroke
           optimization
          * Improved diagnostics for invalid RADIX values
          * Enforced keyword delimiters and line endings for TITLE and DISPLAY

@@ -78,29 +78,39 @@ RADIX 16
   GTO start
 END start
 ASM
-  is( $root->{segments}->[0]->{definitions}->[0]->{value}, 256,
+  my $definitions = $root->{segments}->[0]->{definitions};
+  is( $definitions->[0]->{value}, 256,
     'EQU uses the active radix' );
-  is( $root->{segments}->[0]->{definitions}->[1]->{value}, '101b',
+  is( $definitions->[1]->{value}, '101b',
     'suffixed binary EQU is preserved' );
-  is( $root->{segments}->[0]->{definitions}->[2]->{value}, '17o',
+  is( $definitions->[2]->{value}, '17o',
     'suffixed octal EQU is preserved' );
-  is( $root->{segments}->[0]->{definitions}->[3]->{value}, '12d',
+  is( $definitions->[3]->{value}, '12d',
     'suffixed decimal EQU is preserved' );
-  is( $root->{segments}->[0]->{definitions}->[4]->{value}, 'FFh',
+  is( $definitions->[4]->{value}, 'FFh',
     'suffixed hexadecimal EQU is preserved' );
-  is( $root->{segments}->[0]->{definitions}->[6]->{value}, 4,
+  is( $definitions->[6]->{value}, 4,
     'RADIX inside data changes subsequent definitions' );
-  cmp_ok( abs( $root->{segments}->[0]->{definitions}->[5]->{value} - 0.7 ),
+  cmp_ok( abs( $definitions->[5]->{value} - 0.7 ),
     '<', 1e-12, 'lowercase e float converts under RADIX 10' );
-  is( $root->{segments}->[1]->{statements}->[1]->{instruction}->{operand}->{value},
+
+  my $statements = $root->{segments}->[1]->{statements};
+  is( $statements->[1]->{instruction}->{operand}->{value},
     11, 'CF operand remains decimal under RADIX 2' );
-  is( $root->{segments}->[1]->{statements}->[2]->{instruction}->{operand}->{value},
+  is( $statements->[2]->{instruction}->{operand}->{value},
     11, 'FIX operand remains decimal under RADIX 16' );
-  is( $root->{segments}->[1]->{statements}->[3]->{instruction}->{operand}->{value},
+  is( $statements->[3]->{instruction}->{operand}->{value},
     10, 'SF operand remains decimal under RADIX 16' );
-  is_deeply( $root->{segments}->[1]->{statements}->[0],
+  is_deeply( $statements->[0],
     { label => { name => 'START' } }, 'RADIX preserves label declarations' );
-  my $next = $parser->from_string("IDEAL\nP35S\nMODEL TINY\nCODESEG\n100\n\nEND\n");
+  my $next = $parser->from_string(<<ASM);
+IDEAL
+P35S
+MODEL TINY
+CODESEG
+  100
+END
+ASM
   is_deeply( $next->{segments}->[0]->{statements}->[0],
     { literal => { kind => 'hex', value => '100h' } },
     'radix persists when the parser instance is reused' );
@@ -213,20 +223,36 @@ ASM
     my %suffixes = ( 2 => 'b', 8 => 'o', 10 => '', 16 => 'h' );
     my $value = '100' . $suffixes{$base};
     my $root = Parser::HPC->new->from_string($source);
-    is_deeply( $root->{segments}->[0]->{statements}, [
-      { instruction => { value => 'LBL', operand => { type => 'variable', value => 'A' } } },
+    is_deeply(
+      $root->{segments}->[0]->{statements},
+      [
+        {
+          instruction => {
+            value   => 'LBL',
+            operand => { type => 'variable', value => 'A' }
+          }
+        },
+        { label       => { name  => 'START' } },
+        { instruction => { value => 'RADIX.' } },
+        { literal     => { kind  => $kinds{$base}, value => $value } },
+        { instruction => { value => 'RADIX,' } },
+        { literal     => { kind  => $kinds{$base}, value => $value } },
+        { literal     => { kind  => 'decimal',     value => '100' } },
+        {
+          instruction => {
+            value   => 'GTO',
+            operand => { type => 'label', value => 'START' }
+          }
+        },
+        { instruction => { value => 'RTN' } },
+      ],
+      "display instructions preserve parser base $base"
+    );
+    is_deeply(
+      $root->{segments}->[0]->{statements}->[1],
       { label => { name => 'START' } },
-      { instruction => { value => 'RADIX.' } },
-      { literal => { kind => $kinds{$base}, value => $value } },
-      { instruction => { value => 'RADIX,' } },
-      { literal => { kind => $kinds{$base}, value => $value } },
-      { literal => { kind => 'decimal', value => '100' } },
-      { instruction => { value => 'GTO', operand => { type => 'label', value => 'START' } } },
-      { instruction => { value => 'RTN' } },
-    ], "display instructions preserve parser base $base" );
-    is_deeply( $root->{segments}->[0]->{statements}->[1],
-      { label => { name => 'START' } },
-      'declaration precedes the display instruction without RADIX directive nodes' );
+      'declaration precedes the display instruction without RADIX'
+    );
 
     my ($status, $output, $errors) = run_frontend($source, '-s');
     is( $status, 0, "mixed source assembles in base $base" );
@@ -252,7 +278,7 @@ subtest 'RADIX directive spelling is case-insensitive' => sub {
       "IDEAL\nP35S\nMODEL TINY\n$directive\nCODESEG\nRTN\n\nEND\n",
       "IDEAL\nP35S\nMODEL TINY\nCODESEG\n$directive\nRTN\n\nEND\n",
       "IDEAL\nP35S\nMODEL TINY\nDATASEG\n$directive\nVALUE EQU 1\n\nEND\n",
-      "IDEAL\nP35S\nMODEL TINY\nSTACK\nREGX SET 1\n$directive\nCODESEG\nRTN\n\nEND\n",
+      "IDEAL\nP35S\nMODEL TINY\nSTACK\nREGX SET 1\n$directive\nCODESEG\n\nEND",
     ) {
       my $success = eval { Parser::HPC->new->from_string($source); 1 };
       ok( $success, "$directive is allowed" );

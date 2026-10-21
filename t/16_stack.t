@@ -89,7 +89,7 @@ ASM
   my $result = eval { Parser::HPC->new->from_string($invalid); 1 };
 
   ok( !$result, 'malformed STACK statement is rejected' );
-  like( $@, qr/Expecting segment or group quantity/, 
+  like( $@, qr/Expected .+?SET/, 
     'reports that SET was expected' );
 };
 

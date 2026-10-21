@@ -122,6 +122,7 @@ lib/HP35s/Macro.pm
 lib/HP35s/Render.pm
 lib/HP35s/Vocabulary.pm
 lib/Parser/HPC.pm
+lib/Parser/HPC.pod
 lib/Parser/HPC/Macro.pm
 lib/Parser/HPC/Vocabulary.pm
 LICENSE
@@ -140,6 +141,7 @@ t/16_stack.t
 t/20_frontend-statements.t
 t/21_frontend-forward-labels.t
 t/22_frontend-locals.t
+t/23_listing.t
 t/30_macros-good.t
 t/31_macros-fail.t
 t/40_optimize-keystrokes.t

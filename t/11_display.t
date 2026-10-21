@@ -38,8 +38,21 @@ ASM
 subtest 'DISPLAY reports string errors at the source position' => sub {
   my @cases = (
     [ "IDEAL\nP35S\nMODEL TINY\nDISPLAY \nCODESEG\nRTN\n\nEND\n",
-      qr/Need quoted string on line 4/, 'missing message' ],
-    [ "IDEAL\nP35S\nMODEL TINY\nDISPLAY \"I\/O\nLibrary\"\nCODESEG\nRTN\n\nEND\n",
+      qr/Need quoted string on line 4/, 
+      'missing message' ],
+    [ "IDEAL\nP35S\nMODEL TINY\nDISPLAY \"unfinished\nCODESEG\nRTN\n\nEND\n",
+      qr/Need quoted string on line 4/, 
+      'unterminated message' ],
+    [ "IDEAL\nP35S\nMODEL TINY\nDISPLAY ''\nCODESEG\nRTN\n\nEND\n",
+      qr/Need quoted string on line 4/, 
+      'empty message' ],
+    [ "MODEL TINY\nCODESEG\nRTN\nDISPLAY 123\nEND\n",
+      qr/Need quoted string on line 4/, 
+      'invalid message after an instruction' ],
+    [ "MODEL TINY\nCODESEG\nDISPLAY ''\nRTN\nEND\n",
+      qr/Need quoted string on line 3/, 
+      'empty message inside code' ],
+    [ "IDEAL\nP35S\nMODEL TINY\nDISPLAY \"I\/O\nLibrary\"\nCODESEG\nRTN\n\nEND",
       qr/Missing end quote on line 4 at:\nDISPLAY \"I\/O\n {12}\^/,
       'newline in message after I/O' ],
   );
@@ -83,7 +96,6 @@ MODEL TINY
 $directive 'message'
 CODESEG
   RTN
-
 END
 ASM
     my $success = eval { Parser::HPC->new->from_string($source); 1 };

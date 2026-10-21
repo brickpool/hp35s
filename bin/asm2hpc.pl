@@ -8,7 +8,7 @@ use strict;
 use warnings;
 
 use version;
-our $VERSION = version->declare('v0.5.0');
+our $VERSION = version->declare('v0.5.2');
 
 # ------------------------------------------------------------------------
 # Imports
@@ -58,6 +58,7 @@ my $shortcut;
 my $encoded;
 my $file;
 my $debug;
+my $listing;
 
 Getopt::Long::Configure qw(
   bundling
@@ -86,6 +87,7 @@ sub parse_options { # $ ($, @)
     'unicode|u',
     'shortcut|s',
     'encoded|e',
+    'list|l',
     'debug',
     'file|f=s',
   ) or pod2usage("Try '$0 --help' for more information.");
@@ -109,6 +111,7 @@ sub parse_options { # $ ($, @)
   $unicode = $options{unicode};
   $shortcut = $options{shortcut};
   $encoded = $options{encoded};
+  $listing = $options{list};
   $debug = $options{debug} // 0;
   $file = $options{file};
   $shortcut = 1 if $encoded;
@@ -131,11 +134,21 @@ sub main { # $ ()
   if (defined $file) {
     open(STDIN, '<', $file) or die "Can't open $file : $!";;
   }
+  $listing && !defined $file
+    and die "Option -l requires -f to name the source file\n";
 
   #1# read the stdin and get the response
 
+  my $source_text;
+  {
+    local $/;
+    $source_text = <STDIN>;
+  }
+  $source_text //= '';
+
   my $parser = Parser::HPC->new();
-  $response = $parser->from_file( \*STDIN );
+  $parser->{_track_source_ids} = 1 if $listing;
+  $response = $parser->from_string( $source_text );
 
   # sort segments in alphabetic order
   my @segments = sort { $a->{name} cmp $b->{name} } @{ $response->{segments} };
@@ -507,9 +520,40 @@ sub main { # $ ()
     $out = qq{%%HP: T(3)A(D)F(.);\n} . $out;
   }
 
-  print STDOUT $out;
+  write_listing( $source_text, $response, $file ) if $listing;
+  print STDOUT $out unless $listing;
 
   return 0;
+}
+
+sub write_listing {
+  my ($source, $program, $source_file) = @_;
+  my @source_lines = split /\r\n?|\n/, $source, -1;
+  pop @source_lines if $source =~ /(?:\r\n|\r|\n)\z/;
+  my %has_code;
+
+  for my $segment ( @{ $program->{segments} } ) {
+    next unless $segment->{type} eq 'code';
+    for my $statement ( @{ $segment->{statements} } ) {
+      next if exists $statement->{label};
+      next unless exists $statement->{instruction}
+        || exists $statement->{literal};
+      my $source_id = $statement->{_source_id};
+      $has_code{$source_id} = 1 if defined $source_id;
+    }
+  }
+
+  my ($name) = fileparse($source_file, qr/\.[^.]*/);
+  my $listing_file = "${name}.lst";
+  open my $handle, '>', $listing_file
+    or die "Can't create $listing_file: $!";
+  for my $number (1 .. @source_lines) {
+    my $offset = $has_code{$number} ? '0000' : '';
+    my $code = $has_code{$number} ? '?? ?? ??' : '';
+    printf {$handle} "%1s %4d %4s %20s %s\n", '', $number, $offset, $code,
+      $source_lines[$number - 1];
+  }
+  close $handle or die "Can't write $listing_file: $!";
 }
 
 # ------------------------------------------------------------------------

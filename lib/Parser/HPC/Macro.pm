@@ -9,7 +9,7 @@ use strict;
 use warnings;
 
 use version;
-our $VERSION = version->declare('v0.5.1');
+our $VERSION = version->declare('v0.5.2');
 
 # ------------------------------------------------------------------------
 # Imports
@@ -32,6 +32,7 @@ use Parser::HPC::Vocabulary qw(
   @predefined
   @languages
   @segments
+  @listings
 );
 
 # -------------------------------------------------------------------------
@@ -68,6 +69,7 @@ sub new {
     @predefined,
     @languages,
     @segments,
+    @listings,
   );
   my $self = $class->SUPER::new(%args);
   $self->{_reserved} = { %reserved_symbols };
