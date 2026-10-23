@@ -1,50 +1,44 @@
+0.5.3   2026-10-23
+        [ADDED]
+         * Added layered parser regression tests
+
+        [CHANGES]
+         * Refactored parser responsibilities and directive handling
+         * Canonicalized case-insensitive symbol names
+
+        [BUGFIXES]
+         * Fixed inconsistent parser state and symbol references
+         * Fixed missing END handling
+
 0.5.2   2026-10-21
         [ADDED]
          * Added source tracking support for generated listings
 
         [CHANGES]
-         * Simplified section parsing using Parser::MGC scope_of and explicit
-           section boundaries
-         * Refactored CODESEG, DATASEG and STACK parsing with consistent
-           directive handling and commit boundaries
+         * Refactored CODESEG, DATASEG and STACK parsing
+         * Refactored directive handling and commit boundaries
 
         [BUGFIXES]
          * Preserved specific errors when parsing committed alternatives
-         * Prevented section markers and partial lines from being parsed as
-           regular statements
+         * Fixed parser error propagation
 
 0.5.1   2026-10-11
         [ADDED]
-         * Regression tests comparing assembled examples with their .35s
-           reference listings
-         * Extended tests for TITLE, DISPLAY, RADIX and numeric keystroke
-          optimization
-         * Improved diagnostics for invalid RADIX values
-         * Enforced keyword delimiters and line endings for TITLE and DISPLAY
+         * Added regression tests for generated listings
 
         [CHANGES]
-         * Refined RADIX handling for numeric literals, EQU definitions and
-           SET assignments; instruction operands remain decimal
-         * Made numeric syntax case-sensitive: lowercase base suffixes and
-           decimal exponents, uppercase hexadecimal digits
-         * Optimized decimal literals in shortcut output to reduce keystrokes
-         * Centralized numeric and keystroke optimization in HP35s::Keystrokes
-         * Unified parsing of DISPLAY, RADIX, LOCALS and NOLOCALS directives
-         * Updated example .35s listings incl. jump-target markers
+         * Refined RADIX handling and numeric syntax
+         * Optimized numeric keystrokes and example listings
+         * Unified directive parsing
 
         [BUGFIXES]
          * Fixed signed 36-bit conversion of unsuffixed non-decimal values
-           in EQU definitions and SET assignments
          * Corrected error positions for missing or unterminated quoted strings
-         * Prevented DISPLAY messages from being emitted for invalid lines
-         * Fixed undefined jump targets in example Z
-         * Fixed subroutine calls in the Mancala example
-         * Fixed restart input handling in the JiveTurkey example
+         * Fixed jump targets and example program issues
 
 0.5.0   2026-10-09
         [ADDED]
-         * Test coverage for module loading, parser, frontend and keystroke
-           optimization
+         * Test coverage for parser, frontend and keystroke optimization
          * Extended tests for POD documentation and example sources
          * Support for the LOCALS, NOLOCALS, RADIX and DISPLAY directives
          * Macro support has been added (MACRO, ENDM, and LOCAL directives)
@@ -54,10 +48,8 @@
          * Reduced size and complexity of asm2hpc.pl
          * Separated data definitions from parser and frontend logic
          * Renamed the HP35S namespace to HP35s
-         * Consolidated instruction and keystroke modules as HP35s::Vocabulary
-           and HP35s::Keystrokes
-         * Updated command-line help and POD documentation; --clear now
-           requires shortcut output
+         * Consolidated instruction and keystroke modules
+         * Updated command-line help and POD documentation
 
 0.4.3   2026-10-06
         [CHANGES]

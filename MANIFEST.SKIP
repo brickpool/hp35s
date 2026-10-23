@@ -9,4 +9,5 @@
 \btrial
 \bwiki
 .+\.komodoproject
+.+\.code-workspace
 \bdebug\.log

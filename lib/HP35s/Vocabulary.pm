@@ -3,9 +3,10 @@ package HP35s::Vocabulary;
 
 use strict;
 use warnings;
+use utf8;
 
 use version;
-our $VERSION = version->declare('v0.5.1');
+our $VERSION = version->declare('v0.5.3');
 
 use Exporter 'import';
 our @EXPORT_OK = qw(

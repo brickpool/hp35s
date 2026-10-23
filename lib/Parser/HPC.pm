@@ -9,7 +9,7 @@ use strict;
 use warnings;
 
 use version;
-our $VERSION = version->declare('v0.5.2');
+our $VERSION = version->declare('v0.5.3');
 
 # ------------------------------------------------------------------------
 # Imports
@@ -100,27 +100,30 @@ sub new {    # $parser (%args)
 
   # private parser attributes
   $self->{_local_scope} = '';   # Local label handling
+  $self->{_track_source_ids} = 0;
 
   # A symbol represents a value, which can be a variable, address label, 
   # or an operand to an assembly instruction and directive
   # store predefined symbols
-  my %constants   = map { $_ => 'constant'  } @constants;
-  my %variables   = map { $_ => 'variable'  } 'A'..'Z',
-                                              @register;
-  my %directives  = map { $_ => 'directive' } @directives,
-                                              @languages,
-                                              @segments,
-                                              @listings,
-                                              @modes,
-                                              @models;
-  my %opcodes     = map { $_ => 'opcode'    } @instructions,
-                                              @with_address,
-                                              @with_digits,
-                                              @with_variables,
-                                              @with_indirects,
-                                              @expressions,
-                                              @functions;
-  my %equations  = map { $_ => 'equation'   } @predefined;
+  
+  my %constants   = map { $_ => 'constant' } 
+                    map { $self->_canonical_symbol($_) }
+                      @constants;
+  my %variables   = map { $_ => 'variable' } 
+                    map { $self->_canonical_symbol($_) }
+                      'A'..'Z', @register;
+  my %directives  = map { $_ => 'directive' }
+                    map { $self->_canonical_symbol($_) } 
+                      @directives, @languages, @segments,
+                      @listings,  @modes, @models;
+  my %opcodes     = map { $_ => 'opcode' }
+                    map { $self->_canonical_symbol($_) } 
+                      @instructions,  @with_address, @with_digits, 
+                      @with_variables, @with_indirects, @expressions,
+                      @functions;
+  my %equations   = map { $_ => 'equation' }
+                    map { $self->_canonical_symbol($_) } 
+                      @predefined;
   $self->{symbols} = { %constants, %variables, %directives, %opcodes, 
     %equations };
 
@@ -136,7 +139,7 @@ sub from_string {    # $result ($str)
   return $self->SUPER::from_string($source) if $self->{_track_source_ids};
 
   my $macro_parser = Parser::HPC::Macro->new(
-    patterns => { ident => $self->{patterns}->{ident} },
+    patterns => { ident => $self->{patterns}{ident} },
   );
   my $parsed_source = $macro_parser->from_string($source);
   return $self->SUPER::from_string($parsed_source);
@@ -202,10 +205,9 @@ sub parse {    # $tree ()
   }
 
   my $root = { %$header };
-  delete $root->{display};
   $root->{segments}  = \@segments;
-  $root->{language} ||= $self->{language};
-  $root->{model}    ||= $self->{model};
+  $root->{language} //= $self->{language};
+  $root->{model}    //= $self->{model};
   $root->{startaddr} = $start if $start;
   return $root;
 }
@@ -310,11 +312,20 @@ sub parse_header {
           $self->any_of(
             'parse_title',
             'parse_mode',
-            'parse_display',
             'parse_language',
             'parse_model',
-            'parse_locals',
-            'parse_radix',
+            sub {
+              $self->parse_display;
+              return {};
+            },
+            sub {
+              $self->parse_locals;
+              return {};
+            },
+            sub {
+              $self->parse_radix;
+              return {};
+            },
             sub {
               $self->commit;
               $self->fail('Illegal instruction');
@@ -323,7 +334,7 @@ sub parse_header {
         },
       );
     },
-    qr/(?=(?:$sections)\b)/i,
+    qr/(?=(?:$sections)\b|\z)/i,
   );
 
   my $header = $result
@@ -428,15 +439,15 @@ sub parse_mode {   # $bool ()
   $line != $next_line
     or $self->fail("Extra characters");
 
-  $self->{mode} = uc($mode);
+  $self->{mode} = $self->_canonical_symbol($mode);
   return { mode => $self->{mode} };
 }
 
 sub parse_language {    # $language ()
   my $self = shift;
 
-  my $language = $self->maybe( sub { $self->token_kw_icase( @languages ) } );
-  $self->fail("Missing or illegal language ID") unless $language;
+  my $language = $self->maybe( sub { $self->token_kw_icase( @languages ) } ) 
+    or $self->fail("Missing or illegal language ID");
   $self->commit;
 
   # retrieve the state immediately after the commit
@@ -448,7 +459,7 @@ sub parse_language {    # $language ()
   $line != $next_line
     or $self->fail("Extra characters");
 
-  $self->{language} = $language;
+  $self->{language} = $self->_canonical_symbol($language);
   return { language => $self->{language} };
 }
 
@@ -482,7 +493,8 @@ sub parse_model {    # $model ()
     LARGE   => 4,
     HUGE    => 5,
   );
-  $self->{model} = $models{uc $model};
+  $model = $self->_canonical_symbol($model);
+  $self->{model} = $models{$model};
   return { model => $self->{model} };
 }
 
@@ -527,6 +539,7 @@ sub parse_locals {    # $bool ()
   $line != $next_line
     or $self->fail( "Extra characters" );    # .. on line
 
+  $result = $self->_canonical_symbol($result);
   $self->{locals} = $result eq 'LOCALS' ? 1 : 0;
   return { locals => $self->{locals} };
 }
@@ -538,27 +551,29 @@ sub parse_segment {    # $segment ()
   my $segment = $self->token_kw_icase( @segments );
   $self->commit;
 
+  $segment = $self->_canonical_symbol($segment);
   my $sections = join '|' => ( @segments, 'END' );
   return $self->scope_of(
     undef, 
     sub { 
-      SWITCH: for (uc $segment) {
+      SWITCH: for ($segment) {
         /DATASEG/ and return $self->parse_data_block; 
         /CODESEG/ and return $self->parse_code_block;
         /STACK/   and return $self->parse_stack_block;
       }
     },
-    qr/(?=(?:$sections)\b)/i
+    qr/(?=(?:$sections)\b|\z)/i
   );
 }
 
 sub parse_stack_block {    # $block (|$ident)
   my $self  = shift;
-  my $ident = uc( shift || 'STACK' );
+  my $ident = shift || 'STACK';
   my $type  = 'stack';
 
   # insert symbol into global symbol table
-  $self->{symbols}->{$ident} = $type;
+  $ident = $self->_canonical_symbol($ident);
+  $self->{symbols}{$ident} = $type;
 
   # call each stack line
   my $result = $self->sequence_of(
@@ -632,6 +647,7 @@ sub parse_stack_assignment {    # $assignment ()
     or $self->fail( "Extra characters" );
 
   # create new entry
+  $ident = $self->_canonical_symbol($ident);
   my $entry = {
     $ident => {
       type  => $type,
@@ -644,11 +660,12 @@ sub parse_stack_assignment {    # $assignment ()
 
 sub parse_data_block {    # $block (|$ident)
   my $self  = shift;
-  my $ident = uc( shift || '_DATA' );
+  my $ident = shift || '_DATA';
   my $type  = 'data';
 
   # insert symbol into global symbol table
-  $self->{symbols}->{$ident} = $type;
+  $ident = $self->_canonical_symbol($ident);
+  $self->{symbols}{$ident} = $type;
 
   # call each data line
   my $result = $self->sequence_of(
@@ -700,10 +717,11 @@ sub parse_data_definition {    # $definition ()
   my $fail_pos = $self->pos - length $ident;
 
   # test if symbol already exists
-  if (exists $self->{symbols}->{$ident}) {
+  $ident = $self->_canonical_symbol($ident);
+  if (exists $self->{symbols}{$ident}) {
     $self->fail_from(
       $fail_pos,
-      $self->{symbols}->{$ident} eq $type
+      $self->{symbols}{$ident} eq $type
         ? 'Symbol already defined'
         : 'Symbol already different kind'
     );
@@ -815,7 +833,7 @@ sub parse_data_definition {    # $definition ()
     or $self->fail( "Extra characters" );
 
   # insert symbol into global symbol table
-  $self->{symbols}->{$ident} = $type;
+  $self->{symbols}{$ident} = $type;
 
   # create new entry
   my $entry = {
@@ -833,11 +851,12 @@ sub parse_data_definition {    # $definition ()
 
 sub parse_code_block {    # $block (|$ident)
   my $self  = shift;
-  my $ident = uc( shift || '_TEXT' );
+  my $ident = shift || '_TEXT';
   my $type  = 'code';
 
   # insert symbol into global symbol table
-  $self->{symbols}->{$ident} = $type;
+  $ident = $self->_canonical_symbol($ident);
+  $self->{symbols}{$ident} = $type;
 
   # call each code line
   my $result = $self->sequence_of(
@@ -925,15 +944,15 @@ sub parse_code_instruction {    # $instruction ()
         },
       };
       if ($operand =~ /^[A-Z]\d{3}$/) {
-        $statement->{instruction}->{operand} = {
+        $statement->{instruction}{operand} = {
           type  => 'address',
           value => $operand,
         },
       } 
       else {
-        $statement->{instruction}->{operand} = {
+        $statement->{instruction}{operand} = {
           type  => 'label',
-          value => $self->_qualify_label_name($operand),
+          value => $self->_canonical_label($operand),
         };
       };
       last;
@@ -994,26 +1013,25 @@ sub parse_code_instruction {    # $instruction ()
 
       # determine all current equations
       my @equations = grep {
-        $self->{symbols}->{$_} eq 'equation'
+        $self->{symbols}{$_} eq 'equation'
       } keys %{ $self->{symbols} };
 
       # test if it is an equation
       $operand = $self->maybe( sub { $self->token_kw_icase(@equations) } );
-      if ( defined $operand ) {
-        $statement->{instruction}->{operand} = {
-          type  => 'equation',
-          value => $operand,
-        };
+      my $type = defined $operand ? 'equation' : 'expression';
+      if ( $type eq 'equation' ) {
+        # it is a symbol created via EQU
+        $operand = $self->_canonical_symbol($operand);
       }
       else {
-        # it must be an quoted expression
+        # it must be a quoted expression
         $operand = $self->generic_token( expression
           => qr/\'(.*?)\'/, sub { $1 } );
-        $statement->{instruction}->{operand} = {
-          type  => 'expression',
-          value => $operand,
-        };
       }
+      $statement->{instruction}{operand} = {
+        type  => $type,
+        value => $operand,
+      };
       last;
     };
     DEFAULT: {
@@ -1089,47 +1107,41 @@ sub parse_code_literal {    # $literal ()
 sub parse_label {    # $label ()
   my $self = shift;
   my $type = 'label';
-  my $ident;
 
-  $ident = $self->expect( qr/(?:\?\?\d{4}|\@{0,2}\w+):/ );
+  my ($str, $ident) = $self->expect( qr/(\?\?\d{4}|\@{0,2}\w+):/ );
   $self->commit;
-  my $fail_pos = $self->pos - length $ident;
+  my $fail_pos = $self->pos - length $str;
 
   # check if symbol starts with number
-  $ident !~ /^\d/ or
-    $self->fail_from(
-      $fail_pos,
-      "Labels can't start with numeric characters"
-    );
+  $ident !~ /^\d/ 
+    or $self->fail_from( $fail_pos, 
+      "Labels can't start with numeric characters" );
 
   # check if symbol looks like an address
-  $ident !~ /^[A-Z]\d{3}:$/ or
-    $self->fail_from(
-      $fail_pos,
-      "Illegal segment address"
-    );
+  $ident !~ /^[A-Z]\d{3}$/ 
+    or $self->fail_from( $fail_pos, "Illegal segment address");
 
-  $ident =~ s/://;
-  $ident = uc $ident;
-  my $nonlocal = $ident !~ /^@@/;
-  $ident = $self->_qualify_label_name($ident);
+  # check if the symbol is a local name
+  if ( $ident =~ /^@@/ ) {
+    $ident = $self->_canonical_label($ident);
+  } 
+  else {
+    $ident = $self->_canonical_symbol($ident);
+    $self->{_local_scope} = $ident;
+  }
 
   # check if symbol already exists
-  if ( defined $self->{symbols}->{$ident} ) {
+  if ( exists $self->{symbols}{$ident} ) {
     $self->fail_from(
-      $fail_pos,
-      $self->{symbols}->{$ident} eq $type
-        ?
-      "Symbol already defined"
-        :
-      "Symbol already different kind"
+      $fail_pos, 
+      $self->{symbols}{$ident} eq $type
+        ? "Symbol already defined"
+        : "Symbol already different kind"
     )
   }
 
   # insert symbol into global symbol table
-  $self->{symbols}->{$ident} = $type;
-
-  $self->{_local_scope} = $ident if $nonlocal;
+  $self->{symbols}{$ident} = $type;
 
   my $declaration = { label => { name => $ident } };
   my ($line) = $self->where;
@@ -1150,23 +1162,21 @@ sub parse_end {    # $start_addr|undef ()
     or $self->fail( "Code or data emission to undeclared segment" );
   
   # get the start address if present
-  my $start_addr = $self->any_of(
+  my $start_addr = $self->maybe(
     sub {
       my $ident = $self->generic_token( label => qr/\@{0,2}\w+/ );
-      my $name = $self->_qualify_label_name($ident);
-      defined $self->{symbols}->{$name} 
-        && $self->{symbols}->{$name} eq 'label' 
-          or $self->fail( "Expected label" );
+      my $name = $self->_canonical_label($ident);
+      exists $self->{symbols}{$name} && $self->{symbols}{$name} eq 'label' 
+        or $self->fail( "Expected label" );
       return $name;
     },
-    sub { 0 },
   );
 
   # ignore any data after END
   $self->substring_before( qr/$/s );
   
   return undef unless $start_addr;
-  return { type => 'label', value => uc $start_addr };
+  return { type => 'label', value => $start_addr };
 }
 
 # token methods
@@ -1225,9 +1235,12 @@ sub token_kw_operation {    # $keyword ()
   defined( my $kw = $self->generic_token( operation => pattern_operation, ) )
     or return undef;
 
+  my @expected = @acceptable[ 0 .. ($#acceptable < 4 ? $#acceptable : 4) ];
+  my $expected = join( ", ", @expected );
+  $expected .= ", ... (" . @acceptable . " total)" if @acceptable > 5;
+
   grep { $_ eq $kw } @acceptable
-    or pos($self->{str}) = $pos, $self->fail( "Expected any of "
-      . join( ", ", @acceptable ) );
+    or pos($self->{str}) = $pos, $self->fail( "Expected any of $expected" );
 
   return $kw;
 }
@@ -1242,11 +1255,17 @@ sub token_vector {    # $vector ()
 # Private Methods
 # -------------------------------------------------------------------------
 
-sub _qualify_label_name {    # $qualified_ident ($ident)
-  my ($self, $ident) = @_;
-  $ident = uc $ident;
-  return $self->{locals} && $ident =~ /^@@/
-    ? $self->{_local_scope} . ':' . $ident : $ident;
+sub _canonical_symbol {    # $symbol ($name)
+  my ($self, $name) = @_;
+  return uc $name;
+}
+
+sub _canonical_label {    # $qualified ($name)
+  my ($self, $name) = @_;
+  $name = $self->_canonical_symbol($name);
+  return $name unless 
+    $self->{locals} && $name =~ /^@@/;
+  return join ':', $self->{_local_scope}, $name;
 }
 
 sub _find_before {    # $pos ($substr)
@@ -1262,12 +1281,9 @@ sub _find_before {    # $pos ($substr)
   my $pos = $self->{length} - $self->pos;
   my $idx = index $self->{reverse_str}, $substr, $pos;
 
-  return
-    $idx > 0
-      ?
-    $self->{length} - $idx - length $substr
-      :
-    $self->pos;
+  return $idx > 0
+    ? $self->{length} - $idx - length $substr
+    : $self->pos;
 }
 
 1;

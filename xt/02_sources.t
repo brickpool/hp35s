@@ -11,7 +11,8 @@ plan skip_all => 'No assembler sources found in xt' unless @sources;
 
 for my $file ( @sources ) {
   subtest $file => sub {
-    open my $handle, '<', $file or die "Cannot open $file: $!";
+    open my $handle, '<:encoding(UTF-8)', $file
+      or die "Cannot open $file as UTF-8: $!";
     my $source = do { local $/; <$handle> };
     close $handle or die "Cannot close $file: $!";
 

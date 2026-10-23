@@ -77,6 +77,7 @@ my $expected = "%%HP: T(3)A(D)F(.);\n"
 
 subtest 'new statement AST renders every kind and operand' => sub {
   my ($status, $output, $errors) = run_frontend($source);
+
   is( $status, 0, 'frontend succeeds' );
   is( $errors, '', 'no warnings' );
   is( $output, $expected,
@@ -85,8 +86,10 @@ subtest 'new statement AST renders every kind and operand' => sub {
 
 subtest 'jump markers resolve instruction and literal targets' => sub {
   my ($status, $output, $errors) = run_frontend($source, '-j');
+
   my $marked = $expected;
   $marked =~ s/^(A001|A003)\t/$1*\t/gm;
+
   is( $status, 0, 'frontend succeeds' );
   is( $errors, '', 'no warnings' );
   is( $output, $marked, 'both target nodes retain their line addresses' );
@@ -107,6 +110,7 @@ start:
 END start
 ASM
   my ($status, $output, $errors) = run_frontend($program);
+
   is( $status, 0, 'frontend succeeds' );
   is( $errors, '', 'no warnings' );
   is( $output,
@@ -130,8 +134,10 @@ CODESEG
 END
 ASM
   my ($status, $output, $errors) = run_frontend($numbers, '-s');
+
   is( $status, 0, 'frontend succeeds' );
   is( $errors, '', 'no warnings' );
+
   like( $output, qr/^0001\t1e-9\t\t; 1 e \+\/- 9 ENTER$/m,
     'renders the optimized exponent used by the keystrokes' );
   like( $output, qr/^0002\t1e3\t\t; 1 e 3 ENTER$/m,
@@ -164,28 +170,44 @@ ASM
   my ($status, $output, $errors) = run_frontend($source);
   is( $status, 0, 'frontend succeeds' );
   is( $errors, '', 'no warnings' );
-  is( $output, "%%HP: T(3)A(D)F(.);\nB001\tLBL B\nB002\tRTN\nA001\tLBL A\nA002\tRTN\n",
-    're-entering CODESEG retains one shared address namespace' );
+  is( $output, 
+    "%%HP: T(3)A(D)F(.);\nB001\tLBL B\nB002\tRTN\nA001\tLBL A\nA002\tRTN\n",
+    're-entering CODESEG retains one shared address namespace'
+  );
 };
 
 subtest 'debug shows the parser statement AST without filtering' => sub {
   my ($status, $output, $errors) = run_frontend($source, '--debug');
+
   is( $status, 0, 'frontend succeeds' );
   is( $output, $expected, 'debug does not change the listing' );
-  like( $errors, qr/'segments'\s*=>\s*\[/, 'segments are a list' );
-  like( $errors, qr/'name'\s*=>\s*'_TEXT'/, 'code section uses its internal AST name' );
-  unlike( $errors, qr/'(?:MAIN|_DATA)'\s*=>/, 'no named segment keys' );
-  like( $errors, qr/'definitions'\s*=>\s*\[/, 'definitions are a list' );
-  like( $errors, qr/'name'\s*=>\s*'FORMULA'/, 'definition names are node properties' );
-  unlike( $errors, qr/'FORMULA'\s*=>/, 'no legacy definition keys' );
-  like( $errors, qr/'instruction'\s*=>/, 'instruction nodes retained' );
-  like( $errors, qr/'literal'\s*=>/, 'literal nodes retained' );
-  like( $errors, qr/'operand'\s*=>/, 'operands retained' );
+
+  like( $errors, qr/'segments'\s*=>\s*\[/, 
+    'segments are a list' );
+  like( $errors, qr/'name'\s*=>\s*'_TEXT'/,
+    'code section uses its internal AST name' );
+  unlike( $errors, qr/'(?:MAIN|_DATA)'\s*=>/, 
+    'no named segment keys' );
+  like( $errors, qr/'definitions'\s*=>\s*\[/, 
+    'definitions are a list' );
+  like( $errors, qr/'name'\s*=>\s*'FORMULA'/,
+    'definition names are node properties' );
+  unlike( $errors, qr/'FORMULA'\s*=>/, 
+    'no legacy definition keys' );
+  like( $errors, qr/'instruction'\s*=>/, 
+    'instruction nodes retained' );
+  like( $errors, qr/'literal'\s*=>/, 
+    'literal nodes retained' );
+  like( $errors, qr/'operand'\s*=>/, 
+    'operands retained' );
   like( $errors, qr/'label'\s*=>\s*\{\s*'name'\s*=>\s*'START'/,
     'label declarations are statement nodes' );
-  unlike( $errors, qr/'labels'\s*=>/, 'AST contains no derived label index' );
-  unlike( $errors, qr/'(?:LBL|0|pi)'\s*=>/, 'parser emits no legacy statement keys' );
-  unlike( $errors, qr/'line'\s*=>/, 'debug still shows the AST before numbering' );
+  unlike( $errors, qr/'labels'\s*=>/, 
+    'AST contains no derived label index' );
+  unlike( $errors, qr/'(?:LBL|0|pi)'\s*=>/,
+    'parser emits no legacy statement keys' );
+  unlike( $errors, qr/'line'\s*=>/,
+    'debug still shows the AST before numbering' );
 };
 
 done_testing;
