@@ -53,6 +53,7 @@ my $jumpmark;
 my $clear;
 my $plain;
 my $markdown;
+my $alphabetic;
 my $unicode;
 my $shortcut;
 my $encoded;
@@ -80,6 +81,7 @@ sub parse_options { # $ ($, @)
     'help|?',
     'man',
     'version|v',
+    'alphabetic|a',
     'jumpmark|j',
     'clear|c',
     'plain|p',
@@ -108,6 +110,7 @@ sub parse_options { # $ ($, @)
   $clear = $options{clear};
   $plain = $options{plain};
   $markdown = $options{markdown};
+  $alphabetic = $options{alphabetic};
   $unicode = $options{unicode};
   $shortcut = $options{shortcut};
   $encoded = $options{encoded};
@@ -151,7 +154,8 @@ sub main { # $ ()
   $response = $parser->from_string( $source_text );
 
   # sort segments in alphabetic order
-  my @segments = sort { $a->{name} cmp $b->{name} } @{ $response->{segments} };
+  my @segments = @{ $response->{segments} };
+  @segments = sort { $a->{name} cmp $b->{name} } @segments if $alphabetic;
 
   if ( $debug ) {
     local $Data::Dumper::Sortkeys = 1;
@@ -173,7 +177,7 @@ sub main { # $ ()
     my $definitions = $seg->{definitions};
 
     foreach my $definition ( @$definitions ) {
-      next if $definition->{type} ne 'equation';
+      next if ($definition->{type} || '') ne 'equation';
       defined $definition->{value} or
         warn "missing 'value' for definition '$definition->{name}'\n" and next;
 

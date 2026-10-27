@@ -43,9 +43,10 @@ ASM
       name       => '_TEXT',
       type       => 'code',
       statements => [
-        { label => { name => 'START' } },
+        { directive => { type => 'locals', value => 1 } },
+        { label => { type => 'label', name => 'START' } },
         { instruction => { value => 'RTN' } },
-        { label => { name => 'VALUE' } },
+        { label => { type => 'label', name => 'VALUE' } },
         { literal => { kind => 'decimal', value => '12d' } },
         {
           instruction => {
@@ -59,7 +60,7 @@ ASM
   );
 };
 
-subtest 'CODE applies state directives without retaining nodes' => sub {
+subtest 'CODE preserves label state directives in source order' => sub {
   my $parser = ParserTest->new();
 
   is_deeply(
@@ -76,12 +77,15 @@ ASM
       name       => '_TEXT',
       type       => 'code',
       statements => [
-        { label => { name => 'START' } },
+        { directive => { type => 'locals', value => 1 } },
+        { directive => { type => 'locals', value => 1 } },
+        { label => { type => 'label', name => 'START' } },
         { literal => { kind => 'hex', value => '100h' } },
+        { directive => { type => 'locals', value => 0 } },
         { instruction => { value => 'RTN' } },
       ],
     },
-    'directives affect parsing but are omitted from statements',
+    'label state directives are retained in source order',
   );
 
   is( $parser->{radix}, 16, 'RADIX changes parser state' );
@@ -105,6 +109,7 @@ ASM
         name       => '_TEXT',
         type       => 'code',
         statements => [
+          { directive => { type => 'locals', value => 1 } },
           { instruction => { value => 'RTN' } },
         ],
       },
@@ -133,7 +138,8 @@ ASM
       name       => '_TEXT',
       type       => 'code',
       statements => [
-        { label => { name => 'START' } },
+        { directive => { type => 'locals', value => 1 } },
+        { label => { type => 'label', name => 'START' } },
         { instruction => { value => 'RTN' } },
         { literal => { kind => 'decimal', value => '0' } },
         { literal => { kind => 'constant', value => 'pi' } },
@@ -158,7 +164,7 @@ subtest 'CODE adds its section name to the symbol table' => sub {
   is( $parser->{symbols}->{_TEXT}, 'code', '_TEXT is registered as code' );
 };
 
-subtest 'empty CODE produces an empty statement list' => sub {
+subtest 'empty CODE preserves initial label state' => sub {
   my $parser = ParserTest->new();
 
   is_deeply(
@@ -166,9 +172,11 @@ subtest 'empty CODE produces an empty statement list' => sub {
     {
       name       => '_TEXT',
       type       => 'code',
-      statements => [],
+      statements => [
+        { directive => { type => 'locals', value => 1 } },
+      ],
     },
-    'empty CODE is accepted',
+    'empty CODE preserves initial LOCALS state',
   );
 };
 

@@ -4,13 +4,18 @@ use warnings;
 use Test::More;
 use Parser::HPC;
 
-sub parse_source {
-  my ($source) = @_;
-  return Parser::HPC->new->from_string($source);
+# Legacy Macro.pm expands macro-local labels to ??dddd.
+{
+  package ParserTest;
+  use parent 'Parser::HPC';
+  use constant pattern_label => qr/(?:\?\?\d{4}|\@{0,2}\w+)/i;
+  $INC{'ParserTest.pm'} = 1;
 }
 
+use_ok 'ParserTest';
+
 subtest 'LOCAL may follow an initial body reference' => sub {
-  my $root = parse_source(<<'ASM');
+  my $root = ParserTest->new->from_string(<<'ASM');
 MACRO LATE target
   GTO again
   LOCAL again
@@ -35,7 +40,7 @@ ASM
 };
 
 subtest 'a macro may contain multiple LOCAL directives' => sub {
-  my $root = parse_source(<<'ASM');
+  my $root = ParserTest->new->from_string(<<'ASM');
 MACRO TEST
   LOCAL first
   LOCAL second
@@ -64,7 +69,7 @@ ASM
 };
 
 subtest 'LOCAL labels are unique per expansion and external labels remain usable' => sub {
-  my $root = parse_source(<<'ASM');
+  my $root = ParserTest->new->from_string(<<'ASM');
 MACRO TEST target
   LOCAL again, done
   GTO target
@@ -107,7 +112,7 @@ ASM
 };
 
 subtest 'simple dummy arguments are substituted' => sub {
-  my $root = parse_source(<<'ASM');
+  my $root = ParserTest->new->from_string(<<'ASM');
 MACRO CALL target
   XEQ target
 ENDM
@@ -125,7 +130,7 @@ ASM
 };
 
 subtest 'multiline macros can be redefined' => sub {
-  my $root = parse_source(<<'ASM');
+  my $root = ParserTest->new->from_string(<<'ASM');
 MACRO ACTION
   RTN
 ENDM
@@ -147,7 +152,7 @@ ASM
 };
 
 subtest 'macro identifiers use the HPC identifier pattern' => sub {
-  my $root = parse_source(<<'ASM');
+  my $root = ParserTest->new->from_string(<<'ASM');
 MACRO @CALL target
   XEQ target
 ENDM
@@ -165,7 +170,7 @@ ASM
 };
 
 subtest 'macro names in strings and comments are not expression references' => sub {
-  my $root = parse_source(<<'ASM');
+  my $root = ParserTest->new->from_string(<<'ASM');
 MACRO MYMAC
   RTN
 ENDM

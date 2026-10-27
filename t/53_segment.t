@@ -76,6 +76,7 @@ ASM
       name       => '_TEXT',
       type       => 'code',
       statements => [
+        { directive => { type => 'locals', value => 1 } },
         { instruction => { value => 'RTN' } },
       ],
     },
@@ -99,7 +100,15 @@ subtest 'segment keywords are case-insensitive' => sub {
         type => $type,
         $type eq 'stack' ? ( assignments => {} ) :
         $type eq 'data'  ? ( definitions => [] ) :
-                           ( statements  => [] ),
+                           ( statements  => [
+                              { 
+                                directive => { 
+                                  type => 'locals', 
+                                  value => 1
+                                },
+                              },
+                            ],
+                          ),
       },
       "$keyword is accepted",
     );

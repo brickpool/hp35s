@@ -18,10 +18,14 @@ use_ok 'ParserTest';
 
 subtest 'LOCALS enables local labels' => sub {
   my $parser = ParserTest->new();
-
   is_deeply(
     $parser->from_string("LOCALS\n"),
-    { locals => 1 },
+    {
+      directive => {
+        type  => 'locals',
+        value => 1,
+      },
+    },
     'LOCALS is accepted',
   );
   is( $parser->{locals}, 1, 'local labels are enabled' );
@@ -29,10 +33,14 @@ subtest 'LOCALS enables local labels' => sub {
 
 subtest 'NOLOCALS disables local labels' => sub {
   my $parser = ParserTest->new();
-
   is_deeply(
     $parser->from_string("NOLOCALS\n"),
-    { locals => 0 },
+    {
+      directive => {
+        type  => 'locals',
+        value => 0,
+      },
+    },
     'NOLOCALS is accepted',
   );
   is( $parser->{locals}, 0, 'local labels are disabled' );
@@ -50,7 +58,12 @@ subtest 'LOCALS and NOLOCALS are case-insensitive' => sub {
 
     is_deeply(
       $parser->from_string("$directive\n"),
-      { locals => $value },
+      {
+        directive => {
+          type  => 'locals',
+          value => $value,
+        },
+      },
       "$directive is accepted",
     );
   }

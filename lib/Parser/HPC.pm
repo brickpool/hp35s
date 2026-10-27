@@ -53,53 +53,60 @@ use parent 'Parser::MGC';
 # -------------------------------------------------------------------------
 
 # overwrite existing patterns
-use constant pattern_comment   => qr/;.*\n/;
-use constant pattern_operation => qr/[^\s\(\)]+/;
-use constant pattern_ident     => qr/[[:alpha:]\@_\$?][[:alnum:]\@_\$?]{0,246}/;
-
-# new numeric patterns
-use constant pattern_vector  => qr/\[[\-\d\.e]+,[\-\d\.e]+(?:,[\-\d\.e]+)?\]/;
-use constant pattern_binary  => qr/[01]+b/;
-use constant pattern_octal   => qr/[0-7]+o/;
-use constant pattern_hex     => qr/[\dA-F]+h/;
-use constant pattern_complex => qr/[\-\d\.e]+[it][\-\d\.e]+/;
-use constant pattern_decimal => qr/-?\d+d\b/;
+use constant pattern_comment => qr/;.*\n/;
+use constant pattern_ident   => qr/[[:alpha:]\@_\$?][[:alnum:]\@_\$?]{0,246}/;
 use constant pattern_float   => qr/-?(?:\d*\.\d+|\d+\.)(?:e-?\d+)?|-?\d+e-?\d+/;
+
+# new patterns
+use constant pattern_operation => qr/[^\s\(\)]+/;
+use constant pattern_vector    => qr/\[[\-\d\.e]+,[\-\d\.e]+(?:,[\-\d\.e]+)?\]/;
+use constant pattern_binary    => qr/[01]+b/;
+use constant pattern_octal     => qr/[0-7]+o/;
+use constant pattern_hex       => qr/[\dA-F]+h/;
+use constant pattern_complex   => qr/[\-\d\.e]+[it][\-\d\.e]+/;
+use constant pattern_decimal   => qr/-?\d+d\b/;
+use constant pattern_label => qr/
+  # \?\?nnnn and \@\@nnnn are reserved
+  (?! (?: \?\? | \@\@ ) \d{4} (?= [\s:;] | \z ) )
+
+  # \$, \?, \@ and \@\@ are not labels
+  (?! (?: \$ | \? | \@\@? ) (?= [\s:;] | \z ) )
+
+  [[:alnum:]_\@\$\?]+
+/ixa;
+
+# Macro flags
+use constant {
+  MACRO_NONE  => 0,
+  MACRO_LOCAL => 1 << 0,
+  MACRO_DUMMY => 1 << 1,
+};
 
 # -------------------------------------------------------------------------
 # Constructor
 # -------------------------------------------------------------------------
 
 sub new {    # $parser (%args)
-  my $class = shift;
+  my ($class, %args) = @_;
   
   # Call the constructor of the parent class
-  my $self = $class->SUPER::new( 
-    patterns => {
-      comment    => pattern_comment,
-      ident      => pattern_ident,
-      operations => pattern_operation,
-      vector     => pattern_vector,
-      binary     => pattern_binary,
-      octal      => pattern_octal,
-      hex        => pattern_hex,
-      complex    => pattern_complex,
-      decimal    => pattern_decimal,
-      float      => pattern_float,
-    },
-    @_,
-  );
+  my $self = $class->SUPER::new( %args );
+
+  # Assign patterns for additional token types
+  $self->{patterns}{$_} = $args{patterns}{$_} || $self->${\"pattern_$_"} 
+    for qw( operation vector binary octal hex complex decimal label );
 
   # public parser attributes
-  $self->{mode}     = 'IDEAL';   # IDEAL mode by default
-  $self->{model}    = 0;         # TINY model by default
-  $self->{title}    = undef;     # title is undef by default
-  $self->{radix}    = 10;        # radix is decimal by default
-  $self->{locals}   = 1;         # local label handling enabled by default
-  $self->{language} = 'P35S';    # language is P35S by default
+  $self->{mode}     = 'IDEAL';    # IDEAL mode by default
+  $self->{model}    = 0;          # TINY model by default
+  $self->{title}    = undef;      # title is undef by default
+  $self->{radix}    = 10;         # radix is decimal by default
+  $self->{locals}   = 1;          # local label handling enabled by default
+  $self->{language} = 'P35S';     # language is P35S by default
 
   # private parser attributes
-  $self->{_local_scope} = '';   # Local label handling
+  $self->{_macro}            = undef;
+  $self->{_macro_name}       = undef;
   $self->{_track_source_ids} = 0;
 
   # A symbol represents a value, which can be a variable, address label, 
@@ -176,40 +183,14 @@ sub parse {    # $tree ()
 
   # end directive
   my $start = $self->parse_end;
-  
-  my @segments;
-  my %content_key = (
-    data  => 'definitions',
-    code  => 'statements',
-    stack => 'assignments',
-  );
-  my %section_by_type;
-  for my $segment ( grep { %$_ } @$result ) {
-    my $type     = $segment->{type};
-    my $key      = $content_key{$type};
-    my $existing = $section_by_type{$type};
 
-    if ( defined $key && $existing ) {
-      if ( ref $segment->{$key} eq 'HASH' ) {
-        @{$existing->{$key}}{ keys %{ $segment->{$key} } }
-          = values %{ $segment->{$key} };
-      }
-      else {
-        push @{ $existing->{$key} }, @{ $segment->{$key} };
-      }
-      next;
-    } 
+  my $ast = {
+    header   => $header,
+    segments => $result,
+  };
+  $ast->{startaddr} = $start if $start;
 
-    push @segments, $segment;
-    $section_by_type{$type} = $segment if defined $key;
-  }
-
-  my $root = { %$header };
-  $root->{segments}  = \@segments;
-  $root->{language} //= $self->{language};
-  $root->{model}    //= $self->{model};
-  $root->{startaddr} = $start if $start;
-  return $root;
+  return $self->_prepare_ast($ast);
 }
 
 sub token_number {    # $value ()
@@ -297,7 +278,7 @@ sub warn :method {
 
 # parse methods
 
-sub parse_header {
+sub parse_header {    # \%header ()
   my $self = shift;
 
   my $sections = join '|' => ( @segments, 'END' );
@@ -350,11 +331,12 @@ sub parse_header {
   return $header;
 }
 
-sub parse_title {    # $title ()
+sub parse_title {    # \%title ()
   my $self = shift;
 
   # %TITLE "title"
-  $self->expect( qr/\%TITLE(?=\s)/i );
+  $self->maybe_expect( qr/\%TITLE(?=[\s;]|\z)/i )
+    or $self->fail('Expected %TITLE');
   $self->commit;
 
   # retrieve the state immediately after the commit
@@ -385,14 +367,17 @@ sub parse_title {    # $title ()
     if defined $self->{title};
   
   $self->{title} = $title;
-  return { title => $self->{title} };
+  return { 
+    title => $self->{title}
+  };
 }
 
-sub parse_display {    # $message ()
+sub parse_display {    # \%display ()
   my $self = shift;
 
   # DISPLAY "message"
-  $self->expect( qr/DISPLAY(?=\s)/i );
+  $self->maybe_expect( qr/DISPLAY(?=[\s;]|\z)/i )
+    or $self->fail("Expected DISPLAY" );
   $self->commit;
 
   # retrieve the state immediately after the commit
@@ -421,10 +406,12 @@ sub parse_display {    # $message ()
   # display the message as a warning immediately
   $self->warn($display);
 
-  return { display => $display };
+  return { 
+    display => $display
+  };
 }
 
-sub parse_mode {   # $bool ()
+sub parse_mode {   # \%mode ()
   my $self = shift;
 
   my $mode = $self->token_kw_icase( @modes );
@@ -440,10 +427,12 @@ sub parse_mode {   # $bool ()
     or $self->fail("Extra characters");
 
   $self->{mode} = $self->_canonical_symbol($mode);
-  return { mode => $self->{mode} };
+  return { 
+    mode => $self->{mode}
+  };
 }
 
-sub parse_language {    # $language ()
+sub parse_language {    # \%language ()
   my $self = shift;
 
   my $language = $self->maybe( sub { $self->token_kw_icase( @languages ) } ) 
@@ -460,10 +449,12 @@ sub parse_language {    # $language ()
     or $self->fail("Extra characters");
 
   $self->{language} = $self->_canonical_symbol($language);
-  return { language => $self->{language} };
+  return { 
+    language => $self->{language}
+  };
 }
 
-sub parse_model {    # $model ()
+sub parse_model {    # \%model ()
   my $self = shift;
 
   $self->expect( qr/MODEL(?=\s)/i );
@@ -495,14 +486,17 @@ sub parse_model {    # $model ()
   );
   $model = $self->_canonical_symbol($model);
   $self->{model} = $models{$model};
-  return { model => $self->{model} };
+  return { 
+    model => $self->{model}
+  };
 }
 
-sub parse_radix {    # $base ()
+sub parse_radix {    # \%radix ()
   my $self = shift;
 
   # RADIX ..
-  $self->expect( qr/RADIX(?=[ \t])/i );
+  $self->maybe_expect( qr/RADIX(?=[\s;]|\z)/i )
+    or $self->fail("Expected RADIX" );
   $self->commit;
 
   # retrieve the state immediately after the commit
@@ -520,11 +514,14 @@ sub parse_radix {    # $base ()
     or $self->fail( "Extra characters" );    # .. on line
 
   $self->{radix} = 0+ $result;
-  return { radix => $self->{radix} };
+  return { 
+    radix => $self->{radix} 
+  };
 }
 
-sub parse_locals {    # $bool ()
+sub parse_locals {    # \%locals ()
   my $self = shift;
+  my $type = 'locals';
 
   # [NO]LOCALS
   my $result = $self->expect(qr/(?:NOLOCALS|LOCALS)(?=[\s;])/i);
@@ -540,11 +537,17 @@ sub parse_locals {    # $bool ()
     or $self->fail( "Extra characters" );    # .. on line
 
   $result = $self->_canonical_symbol($result);
-  $self->{locals} = $result eq 'LOCALS' ? 1 : 0;
-  return { locals => $self->{locals} };
+  my $value = $self->{locals} = $result eq 'LOCALS' ? 1 : 0;
+
+  return { 
+    directive => {
+      type  => $type,
+      value => $value,
+    }
+  };
 }
 
-sub parse_segment {    # $segment ()
+sub parse_segment {    # \%segment ()
   my $self = shift;
 
   # DATASEG or CODESEG or ..
@@ -566,7 +569,7 @@ sub parse_segment {    # $segment ()
   );
 }
 
-sub parse_stack_block {    # $block (|$ident)
+sub parse_stack_block {    # \%block (|$ident)
   my $self  = shift;
   my $ident = shift || 'STACK';
   my $type  = 'stack';
@@ -593,6 +596,7 @@ sub parse_stack_block {    # $block (|$ident)
           $self->parse_radix;
           return {};
         },
+        'parse_macro_section',
         'parse_stack_assignment',
         sub {
           $self->commit;
@@ -611,16 +615,14 @@ sub parse_stack_block {    # $block (|$ident)
   }
 
   # create new entry
-  my $entry = {
+  return {
     name        => $ident,
     type        => $type,
     assignments => $ref,
   };
-
-  return $entry;
 }
 
-sub parse_stack_assignment {    # $assignment ()
+sub parse_stack_assignment {    # \%assignment ()
   my $self = shift;
   my $type = 'register';
 
@@ -648,17 +650,15 @@ sub parse_stack_assignment {    # $assignment ()
 
   # create new entry
   $ident = $self->_canonical_symbol($ident);
-  my $entry = {
+  return {
     $ident => {
       type  => $type,
       value => $value,
     }
   };
-
-  return $entry;
 }
 
-sub parse_data_block {    # $block (|$ident)
+sub parse_data_block {    # \%block (|$ident)
   my $self  = shift;
   my $ident = shift || '_DATA';
   my $type  = 'data';
@@ -685,6 +685,7 @@ sub parse_data_block {    # $block (|$ident)
           $self->parse_radix;
           return {};
         },
+        'parse_macro_section',
         'parse_data_definition',
         sub {
           $self->commit;
@@ -695,16 +696,14 @@ sub parse_data_block {    # $block (|$ident)
   ) or return {};
 
   # create new entry
-  my $entry = {
+  return {
     name        => $ident,
     type        => $type,
     definitions => [ grep { %$_ } @$result ],
   };
-
-  return $entry;
 }
 
-sub parse_data_definition {    # $definition ()
+sub parse_data_definition {    # \%definition ()
   my $self = shift;
   my $type = 'equation';
 
@@ -849,10 +848,13 @@ sub parse_data_definition {    # $definition ()
   return $entry;
 }
 
-sub parse_code_block {    # $block (|$ident)
+sub parse_code_block {    # \%block (|$ident)
   my $self  = shift;
   my $ident = shift || '_TEXT';
   my $type  = 'code';
+
+  # retrieve the current local symbols before parsing
+  my $locals = $self->{locals};
 
   # insert symbol into global symbol table
   $ident = $self->_canonical_symbol($ident);
@@ -868,15 +870,14 @@ sub parse_code_block {    # $block (|$ident)
           $self->parse_display;
           return {};
         },
-        sub {
-          $self->parse_locals;
-          return {};
-        },
+        'parse_locals',
         sub {
           $self->parse_radix;
           return {};
         },
         'parse_label',
+        'parse_macro_section',
+        'parse_macro_statement',
         'parse_code_instruction',
         'parse_code_literal',
         sub {
@@ -888,16 +889,23 @@ sub parse_code_block {    # $block (|$ident)
   ) or return {};
 
   # create new entry
-  my $entry = {
+  return {
     name        => $ident,
     type        => $type,
-    statements  => [ grep { %$_ } @$result ],
+    statements  => [
+      # Insert the saved locals state before the actual statements
+      {
+        directive => {
+          type  => 'locals',
+          value => $locals,
+        },
+      },
+      grep { %$_ } @$result
+    ],
   };
-  
-  return $entry;
 }
 
-sub parse_code_instruction {    # $instruction ()
+sub parse_code_instruction {    # \%instruction ()
   my $self = shift;
 
   my $mnemonic = $self->token_kw_operation(
@@ -930,13 +938,10 @@ sub parse_code_instruction {    # $instruction ()
       };
       last;
     };
+
     /address/ and do {
       # instructions with an address: GTO and XEQ
-      $operand = $self->maybe( sub { 
-        $self->generic_token(
-          label => qr/(?:\?\?\d{4}|\@{0,2}\w+)/, sub { $_[1] }
-        ) 
-      } ) 
+      $operand = $self->maybe( 'token_label' )
         or $self->fail( "Illegal origin address" );
       $statement = {
         instruction => {
@@ -948,29 +953,49 @@ sub parse_code_instruction {    # $instruction ()
           type  => 'address',
           value => $operand,
         },
-      } 
+      }
       else {
+        my $flags = $self->_find_macro_symbol($operand);
+        my $type = $flags & MACRO_LOCAL ? 'local'
+                 : $flags & MACRO_DUMMY ? 'dummy'
+                 :                        'label';
         $statement->{instruction}{operand} = {
-          type  => 'label',
-          value => $self->_canonical_label($operand),
+          type  => $type,
+          value => $self->_canonical_symbol($operand),
         };
       };
       last;
     };
+
     /variable/ and do {
       # instructions with a variable: LBL and INPUT
-      $operand = $self->generic_token( variable => qr/[A-Z]/ );
-      $statement = {
-        instruction => {
-          value => $mnemonic,
-          operand  => {
-            type  => 'variable',
-            value => $operand,
+      my $dummy = $self->maybe('parse_macro_dummy');
+      if (defined $dummy) {
+        $statement = {
+          instruction => {
+            value => $mnemonic,
+            operand => {
+              type  => 'dummy',
+              value => $dummy->{dummy}{name},
+            },
           },
-        },
-      };
+        };
+      }
+      else {
+        $operand = $self->generic_token( variable => qr/[A-Z](?=[\s;]|\z)/ );
+        $statement = {
+          instruction => {
+            value => $mnemonic,
+            operand  => {
+              type  => 'variable',
+              value => $operand,
+            },
+          },
+        };
+      }
       last;
     };
+
     /digit/ and do {
       # instructions with a number 0 < n < 11: CF, FIX, ...
       $operand = $self->maybe('token_int');
@@ -989,20 +1014,34 @@ sub parse_code_instruction {    # $instruction ()
       };
       last;
     };
+
     /indirect/ and do {
-      # instructions with a (indirect) variable: VIEW, ...
-      $operand = $self->generic_token( variable => qr/[A-Z]|(?:\([IJ]\))/ );
+      # instructions with a direct or indirect variable: STO, RCL, VIEW, ...
+      my $dummy = $self->maybe('parse_macro_dummy');
+      if (defined $dummy) {
+        $operand = {
+          type  => 'dummy',
+          value => $dummy->{dummy}{name},
+        };
+      }
+      else {
+        my $value = $self->generic_token(
+          variable => qr/(?:[A-Z]|\([IJ]\))(?=[\s;]|\z)/
+        );
+        $operand = {
+          type  => 'variable',
+          value => $value,
+        };
+      }
       $statement = {
         instruction => {
-          value => $mnemonic,
-          operand  => {
-            type  => 'variable',
-            value => $operand,
-          },
+          value   => $mnemonic,
+          operand => $operand,
         },
       };
       last;
     };
+
     /expression/ and do {
       # instructions with an expression: EQN
       $statement = {
@@ -1034,6 +1073,7 @@ sub parse_code_instruction {    # $instruction ()
       };
       last;
     };
+
     DEFAULT: {
       my ($next_line) = $self->where;
       $line == $next_line 
@@ -1054,7 +1094,7 @@ sub parse_code_instruction {    # $instruction ()
   return $statement;
 }
 
-sub parse_code_literal {    # $literal ()
+sub parse_code_literal {    # \%literal ()
   my $self = shift;
 
   # line tracking for listing
@@ -1104,50 +1144,316 @@ sub parse_code_literal {    # $literal ()
   return $literal;
 }
 
-sub parse_label {    # $label ()
+sub parse_label {    # \%label ()
   my $self = shift;
-  my $type = 'label';
 
-  my ($str, $ident) = $self->expect( qr/(\?\?\d{4}|\@{0,2}\w+):/ );
-  $self->commit;
-  my $fail_pos = $self->pos - length $str;
+  # LABEL:
+  $self->skip_ws;
+  my $fail_pos = $self->pos;
+  my $ident = $self->maybe( sub {
+    my $re = $self->pattern_label;
+    $self->generic_token( label => qr/($re):/i, sub { $1 } );
+  } ) or $self->fail("Illegal segment address");
 
   # check if symbol starts with number
-  $ident !~ /^\d/ 
-    or $self->fail_from( $fail_pos, 
-      "Labels can't start with numeric characters" );
+  $ident !~ /^\d/
+    or $self->fail( "Labels can't start with numeric characters" );
 
   # check if symbol looks like an address
   $ident !~ /^[A-Z]\d{3}$/ 
-    or $self->fail_from( $fail_pos, "Illegal segment address");
+    or $self->fail( "Illegal segment address");
+  $self->commit;
 
-  # check if the symbol is a local name
-  if ( $ident =~ /^@@/ ) {
-    $ident = $self->_canonical_label($ident);
-  } 
-  else {
-    $ident = $self->_canonical_symbol($ident);
-    $self->{_local_scope} = $ident;
+  my $name = $self->_canonical_symbol($ident);
+
+  # Determine macro-specific label type.
+  my $flags = $self->_find_macro_symbol($ident);
+  my $type = $flags & MACRO_LOCAL ? 'local'
+           : $flags & MACRO_DUMMY ? 'dummy'
+           :                        'label';
+
+  if ($type eq 'label') {
+    # check if symbol already exists
+    if ( exists $self->{symbols}{$name} ) {
+      $self->fail_from(
+        $fail_pos, 
+        $self->{symbols}{$name} eq $type
+          ? "Symbol already defined"
+          : "Symbol already different kind"
+      )
+    }
+
+    # insert symbol into global symbol table
+    $self->{symbols}{$name} = $type 
+      if $self->{locals} && $name !~ /^@@/;
   }
 
-  # check if symbol already exists
-  if ( exists $self->{symbols}{$ident} ) {
-    $self->fail_from(
-      $fail_pos, 
-      $self->{symbols}{$ident} eq $type
-        ? "Symbol already defined"
-        : "Symbol already different kind"
-    )
-  }
+  my $entry = { 
+    label => { 
+      type => $type,
+      name => $name,
+    },
+  };
 
-  # insert symbol into global symbol table
-  $self->{symbols}{$ident} = $type;
-
-  my $declaration = { label => { name => $ident } };
   my ($line) = $self->where;
   my $source_id = $self->{_track_source_ids} ? $line : undef;
-  $declaration->{_source_id} = $source_id if defined $source_id;
-  return $declaration;
+  $entry->{_source_id} = $source_id if defined $source_id;
+
+  return $entry;
+}
+
+sub parse_local {     # \%local ()
+  my $self = shift;
+  my $type = 'local';
+
+  # LOCAL ..
+  $self->maybe_expect(qr/LOCAL(?=[\s;])/i)
+    or $self->fail("Expected LOCAL");
+  $self->commit;
+
+  # LOCAL label ..
+  my $ident = $self->on_parse_line('token_label')
+    or $self->fail("Illegal local argument");
+
+  # check if symbol starts with number
+  $ident !~ /^\d/
+    or $self->fail( "Illegal local argument" );
+
+  my @locals;
+  while (1) {
+    my $fail_pos = $self->pos - length $ident;
+    my $local = $self->_canonical_symbol($ident);
+
+    # check if the local name collides with an existing symbol
+    if (exists $self->{symbols}{$local}) {
+      $self->fail_from(
+        $fail_pos,
+        $self->{symbols}{$local} eq $type
+          ? 'Symbol already defined'
+          : 'Symbol already different kind'
+      );
+    }
+    push @locals, $local;
+
+    last unless $self->maybe_expect(',');
+    $self->commit;
+
+    $ident = $self->on_parse_line( 'token_label' )
+      or $self->fail("Illegal local argument");
+  }
+
+  return {
+    locals => \@locals,
+  };
+}
+
+sub parse_macro_section {    # \%section ()
+  my $self = shift;
+  my $type = 'macro';
+
+  # MACRO name arguments
+  my $header = $self->parse_macro_header;
+  my ($name) = keys %$header;
+
+  $self->{_macro}{$name} = $header->{$name};
+
+  # establish current macro context
+  local $self->{_macro_name} = $name;
+
+  # content between MACRO header and ENDM
+  my $block = $self->scope_of(
+    undef,
+    sub { $self->parse_macro_block() },
+    qr/ENDM\b/i,
+  );
+
+  # extend macro entry with parsed block content
+  my $macro = $self->{_macro}{$name};
+
+  $macro->{locals} = $block->{locals}
+    if $block->{locals} && @{$block->{locals}};
+
+  $macro->{statements} = $block->{statements}
+    if $block->{statements} && @{$block->{statements}};
+
+  # register the successfully parsed macro definition
+  $self->{symbols}{$name} = $type;
+
+  return {
+    macro => {
+      $name => $macro,
+    },
+  };
+}
+
+sub parse_macro_header {    # \%header ()
+  my $self = shift;
+  my $type = 'macro';
+
+  # MACRO ..
+  $self->maybe_expect( qr/MACRO(?=[\s;]|\z)/i )
+    or $self->fail("Expected MACRO");
+  $self->commit;
+
+  # retrieve the line after the commit
+  my ($line) = $self->where;
+
+  # MACRO name ..
+  my $name = $self->on_parse_line( 'token_ident' )
+    or $self->fail("Missing macro ID");
+  my $fail_pos = $self->pos - length $name;
+
+  # check if the macro name is a reserved word
+  $name = $self->_canonical_symbol($name);
+  if (exists $self->{symbols}{$name}) {
+    $self->fail_from(
+      $fail_pos,
+      $self->{symbols}{$name} eq $type
+        ? 'Symbol already defined'
+        : 'Symbol already different kind'
+    );
+  }
+  $self->commit;
+
+  # parse macro arguments if present
+  my %seen;
+  my @arguments;
+  my $ident = $self->on_parse_line( 'token_ident' );
+  if (defined $ident) {
+    while (1) {
+      my $argument = $self->_canonical_symbol($ident);
+
+      !$seen{$argument}++
+        or $self->fail("Duplicate dummy argument: $ident");
+
+      push @arguments, $argument;
+
+      last unless $self->maybe_expect(',');
+      $self->commit;
+
+      $ident = $self->on_parse_line( 'token_ident' )
+        or $self->fail("Illegal macro argument");
+    }
+  }
+
+  # skip whitespace and ensure no extra characters remain on the line
+  $self->skip_ws;
+  my ($next_line) = $self->where;
+  $line != $next_line
+    or $self->fail( "Extra characters" );
+
+  # create new entry
+  return {
+    $name => {
+      arguments => \@arguments,
+    }
+  };
+}
+
+sub parse_macro_block {   # $entry ()
+  my $self = shift;
+
+  my $macro_name = $self->{_macro_name};
+  my $macro = $self->{_macro}{$macro_name};
+
+  # parse LOCAL declarations before any macro statements
+  my $locals = $self->sequence_of( 'parse_local' ) || [];
+
+  # flatten the array of local declarations into a simple list of local names
+  my @locals = map { @{$_->{locals}} } @$locals;
+  $macro->{locals} = \@locals if @locals;
+
+  # call each code line
+  my $result = $self->sequence_of(
+    sub {
+      $self->commit;
+
+      $self->any_of(
+        sub {
+          $self->parse_display;
+          return {};
+        },
+        'parse_locals',
+        sub {
+          $self->parse_radix;
+          return {};
+        },
+        'parse_label',
+        'parse_code_instruction',
+        'parse_code_literal',
+        'parse_macro_dummy',
+        sub {
+          $self->commit;
+          $self->fail('Illegal instruction');
+        },
+      );
+    },
+  ) or return {};
+
+  my $entry = {
+    statements => $result,
+  };
+  $entry->{locals} = \@locals if @locals;
+  return $entry;
+}
+
+sub parse_macro_dummy {    # $entry ()
+  my $self = shift;
+
+  my $macro_name = $self->{_macro_name}
+    or return;
+
+  my $macro = $self->{_macro}{$macro_name}
+    or return;
+
+  my $ident = $self->token_kw_icase(@{$macro->{arguments}})
+    or return;
+
+  return {
+    dummy => {
+      name => $self->_canonical_symbol($ident),
+    },
+  };
+}
+
+sub parse_macro_statement {
+  my $self = shift;
+
+  # parse macro name
+  my @macros = grep { $self->{symbols}{$_} eq 'macro' } 
+    keys %{$self->{symbols}};
+
+  my $ident = $self->token_kw_icase(@macros)
+    or return;    # return if there exists no macro names
+  $self->commit;
+
+  my $name = $self->_canonical_symbol($ident);
+  my $macro = $self->{_macro}{$name};
+
+  # actual arguments
+  my @arguments;
+  my $argument = $self->on_parse_line('token_ident');
+  if (defined $argument) {
+    while (1) {
+      push @arguments, $argument;
+
+      last unless $self->maybe_expect(',');
+      $self->commit;
+
+      $argument = $self->on_parse_line('token_ident')
+        or $self->fail("Illegal macro argument");
+    }
+  }
+
+  @arguments == @{$macro->{arguments}}
+    or $self->fail("Wrong number of macro arguments");
+
+  return {
+    macro => {
+      name      => $name,
+      arguments => \@arguments,
+    },
+  };
 }
 
 sub parse_end {    # $start_addr|undef ()
@@ -1164,8 +1470,8 @@ sub parse_end {    # $start_addr|undef ()
   # get the start address if present
   my $start_addr = $self->maybe(
     sub {
-      my $ident = $self->generic_token( label => qr/\@{0,2}\w+/ );
-      my $name = $self->_canonical_label($ident);
+      my $ident = $self->token_label();
+      my $name = $self->_canonical_symbol($ident);
       exists $self->{symbols}{$name} && $self->{symbols}{$name} eq 'label' 
         or $self->fail( "Expected label" );
       return $name;
@@ -1183,27 +1489,27 @@ sub parse_end {    # $start_addr|undef ()
 
 sub token_binary {    # $binary ()
   my $self = shift;
-  return $self->generic_token(binary => pattern_binary);
+  return $self->generic_token( binary => $self->{patterns}{binary} );
 }
 
 sub token_complex {    # $complex ()
   my $self = shift;
-  return $self->generic_token(complex => pattern_complex);
+  return $self->generic_token( complex => $self->{patterns}{complex} );
 }
 
 sub token_decimal {    # $decimal ()
   my $self = shift;
-  return $self->generic_token(decimal => pattern_decimal);
+  return $self->generic_token( decimal => $self->{patterns}{decimal} );
 }
 
 sub token_hex {    # $hex ()
   my $self = shift;
-  return $self->generic_token(hex => pattern_hex);
+  return $self->generic_token( hex => $self->{patterns}{hex} );
 }
 
 sub token_octal {    # $octal ()
   my $self = shift;
-  return $self->generic_token(octal => pattern_octal);
+  return $self->generic_token( octal => $self->{patterns}{octal} );
 }
 
 sub token_kw_icase {    # $keyword ()
@@ -1232,8 +1538,9 @@ sub token_kw_operation {    # $keyword ()
 
   my $pos = pos $self->{str};
   
-  defined( my $kw = $self->generic_token( operation => pattern_operation, ) )
-    or return undef;
+  defined( my $kw = $self->generic_token( 
+    operation => $self->{patterns}{operation}, ) 
+  ) or return undef;
 
   my @expected = @acceptable[ 0 .. ($#acceptable < 4 ? $#acceptable : 4) ];
   my $expected = join( ", ", @expected );
@@ -1247,8 +1554,35 @@ sub token_kw_operation {    # $keyword ()
 
 sub token_vector {    # $vector ()
   my $self = shift;
-  my $vector = $self->generic_token( vector => pattern_vector );
+  my $vector = $self->generic_token( vector => $self->{patterns}{vector} );
   return $vector;
+}
+
+sub token_label {    # $label ()
+  my $self = shift;
+  my $label = $self->generic_token( label => $self->{patterns}{label} );
+  return $label;
+}
+
+sub on_parse_line {
+  my ($self, $parser) = @_;
+
+  my ($line) = $self->where;
+
+  return $self->maybe(
+    sub {
+      my $result = ref $parser eq 'CODE'
+        ? $parser->()
+        : $self->$parser();
+
+      my ($next_line) = $self->where;
+
+      $line == $next_line
+        or $self->fail('left current line');
+
+      return $result;
+    }
+  );
 }
 
 # -------------------------------------------------------------------------
@@ -1258,14 +1592,6 @@ sub token_vector {    # $vector ()
 sub _canonical_symbol {    # $symbol ($name)
   my ($self, $name) = @_;
   return uc $name;
-}
-
-sub _canonical_label {    # $qualified ($name)
-  my ($self, $name) = @_;
-  $name = $self->_canonical_symbol($name);
-  return $name unless 
-    $self->{locals} && $name =~ /^@@/;
-  return join ':', $self->{_local_scope}, $name;
 }
 
 sub _find_before {    # $pos ($substr)
@@ -1284,6 +1610,134 @@ sub _find_before {    # $pos ($substr)
   return $idx > 0
     ? $self->{length} - $idx - length $substr
     : $self->pos;
+}
+
+sub _find_macro_symbol {    # $flags ($ident)
+  my ($self, $ident) = @_;
+
+  my $macro_name = $self->{_macro_name}
+    or return MACRO_NONE;
+
+  my $macro = $self->{_macro}{$macro_name}
+    or return MACRO_NONE;
+
+  my $name = $self->_canonical_symbol($ident);
+  my $flags = MACRO_NONE;
+
+  $flags |= MACRO_LOCAL
+    if grep { $_ eq $name } @{$macro->{locals} || []};
+
+  $flags |= MACRO_DUMMY
+    if grep { $_ eq $name } @{$macro->{arguments} || []};
+
+  return $flags;
+}
+
+sub _fixup_labels {   # $ast ($ast)
+  my ($self, $ast) = @_;
+
+  my ($code) = grep { $_->{type} eq 'code' } @{$ast->{segments}};
+  return $ast unless $code;
+
+  my $locals;
+  my $scope  = 0;
+  my $next   = 0;
+  my %labels;
+  my @statements;
+
+  for my $statement (@{$code->{statements}}) {
+
+    # LOCALS / NOLOCALS
+    if (
+      $statement->{directive}
+      && $statement->{directive}{type} eq 'locals'
+    ) {
+      $locals = $statement->{directive}{value};
+      next;
+    }
+
+    defined $locals
+      or $self->warn("Missing initial LOCALS state");
+
+    # Label declaration
+    if (my $label = $statement->{label}) {
+      if ($label->{type} eq 'label') {
+        my $name = $label->{name};
+
+        if ($locals && $name =~ /^@@/) {
+          $labels{$scope}{$name} //= sprintf '@@%04d', ++$next;
+          $label->{name} = $labels{$scope}{$name};
+        }
+        elsif ($name !~ /^@@/) {
+          ++$scope;
+        }
+
+        delete $label->{type};
+      }
+    }
+
+    # Label reference
+    if (my $instruction = $statement->{instruction}) {
+      my $operand = $instruction->{operand};
+
+      if ($operand && $operand->{type} eq 'label') {
+        my $name = $operand->{value};
+
+        if ($locals && $name =~ /^@@/) {
+          $labels{$scope}{$name} //= sprintf '@@%04d', ++$next;
+          $operand->{value} = $labels{$scope}{$name};
+        }
+      }
+    }
+
+    push @statements, $statement;
+  }
+
+  $code->{statements} = \@statements;
+
+  return $ast;
+}
+
+sub _prepare_ast {    # $ast ($ast)
+  my ($self, $ast) = @_;
+
+  my %content_key = (
+    data  => 'definitions',
+    code  => 'statements',
+    stack => 'assignments',
+  );
+
+  my @segments;
+  my %section_by_type;
+
+  for my $segment ( grep { %$_ } @{$ast->{segments}} ) {
+    my $type     = $segment->{type};
+    my $key      = $content_key{$type};
+    my $existing = $section_by_type{$type};
+
+    if ( defined $key && $existing ) {
+      if ( ref $segment->{$key} eq 'HASH' ) {
+        @{$existing->{$key}}{ keys %{$segment->{$key}} }
+          = values %{$segment->{$key}};
+      }
+      else {
+        push @{$existing->{$key}}, @{$segment->{$key}};
+      }
+      next;
+    }
+
+    push @segments, $segment;
+    $section_by_type{$type} = $segment if defined $key;
+  }
+
+  my $header = delete $ast->{header};
+
+  $ast->{segments} = \@segments;
+  @$ast{keys %$header} = values %$header;
+  $ast->{language} //= $self->{language};
+  $ast->{model}    //= $self->{model};
+
+  return $self->_fixup_labels($ast);
 }
 
 1;

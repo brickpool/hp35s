@@ -4,7 +4,7 @@ use warnings;
 use Test::More;
 use Parser::HPC;
 
-subtest 'local labels are enabled by default and scoped by nonlocal labels' => sub {
+subtest '@@labels are enabled by default and scoped by nonlocal labels' => sub {
   my $root = Parser::HPC->new->from_string(<<'ASM');
 MODEL TINY
 CODESEG
@@ -25,6 +25,9 @@ ASM
   my $statements = $root->{segments}->[0]->{statements};
   my $first = $statements->[2]->{instruction}->{operand}->{value};
   my $second = $statements->[7]->{instruction}->{operand}->{value};
+
+  like( $first,  qr/^\@\@\d{4}$/, 'first local uses internal label form' );
+  like( $second, qr/^\@\@\d{4}$/, 'second local uses internal label form' );
 
   isnt( $first, $second, 'same local spelling has distinct scoped identities' );
   is( $statements->[5]->{instruction}->{operand}->{value}, $first,
@@ -56,17 +59,27 @@ END @@loop
 ASM
 
   my $statements = $root->{segments}->[0]->{statements};
-  is_deeply( $statements->[3], { label => { name => '@@LOOP' } },
-    'NOLOCALS leaves a double-at declaration global' );
-  is( $statements->[4]->{instruction}->{operand}->{value}, '@@LOOP',
-    'NOLOCALS leaves a double-at reference global' );
-  is( $statements->[6]->{instruction}->{operand}->{value}, '@@LOOP',
-    'global reference remains independent of nonlocal scope' );
-  isnt( $statements->[8]->{label}->{name}, '@@LOOP',
-    'LOCALS qualifies double-at declarations again' );
+  my $global_def = $statements->[3]{label}{name};
+  my $global_ref = $statements->[4]{instruction}{operand}{value};
+  my $next_ref   = $statements->[6]{instruction}{operand}{value};
+  my $local_def  = $statements->[7]{label}{name};
+  my $local_ref  = $statements->[8]{instruction}{operand}{value};
+
+  is( $global_def, '@@LOOP',
+    'NOLOCALS keeps double-at declaration global' );
+  is( $global_ref, $global_def,
+    'NOLOCALS reference resolves to global declaration' );
+  is( $next_ref, $global_def,
+    'nonlocal label does not change global double-at identity' );
+  like( $local_def, qr/^\@\@\d{4}$/,
+    'LOCALS creates an internal local identity' );
+  is( $local_ref, $local_def,
+    'LOCALS reference resolves to local declaration' );
+  isnt( $local_def, $global_def,
+    'local and global double-at identities are distinct' );
 };
 
-subtest 'local scope follows nonlocal labels rather than sections or directives' => sub {
+subtest 'local scope follows nonlocal labels' => sub {
   my $root = Parser::HPC->new->from_string(<<'ASM');
 MODEL TINY
 CODESEG
@@ -112,9 +125,11 @@ ASM
   my $local = $statements->[3]->{instruction}->{operand};
 
   is( $local->{type}, 'label', '@@A001 is not a calculator address' );
-  is_deeply( $statements->[1], { label => { name => $local->{value} } },
-    'double-at label resolves in its local scope' );
-  is( $statements->[8]->{instruction}->{operand}->{value}, '@SHARED',
+  like( $local->{value}, qr/^\@\@\d{4}$/,
+    'double-at label gets an internal local identity' );
+  is( $statements->[1]{label}{name}, $local->{value},
+    'double-at reference resolves to its declaration' );
+  is( $statements->[8]{instruction}{operand}{value}, '@SHARED',
     'single-at name remains global' );
 };
 

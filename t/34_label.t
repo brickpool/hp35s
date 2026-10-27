@@ -30,7 +30,12 @@ subtest 'label declaration is parsed and registered' => sub {
 
   is_deeply(
     $parser->from_string("START:\n"),
-    { label => { name => 'START' } },
+    { 
+      label => { 
+        type => 'label',
+        name => 'START',
+      } 
+    },
     'global label',
   );
   is( $parser->{symbols}->{START}, 'label', 'label is registered' );
@@ -42,7 +47,12 @@ subtest 'label names are case-insensitive' => sub {
 
     is_deeply(
       $parser->from_string("$source\n"),
-      { label => { name => 'START' } },
+      { 
+        label => { 
+          type => 'label',
+          name => 'START',
+        } 
+      },
       "$source is normalized",
     );
     is( 
@@ -54,22 +64,54 @@ subtest 'label names are case-insensitive' => sub {
 };
 
 subtest 'label accepts supported label names' => sub {
-  for my $case (
-    [ 'start:',    'START'    ],
-    [ '@shared:',  '@SHARED'  ],
-    [ '@@local:',  ':@@LOCAL' ],
-    [ '??0000:',   '??0000'   ],
-  ) {
-    my ($source, $name) = @$case;
+  my @valid = (
+    [ 'start:',   'START',   1 ],
+    [ '@shared:', '@SHARED', 1 ],
+    [ '@@local:', '@@LOCAL', 0 ],
+    [ '$2:',      '$2',      1 ],
+    [ 'A00:',     'A00',     1 ],
+  );
+
+  for my $case (@valid) {
+    my ($source, $name, $registered) = @$case;
     my $parser = ParserTest->new();
 
     is_deeply(
       $parser->from_string("$source\n"),
-      { label => { name => $name } },
+      {
+        label => {
+          type => 'label',
+          name => $name,
+        },
+      },
       "$source is accepted",
     );
 
-    is( $parser->{symbols}->{$name}, 'label', "$name is registered" );
+    is(
+      $parser->{symbols}{$name},
+      $registered ? 'label' : undef,
+      $registered ? "$name is registered" : "$name is unresolved",
+    );
+  }
+};
+
+subtest 'invalid labels' => sub {
+  my @invalid = (
+    [ '123:',     "Labels can't start with numeric characters" ],
+    [ '12ab:',    "Labels can't start with numeric characters" ],
+    [ '1ABC:',    "Labels can't start with numeric characters" ],
+    [ 'A123:',    "Illegal segment address" ],
+    [ '??0000:',  "Illegal segment address" ],
+    [ '@@0000:',  "Illegal segment address" ],
+    [ 'START :',  "Illegal segment address" ],
+  );
+
+  for my $case (@invalid) {
+    my ($source, $error) = @$case;
+    my $parser = ParserTest->new();
+
+    throws_ok { $parser->from_string($source) } qr/\Q$error\E/, 
+      "$source is rejected";
   }
 };
 
@@ -105,8 +147,10 @@ subtest 'label requires a colon' => sub {
 
   throws_ok {
     $parser->from_string($source);
-  } qr/Expected.*:/,
+  } qr/Illegal segment address/,
     'missing colon is rejected';
+
+  is( $@->{pos}, 0, 'failure position' );
 };
 
 done_testing;
