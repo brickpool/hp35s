@@ -4,7 +4,7 @@ This program is by Edward Shore and is used here by permission.
 
 Please visit [Edward Shore's Blog](http://edspi31415.blogspot.com/2013/05/hp-35s-approximate-length-of-sunlight.html) for more information.
 
-The original listing is stored in the file `S.35s`
+The original listing is stored in the file `S.txt`
 
 ## Input
 
@@ -19,7 +19,7 @@ Approximate number of hours of sunlight, in hours, minutes, seconds
 
 ## Examples
 
-[Hamburg](https://en.wikipedia.org/wiki/Hamburg), September 1: latitude 53°33' N, 164 days after March 21
+[Hamburg](https://en.wikipedia.org/wiki/Hamburg), September 1: latitude 53Â°33' N, 164 days after March 21
 
 ```
 D?
