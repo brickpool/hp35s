@@ -9,10 +9,6 @@ use Parser::HPC;
   package ParserTest;
   use parent 'Parser::HPC';
 
-  sub from_string {
-    goto &Parser::MGC::from_string;
-  }
-
   sub parse {
     my $self = shift;
 
@@ -33,7 +29,7 @@ use Parser::HPC;
 
 use_ok 'ParserTest';
 
-subtest 'macro statement is parsed' => sub {
+subtest 'macro call is parsed' => sub {
   my $parser = ParserTest->new();
 
   is_deeply(
@@ -49,7 +45,7 @@ ASM
         arguments => ['MixedCase'],
       },
     },
-    'macro invocation becomes a macro statement',
+    'macro invocation becomes a macro call',
   );
 };
 
@@ -104,6 +100,30 @@ ASM
     $@->{pos},
     index($parser->{str}, 'test one,') + length('test one,'),
     'failure position points after comma',
+  );
+};
+
+subtest 'macro arguments may contain source text' => sub {
+  my $parser = ParserTest->new();
+
+  is_deeply(
+    $parser->from_string(<<'ASM'),
+MACRO test first,second,third,fourth
+ENDM
+test 9.1,x<>?,"1, 2",[1,2]
+ASM
+    {
+      macro => {
+        name      => 'TEST',
+        arguments => [
+          '9.1',
+          'x<>?',
+          '"1, 2"',
+          '[1,2]',
+        ],
+      },
+    },
+    'source expressions remain complete macro arguments',
   );
 };
 

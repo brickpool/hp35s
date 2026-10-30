@@ -6,7 +6,7 @@ use warnings;
 use utf8;
 
 use version;
-our $VERSION = version->declare('v0.5.3');
+our $VERSION = version->declare('v0.5.4');
 
 use Exporter 'import';
 our @EXPORT_OK = qw(

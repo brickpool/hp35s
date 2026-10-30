@@ -7,10 +7,6 @@ use Test::More;
   package ParserTest;
   use parent 'Parser::HPC';
 
-  sub from_string {
-    goto &Parser::MGC::from_string;
-  }
-
   sub parse {
     return shift->any_of('parse_code_block');
   }

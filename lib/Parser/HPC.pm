@@ -9,14 +9,18 @@ use strict;
 use warnings;
 
 use version;
-our $VERSION = version->declare('v0.5.3');
+our $VERSION = version->declare('v0.5.4');
 
 # ------------------------------------------------------------------------
 # Imports
 # ------------------------------------------------------------------------
 
 use Parser::MGC;
-use Text::Balanced qw( gen_delimited_pat );
+use Text::Balanced qw(
+  extract_delimited
+  extract_bracketed
+  gen_delimited_pat
+);
 use Storable qw( dclone );
 
 use HP35s::Charset qw(
@@ -43,7 +47,6 @@ use Parser::HPC::Vocabulary qw(
   @modes
   @models
 );
-use Parser::HPC::Macro;
 
 # -------------------------------------------------------------------------
 # Parent class
@@ -141,17 +144,6 @@ sub new {    # $parser (%args)
 # -------------------------------------------------------------------------
 # Overload existing Methods
 # -------------------------------------------------------------------------
-
-sub from_string {    # $result ($str)
-  my ($self, $source) = @_;
-  return $self->SUPER::from_string($source) if $self->{_track_source_ids};
-
-  my $macro_parser = Parser::HPC::Macro->new(
-    patterns => { ident => $self->{patterns}{ident} },
-  );
-  my $parsed_source = $macro_parser->from_string($source);
-  return $self->SUPER::from_string($parsed_source);
-}
 
 sub parse {    # $tree ()
   my $self = shift;
@@ -348,6 +340,7 @@ sub parse_header {    # \%header ()
               $self->parse_radix;
               return {};
             },
+            'parse_macro_section',
             sub {
               $self->commit;
               $self->fail('Illegal instruction');
@@ -1001,19 +994,33 @@ sub parse_code_instruction {    # \%instruction ()
           value => $mnemonic,
         },
       };
+
       if ($operand =~ /^[A-Z]\d{3}$/) {
         $statement->{instruction}{operand} = {
           type  => 'address',
           value => $operand,
-        },
+        };
       }
       else {
+        my $name = $self->_canonical_symbol($operand);
+        my $fail_pos = $self->pos - length $operand;
+
+        if (
+          exists $self->{symbols}{$name}
+          && $self->{symbols}{$name} ne 'label'
+        ) {
+          $self->fail_from(
+            $fail_pos,
+            'Symbol already different kind'
+          );
+        }
+
         my $type = $self->_label_type($operand);
         $statement->{instruction}{operand} = {
           type  => $type,
-          value => $self->_canonical_symbol($operand),
+          value => $name,
         };
-      };
+      }
       last;
     };
 
@@ -1239,13 +1246,14 @@ sub parse_local {     # \%local ()
   my $ident = $self->on_parse_line('token_label')
     or $self->fail("Illegal local argument");
 
-  # check if symbol starts with number
-  $ident !~ /^\d/
-    or $self->fail( "Illegal local argument" );
-
   my @locals;
   while (1) {
     my $fail_pos = $self->pos - length $ident;
+
+    # check if symbol starts with number
+    $ident !~ /^\d/
+      or $self->fail( "Illegal local argument" );
+
     my $local = $self->_canonical_symbol($ident);
 
     # check if the local name collides with an existing symbol
@@ -1257,6 +1265,7 @@ sub parse_local {     # \%local ()
           : 'Symbol already different kind'
       );
     }
+
     push @locals, $local;
 
     last unless $self->maybe_expect(',');
@@ -1286,6 +1295,14 @@ sub parse_macro_section {    # \%section ()
     sub { $self->parse_macro_block() },
     qr/ENDM\b/i,
   );
+
+  # skip whitespace and ensure no extra characters remain on the line
+  my ($line) = $self->where;
+  $self->skip_ws;
+  my ($next_line) = $self->where;
+  $line != $next_line
+    or $self->fail( "Extra characters" );    # .. on line
+
   $macro = { %$macro, %$block };
 
   # remember the successfully parsed macro definition
@@ -1458,7 +1475,7 @@ sub parse_macro_statement {
   return \@statements;
 }
 
-sub parse_macro_call {
+sub parse_macro_call {    # \%call ()
   my $self = shift;
 
   # parse macro name
@@ -1468,26 +1485,85 @@ sub parse_macro_call {
   my $ident = $self->token_kw_icase(@macros)
     or return;
   $self->commit;
-  my $name = $self->_canonical_symbol($ident);
 
-  # actual arguments
+  my $name = $self->_canonical_symbol($ident);
+  my $macro = $self->{_macro}{definitions}{$name};
+
+  my (undef, $column, $text) = $self->where;
+  my $source = substr($text, $column);
+  my $fail_pos = $self->pos;
+
   my @arguments;
-  my $argument = $self->on_parse_line('token_ident');
-  if (defined $argument) {
-    while (1) {
+  my $argument = '';
+  my $offset = 0;
+  my $after_comma;
+
+  while ($offset < length $source) {
+    my $remaining = substr($source, $offset);
+    my $character = substr($remaining, 0, 1);
+
+    last if $character eq ';';
+
+    if ($character eq q{' } || $character eq q{"}) {
+      my ($quoted) = extract_delimited( $remaining, $character, '' );
+
+      defined $quoted
+        or $self->fail_from( $fail_pos + $offset, 'Illegal macro argument' );
+
+      $argument .= $quoted;
+      $offset += length $quoted;
+      $after_comma = 0;
+      next;
+    }
+
+    if ($character =~ /[\[\(\{]/) {
+      my ($bracketed) = extract_bracketed( $remaining, '()[]{}', '' );
+
+      defined $bracketed
+        or $self->fail_from( $fail_pos + $offset, 'Illegal macro argument' );
+
+      $argument .= $bracketed;
+      $offset += length $bracketed;
+      $after_comma = 0;
+      next;
+    }
+
+    if ($character eq ',') {
+      $argument =~ s/^\s+//;
+      $argument =~ s/\s+$//;
+
+      length $argument
+        or $self->fail_from( $fail_pos + $offset, 'Illegal macro argument' );
+
       push @arguments, $argument;
 
-      last unless $self->maybe_expect(',');
-      $self->commit;
-
-      $argument = $self->on_parse_line('token_ident')
-        or $self->fail("Illegal macro argument");
+      $argument = '';
+      ++$offset;
+      $after_comma = 1;
+      next;
     }
+
+    $argument .= $character;
+    ++$offset;
+
+    $after_comma = 0
+      if $character !~ /\s/;
   }
 
-  my $macro = $self->{_macro}{definitions}{$name};
+  $argument =~ s/^\s+//;
+  $argument =~ s/\s+$//;
+
+  if (length $argument) {
+    push @arguments, $argument;
+  }
+  elsif ($after_comma) {
+    $self->fail_from( $fail_pos + $offset, 'Illegal macro argument' );
+  }
+
   @arguments == @{$macro->{arguments}}
     or $self->fail("Wrong number of macro arguments");
+
+  $self->take(length($text) - $column);
 
   return {
     macro => {
@@ -1606,15 +1682,15 @@ sub token_label {    # $label ()
 }
 
 sub on_parse_line {
-  my ($self, $parser) = @_;
+  my ($self, $code) = @_;
 
   my ($line) = $self->where;
 
   return $self->maybe(
     sub {
-      my $result = ref $parser eq 'CODE'
-        ? $parser->()
-        : $self->$parser();
+      my $result = ref $code eq 'CODE'
+        ? $code->()
+        : $self->$code();
 
       my ($next_line) = $self->where;
 

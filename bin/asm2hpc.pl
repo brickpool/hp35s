@@ -8,7 +8,7 @@ use strict;
 use warnings;
 
 use version;
-our $VERSION = version->declare('v0.5.2');
+our $VERSION = version->declare('v0.5.4');
 
 # ------------------------------------------------------------------------
 # Imports
@@ -67,10 +67,10 @@ Getopt::Long::Configure qw(
 );
 
 # Global helper variables
-my $label = '0';  # start with label '0'
+my $label = '0';    # start with label '0'
 my $response;
-my $jump_targets = {};
-my $addresses = {};
+my $jump_targets    = {};
+my $addresses       = {};
 my $label_addresses = {};
 
 sub parse_options { # $ ($, @)
@@ -106,18 +106,18 @@ sub parse_options { # $ ($, @)
     pod2usage(-exitval => 0, -verbose => 2);
   }
 
-  $jumpmark = $options{jumpmark};
-  $clear = $options{clear};
-  $plain = $options{plain};
-  $markdown = $options{markdown};
+  $jumpmark   = $options{jumpmark};
+  $clear      = $options{clear};
+  $plain      = $options{plain};
+  $markdown   = $options{markdown};
   $alphabetic = $options{alphabetic};
-  $unicode = $options{unicode};
-  $shortcut = $options{shortcut};
-  $encoded = $options{encoded};
-  $listing = $options{list};
-  $debug = $options{debug} // 0;
-  $file = $options{file};
-  $shortcut = 1 if $encoded;
+  $unicode    = $options{unicode};
+  $shortcut   = $options{shortcut};
+  $encoded    = $options{encoded};
+  $listing    = $options{list};
+  $debug      = $options{debug} // 0;
+  $file       = $options{file};
+  $shortcut   = 1 if $encoded;
 
   return 1;
 }
@@ -1028,5 +1028,12 @@ Read the assembler source from C<FILE> instead of standard input.
 =head1 AUTHOR
 
 J. Schneider <brickpool@cpan.org>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (c) 2019-2026 the L</AUTHOR> listed above.
+
+This software is licensed under the MIT license (see the LICENSE file, which is
+part of the distribution).
 
 =cut

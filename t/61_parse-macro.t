@@ -246,4 +246,131 @@ ASM
     'expanded source is validated as code';
 };
 
+subtest 'multiple macro LOCAL labels get distinct identities' => sub {
+  my $parser = ParserTest->new();
+
+  $parser->{_macro}{definitions}{LOOP} = {
+    arguments => [],
+    locals    => ['FIRST', 'SECOND'],
+    lines     => [
+      'GTO first',
+      'first:',
+      'GTO second',
+      'second:',
+      'RTN',
+    ],
+  };
+  $parser->{symbols}{LOOP} = 'macro';
+
+  my $code = $parser->from_string(<<'ASM');
+  LOOP
+END
+ASM
+
+  is_deeply(
+    $code->{statements},
+    [
+      {
+        directive => {
+          type  => 'locals',
+          value => 1,
+        },
+      },
+      {
+        instruction => {
+          value   => 'GTO',
+          operand => {
+            type  => 'label',
+            value => '??0000',
+          },
+        },
+      },
+      {
+        label => {
+          type => 'label',
+          name => '??0000',
+        },
+      },
+      {
+        instruction => {
+          value   => 'GTO',
+          operand => {
+            type  => 'label',
+            value => '??0001',
+          },
+        },
+      },
+      {
+        label => {
+          type => 'label',
+          name => '??0001',
+        },
+      },
+      {
+        instruction => {
+          value => 'RTN',
+        },
+      },
+    ],
+    'each LOCAL name gets its own internal label',
+  );
+};
+
+subtest 'dummy label target remains separate from macro LOCAL' => sub {
+  my $parser = ParserTest->new();
+
+  $parser->{_macro}{definitions}{BRANCH} = {
+    arguments => ['TARGET'],
+    locals    => ['AGAIN'],
+    lines     => [
+      'GTO target',
+      'again:',
+      'GTO again',
+    ],
+  };
+  $parser->{symbols}{BRANCH} = 'macro';
+
+  my $code = $parser->from_string(<<'ASM');
+  BRANCH done
+END
+ASM
+
+  is_deeply(
+    $code->{statements},
+    [
+      {
+        directive => {
+          type  => 'locals',
+          value => 1,
+        },
+      },
+      {
+        instruction => {
+          value   => 'GTO',
+          operand => {
+            type  => 'label',
+            value => 'DONE',
+          },
+        },
+      },
+      {
+        label => {
+          type => 'label',
+          name => '??0000',
+        },
+      },
+      {
+        instruction => {
+          value   => 'GTO',
+          operand => {
+            type  => 'label',
+            value => '??0000',
+          },
+        },
+      },
+    ],
+    'dummy target and macro LOCAL keep separate identities',
+  );
+};
+
 done_testing;

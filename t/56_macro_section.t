@@ -9,10 +9,6 @@ use Parser::HPC;
   package ParserTest;
   use parent 'Parser::HPC';
 
-  sub from_string {
-    goto &Parser::MGC::from_string;
-  }
-
   sub parse {
     my $self = shift;
 
@@ -172,6 +168,24 @@ END
 ASM
   } qr/Symbol already defined/,
     'existing macro cannot be redefined';
+};
+
+subtest 'ENDM must terminate the line' => sub {
+  my $parser = ParserTest->new();
+
+  throws_ok {
+    $parser->from_string(<<'ASM');
+MACRO test
+  RTN
+ENDM extra
+ASM
+  } qr/Extra characters/,
+    'source after ENDM is rejected';
+
+  ok(
+    !exists $parser->{symbols}{TEST},
+    'failed macro is not registered',
+  );
 };
 
 done_testing;

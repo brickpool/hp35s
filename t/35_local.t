@@ -10,10 +10,6 @@ use Parser::HPC;
   package ParserTest;
   use parent 'Parser::HPC';
 
-  sub from_string {
-    goto &Parser::MGC::from_string;
-  }
-
   sub parse {
     return shift->any_of( 'parse_local' );
   }
@@ -54,7 +50,7 @@ subtest 'LOCAL is case-insensitive' => sub {
       {
         locals => ['AGAIN'],
       },
-      "$keyword is accepted",
+      "'$keyword' is accepted",
     );
   }
 };
@@ -73,34 +69,45 @@ subtest 'LOCAL arguments are case-insensitive' => sub {
 
 subtest 'LOCAL requires an argument' => sub {
   for my $source (
-    "LOCAL\n",
-    "LOCAL \n",
-    "LOCAL ; comment\n",
-    "LOCAL 123\n",
+    "LOCAL",
+    "LOCAL ",
+    "LOCAL ; comment",
+    "LOCAL 123",
   ) {
     my $parser = ParserTest->new();
 
     throws_ok {
-      $parser->from_string($source);
+      $parser->from_string("$source\n");
     } qr/Illegal local argument/,
-      "$source is rejected";
+      "'$source' is rejected";
   }
 };
 
 subtest 'malformed LOCAL lists are rejected' => sub {
-  my $parser = ParserTest->new();
+  for my $source (
+    "LOCAL again,",
+    "LOCAL again,,retry",
+    "LOCAL name,123",
+  ) {
+    my $parser = ParserTest->new();
 
-  throws_ok {
-    $parser->from_string("LOCAL again,\n");
-  } qr/Illegal local argument/,
-    'missing argument after comma';
+    throws_ok {
+      $parser->from_string("$source\n");
+    } qr/Illegal local argument/,
+      "'$source' is rejected";
+  }
 
-  $parser = ParserTest->new();
-  
-  throws_ok {
-    $parser->from_string("LOCAL again,,retry\n");
-  } qr/Illegal local argument/,
-    'missing argument between commas';
+  for my $source (
+    "LOCAL name:WORD",
+    "LOCAL name other",
+  ) {
+    my $parser = ParserTest->new();
+
+    throws_ok {
+      $parser->from_string("$source\n");
+    } qr/Expected end of input/,
+      "'$source' is rejected";
+  }
 };
 
 subtest 'LOCAL does not continue on next line' => sub {
@@ -130,6 +137,17 @@ subtest 'LOCAL collides with existing symbols case-insensitively' => sub {
     $parser->from_string("LOCAL value\n");
   } qr/Symbol already different kind/,
     'existing equation conflicts with LOCAL';
+};
+
+subtest 'LOCAL rejects existing symbols' => sub {
+  for my $name ('RTN', 'pi') {
+    my $parser = ParserTest->new();
+
+    throws_ok {
+      $parser->from_string("LOCAL $name\n");
+    } qr/Symbol already different kind/,
+      "$name cannot be used as LOCAL";
+  }
 };
 
 done_testing;

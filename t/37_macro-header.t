@@ -9,10 +9,6 @@ use Parser::HPC;
   package ParserTest;
   use parent 'Parser::HPC';
 
-  sub from_string {
-    goto &Parser::MGC::from_string;
-  }
-
   sub parse {
     return shift->any_of( 'parse_macro_header' );
   }
@@ -115,6 +111,36 @@ subtest 'macro header does not continue on next line' => sub {
     index($parser->{str}, 'arg'),
     'failure position points to following line',
   );
+};
+
+subtest 'macro name uses HPC identifier syntax' => sub {
+  my $parser = ParserTest->new();
+
+  is_deeply(
+    $parser->from_string("MACRO \@call target\n"),
+    {
+      '@CALL' => {
+        arguments => ['TARGET'],
+      },
+    },
+    'HPC identifier is accepted as macro name',
+  );
+};
+
+subtest 'macro name cannot use an existing symbol' => sub {
+  my $parser = ParserTest->new();
+
+  throws_ok {
+    $parser->from_string("MACRO RTN\n");
+  } qr/Symbol already different kind/,
+    'instruction name cannot be used as macro name';
+
+  $parser = ParserTest->new();
+
+  throws_ok {
+    $parser->from_string("MACRO pi\n");
+  } qr/Symbol already different kind/,
+    'existing symbol cannot be used as macro name';
 };
 
 done_testing;

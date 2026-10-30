@@ -248,4 +248,17 @@ subtest 'instruction preserves operand diagnostics' => sub {
   }
 };
 
+subtest 'address operand rejects an existing macro symbol' => sub {
+  for my $instruction ('GTO', 'XEQ') {
+    my $parser = ParserTest->new();
+
+    $parser->{symbols}{TESTMACRO} = 'macro';
+
+    throws_ok {
+      $parser->from_string("$instruction TESTMACRO\n");
+    } qr/Symbol already different kind/,
+      "$instruction rejects a macro symbol";
+  }
+};
+
 done_testing;
