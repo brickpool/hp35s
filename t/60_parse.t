@@ -14,9 +14,9 @@ IDEAL
 P35S
 MODEL TINY
 DATASEG
-VALUE EQU 1
+  VALUE EQU 1
 STACK
-REGX SET 2
+  REGX SET 2
 CODESEG
 start:
   RTN
@@ -67,16 +67,16 @@ CODESEG
 first:
   RTN
 DATASEG
-DATA_ONE EQU 1
+  DATA_ONE EQU 1
 STACK
-REGX SET 1
+  REGX SET 1
 CODESEG
 second:
   STOP
 DATASEG
-DATA_TWO EQU 2
+  DATA_TWO EQU 2
 STACK
-REGY SET 2
+  REGY SET 2
 END first
 ASM
 
@@ -135,7 +135,7 @@ TODO: {
   subtest 'parse rejects emission before a segment' => sub {
     my $source = <<'ASM';
 MODEL TINY
-RTN
+  RTN
 END
 ASM
 

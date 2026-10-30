@@ -16,6 +16,9 @@ our $VERSION = version->declare('v0.5.3');
 # ------------------------------------------------------------------------
 
 use Parser::MGC;
+use Text::Balanced qw( gen_delimited_pat );
+use Storable qw( dclone );
+
 use HP35s::Charset qw(
   $character
 );
@@ -75,20 +78,13 @@ use constant pattern_label => qr/
   [[:alnum:]_\@\$\?]+
 /ixa;
 
-# Macro flags
-use constant {
-  MACRO_NONE  => 0,
-  MACRO_LOCAL => 1 << 0,
-  MACRO_DUMMY => 1 << 1,
-};
-
 # -------------------------------------------------------------------------
 # Constructor
 # -------------------------------------------------------------------------
 
 sub new {    # $parser (%args)
   my ($class, %args) = @_;
-  
+
   # Call the constructor of the parent class
   my $self = $class->SUPER::new( %args );
 
@@ -105,14 +101,19 @@ sub new {    # $parser (%args)
   $self->{language} = 'P35S';     # language is P35S by default
 
   # private parser attributes
-  $self->{_macro}            = undef;
-  $self->{_macro_name}       = undef;
+  $self->{_macro} = {
+    depth       => 0,             # current macro expansion depth
+    max_depth   => 50,            # maximum macro expansion depth
+    name        => undef,
+    label       => 0,
+    definitions => {},
+  };
   $self->{_track_source_ids} = 0;
 
   # A symbol represents a value, which can be a variable, address label, 
   # or an operand to an assembly instruction and directive
   # store predefined symbols
-  
+
   my %constants   = map { $_ => 'constant' } 
                     map { $self->_canonical_symbol($_) }
                       @constants;
@@ -193,6 +194,44 @@ sub parse {    # $tree ()
   return $self->_prepare_ast($ast);
 }
 
+my $include_string = Parser::MGC->can('include_string');
+$include_string //= sub {
+  my $self = shift;
+  my ( $str, %opts ) = @_;
+
+  # local'ize everything out of the way
+  local @{$self}{qw( str filename reader )};
+  $self->{str} = $str;
+
+  pos($self->{str}) = 0;
+  $self->{filename} = $opts{filename};
+
+  my $toplevel = $opts{toplevel} // $self->{toplevel};
+  my $result = $self->$toplevel;
+
+  return $result;
+};
+
+sub include_string {
+  my $self = shift;
+
+  local $@;
+  local ($self->{str}) = @_;
+
+  my $result = eval {
+    $self->$include_string(@_);
+  };
+
+  if ($@) {
+    my $error = $@;
+    die ref($error) eq 'Parser::MGC::Failure'
+      ? $error->STRING
+      : $error;
+  }
+
+  return $result;
+}
+
 sub token_number {    # $value ()
   my $self = shift;
   my $value = $self->any_of(
@@ -266,10 +305,12 @@ sub token_string {    # $string ()
 }
 
 sub warn :method {
-  my ($self, $message) = @_;
-  Parser::MGC->can('warn') 
-    ? $self->SUPER::warn( $message )
-    : warn( Parser::MGC::Failure->new( $message, $self, $self->pos )->STRING );
+  my $self = shift;
+    return $self->SUPER::warn( @_ ) 
+    if Parser::MGC->can('warn');
+
+  my $message = shift;
+  warn( Parser::MGC::Failure->new( $message, $self, $self->pos )->STRING );
 }
 
 # -------------------------------------------------------------------------
@@ -850,18 +891,18 @@ sub parse_data_definition {    # \%definition ()
 
 sub parse_code_block {    # \%block (|$ident)
   my $self  = shift;
-  my $ident = shift || '_TEXT';
+  my $name = '_TEXT';
   my $type  = 'code';
 
   # retrieve the current local symbols before parsing
   my $locals = $self->{locals};
 
   # insert symbol into global symbol table
-  $ident = $self->_canonical_symbol($ident);
-  $self->{symbols}{$ident} = $type;
+  $name = $self->_canonical_symbol($name);
+  $self->{symbols}{$name} = $type;
 
   # call each code line
-  my $result = $self->sequence_of(
+  my $entries = $self->sequence_of(
     sub {
       $self->commit;
 
@@ -888,11 +929,23 @@ sub parse_code_block {    # \%block (|$ident)
     },
   ) or return {};
 
+  my @statements;
+
+  foreach my $entry (@$entries) {
+    if (ref($entry) eq 'ARRAY') {
+      push @statements, @$entry;
+      next;
+    }
+
+    push @statements, $entry
+      if keys %$entry;
+  }
+
   # create new entry
   return {
-    name        => $ident,
-    type        => $type,
-    statements  => [
+    name       => $name,
+    type       => $type,
+    statements => [
       # Insert the saved locals state before the actual statements
       {
         directive => {
@@ -900,7 +953,7 @@ sub parse_code_block {    # \%block (|$ident)
           value => $locals,
         },
       },
-      grep { %$_ } @$result
+      @statements,
     ],
   };
 }
@@ -955,10 +1008,7 @@ sub parse_code_instruction {    # \%instruction ()
         },
       }
       else {
-        my $flags = $self->_find_macro_symbol($operand);
-        my $type = $flags & MACRO_LOCAL ? 'local'
-                 : $flags & MACRO_DUMMY ? 'dummy'
-                 :                        'label';
+        my $type = $self->_label_type($operand);
         $statement->{instruction}{operand} = {
           type  => $type,
           value => $self->_canonical_symbol($operand),
@@ -969,30 +1019,16 @@ sub parse_code_instruction {    # \%instruction ()
 
     /variable/ and do {
       # instructions with a variable: LBL and INPUT
-      my $dummy = $self->maybe('parse_macro_dummy');
-      if (defined $dummy) {
-        $statement = {
-          instruction => {
-            value => $mnemonic,
-            operand => {
-              type  => 'dummy',
-              value => $dummy->{dummy}{name},
-            },
+      $operand = $self->generic_token( variable => qr/[A-Z](?=[\s;]|\z)/ );
+      $statement = {
+        instruction => {
+          value => $mnemonic,
+          operand  => {
+            type  => 'variable',
+            value => $operand,
           },
-        };
-      }
-      else {
-        $operand = $self->generic_token( variable => qr/[A-Z](?=[\s;]|\z)/ );
-        $statement = {
-          instruction => {
-            value => $mnemonic,
-            operand  => {
-              type  => 'variable',
-              value => $operand,
-            },
-          },
-        };
-      }
+        },
+      };
       last;
     };
 
@@ -1017,22 +1053,13 @@ sub parse_code_instruction {    # \%instruction ()
 
     /indirect/ and do {
       # instructions with a direct or indirect variable: STO, RCL, VIEW, ...
-      my $dummy = $self->maybe('parse_macro_dummy');
-      if (defined $dummy) {
-        $operand = {
-          type  => 'dummy',
-          value => $dummy->{dummy}{name},
-        };
-      }
-      else {
-        my $value = $self->generic_token(
-          variable => qr/(?:[A-Z]|\([IJ]\))(?=[\s;]|\z)/
-        );
-        $operand = {
-          type  => 'variable',
-          value => $value,
-        };
-      }
+      my $value = $self->generic_token(
+        variable => qr/(?:[A-Z]|\([IJ]\))(?=[\s;]|\z)/
+      );
+      $operand = {
+        type  => 'variable',
+        value => $value,
+      };
       $statement = {
         instruction => {
           value   => $mnemonic,
@@ -1167,10 +1194,7 @@ sub parse_label {    # \%label ()
   my $name = $self->_canonical_symbol($ident);
 
   # Determine macro-specific label type.
-  my $flags = $self->_find_macro_symbol($ident);
-  my $type = $flags & MACRO_LOCAL ? 'local'
-           : $flags & MACRO_DUMMY ? 'dummy'
-           :                        'label';
+  my $type = $self->_label_type($ident);
 
   if ($type eq 'label') {
     # check if symbol already exists
@@ -1254,11 +1278,7 @@ sub parse_macro_section {    # \%section ()
   # MACRO name arguments
   my $header = $self->parse_macro_header;
   my ($name) = keys %$header;
-
-  $self->{_macro}{$name} = $header->{$name};
-
-  # establish current macro context
-  local $self->{_macro_name} = $name;
+  my $macro = $header->{$name};
 
   # content between MACRO header and ENDM
   my $block = $self->scope_of(
@@ -1266,16 +1286,11 @@ sub parse_macro_section {    # \%section ()
     sub { $self->parse_macro_block() },
     qr/ENDM\b/i,
   );
+  $macro = { %$macro, %$block };
 
-  # extend macro entry with parsed block content
-  my $macro = $self->{_macro}{$name};
-
-  $macro->{locals} = $block->{locals}
-    if $block->{locals} && @{$block->{locals}};
-
-  $macro->{statements} = $block->{statements}
-    if $block->{statements} && @{$block->{statements}};
-
+  # remember the successfully parsed macro definition
+  $self->{_macro}{definitions}{$name} = $macro;
+  
   # register the successfully parsed macro definition
   $self->{symbols}{$name} = $type;
 
@@ -1350,73 +1365,100 @@ sub parse_macro_header {    # \%header ()
   };
 }
 
-sub parse_macro_block {   # $entry ()
+sub parse_macro_block {    # $entry ()
   my $self = shift;
 
-  my $macro_name = $self->{_macro_name};
-  my $macro = $self->{_macro}{$macro_name};
-
   # parse LOCAL declarations before any macro statements
-  my $locals = $self->sequence_of( 'parse_local' ) || [];
-
-  # flatten the array of local declarations into a simple list of local names
+  my $locals = $self->sequence_of('parse_local') || [];
   my @locals = map { @{$_->{locals}} } @$locals;
-  $macro->{locals} = \@locals if @locals;
 
-  # call each code line
-  my $result = $self->sequence_of(
-    sub {
-      $self->commit;
-
-      $self->any_of(
-        sub {
-          $self->parse_display;
-          return {};
-        },
-        'parse_locals',
-        sub {
-          $self->parse_radix;
-          return {};
-        },
-        'parse_label',
-        'parse_code_instruction',
-        'parse_code_literal',
-        'parse_macro_dummy',
-        sub {
-          $self->commit;
-          $self->fail('Illegal instruction');
-        },
-      );
-    },
-  ) or return {};
+  # preserve remaining macro source lines
+  my $lines = $self->sequence_of('parse_macro_line') || [];
+  my @lines = grep { defined $_ } @$lines;
 
   my $entry = {
-    statements => $result,
+    lines => \@lines,
   };
   $entry->{locals} = \@locals if @locals;
   return $entry;
 }
 
-sub parse_macro_dummy {    # $entry ()
+sub parse_macro_line {    # $source|undef ()
   my $self = shift;
 
-  my $macro_name = $self->{_macro_name}
-    or return;
+  # forward to the next non-whitespace character
+  $self->skip_ws;
+  my $fail_pos = $self->pos;
 
-  my $macro = $self->{_macro}{$macro_name}
-    or return;
+  # check for unexpected LOCAL directive
+  if (my $local = $self->maybe('parse_local')) {
+    $self->commit;
+    $self->fail_from($fail_pos, "Unexpected LOCAL in macro line");
+  }
 
-  my $ident = $self->token_kw_icase(@{$macro->{arguments}})
-    or return;
+  # retrieve one physical source line
+  my ( undef, $col, $text ) = $self->where;
 
-  return {
-    dummy => {
-      name => $self->_canonical_symbol($ident),
-    },
-  };
+  # strip comments, but preserve semicolons inside quoted strings
+  my $quoted = gen_delimited_pat(q{'"}); 
+  my $source = substr($text, $col);
+  $source =~ s{
+    \A
+    (
+      (?:
+        $quoted       # quoted string
+        |
+        [^;'"]        # anything except comment or quote start
+      )*
+    )
+    ;.*               # first unquoted comment
+    \z
+  }{$1}x;
+  $source =~ s/\s+$//;
+
+  # consume the physical source line
+  $self->take( length($text) - $col );
+
+  return length $source ? $source : undef;
 }
 
 sub parse_macro_statement {
+  my $self = shift;
+
+  my $result = $self->parse_macro_call();
+  $self->commit;
+
+  $self->{_macro}{depth} < $self->{_macro}{max_depth}
+    or $self->fail("Maximum macro expansion depth exceeded");
+
+  local $self->{_macro}{depth} = $self->{_macro}{depth} + 1;
+
+  my $call = $result->{macro};
+  my $source = $self->_substitute_macro_dummies($call);
+
+  my $name = $call->{name};
+  local $self->{_macro}{name} = $name;
+
+  my $code = $self->include_string( 
+    "$source\n",
+    toplevel => 'parse_code_block',
+  );
+
+  my $expanded = $self->_resolve_macro_labels($code);
+  my @statements = @{$expanded->{statements}};
+
+  # The outer code block already owns the current LOCALS state.
+  if ( @statements
+    && $statements[0]{directive}
+    && $statements[0]{directive}{type} eq 'locals'
+  ) {
+    shift @statements;
+  }
+
+  return \@statements;
+}
+
+sub parse_macro_call {
   my $self = shift;
 
   # parse macro name
@@ -1424,11 +1466,9 @@ sub parse_macro_statement {
     keys %{$self->{symbols}};
 
   my $ident = $self->token_kw_icase(@macros)
-    or return;    # return if there exists no macro names
+    or return;
   $self->commit;
-
   my $name = $self->_canonical_symbol($ident);
-  my $macro = $self->{_macro}{$name};
 
   # actual arguments
   my @arguments;
@@ -1445,6 +1485,7 @@ sub parse_macro_statement {
     }
   }
 
+  my $macro = $self->{_macro}{definitions}{$name};
   @arguments == @{$macro->{arguments}}
     or $self->fail("Wrong number of macro arguments");
 
@@ -1594,6 +1635,49 @@ sub _canonical_symbol {    # $symbol ($name)
   return uc $name;
 }
 
+sub _substitute_macro_dummies {    # $source (\%call)
+  my ($self, $call) = @_;
+
+  my $name = $self->_canonical_symbol($call->{name});
+  my $macro = $self->{_macro}{definitions}{$name};
+  my @expanded_lines = @{$macro->{lines}};
+
+  my %arguments;
+  for my $index (0 .. $#{$macro->{arguments}}) {
+    my $formal = $macro->{arguments}[$index];
+    my $actual = $call->{arguments}[$index];
+
+    $arguments{$formal} = $actual;
+  }
+
+  return join "\n", @expanded_lines
+    unless keys %arguments;
+
+  my $quoted_string = gen_delimited_pat(q{'"});
+  my $identifier    = $self->pattern_ident;
+
+  foreach (@expanded_lines) {
+    s{
+      (?<quoted_string>$quoted_string)
+      |
+      (?<identifier>$identifier)
+    }{
+      if (defined $+{quoted_string}) {
+        $+{quoted_string};
+      }
+      else {
+        my $name = $self->_canonical_symbol($+{identifier});
+
+        exists $arguments{$name}
+          ? $arguments{$name}
+          : $+{identifier};
+      }
+    }egix;
+  }
+
+  return join "\n", @expanded_lines;
+}
+
 sub _find_before {    # $pos ($substr)
   my $self    = shift;
   my $substr  = reverse shift;
@@ -1612,36 +1696,16 @@ sub _find_before {    # $pos ($substr)
     : $self->pos;
 }
 
-sub _find_macro_symbol {    # $flags ($ident)
-  my ($self, $ident) = @_;
-
-  my $macro_name = $self->{_macro_name}
-    or return MACRO_NONE;
-
-  my $macro = $self->{_macro}{$macro_name}
-    or return MACRO_NONE;
-
-  my $name = $self->_canonical_symbol($ident);
-  my $flags = MACRO_NONE;
-
-  $flags |= MACRO_LOCAL
-    if grep { $_ eq $name } @{$macro->{locals} || []};
-
-  $flags |= MACRO_DUMMY
-    if grep { $_ eq $name } @{$macro->{arguments} || []};
-
-  return $flags;
-}
-
-sub _fixup_labels {   # $ast ($ast)
+sub _fixup_labels {    # $ast ($ast)
   my ($self, $ast) = @_;
+  $ast = dclone($ast);
 
   my ($code) = grep { $_->{type} eq 'code' } @{$ast->{segments}};
   return $ast unless $code;
 
-  my $locals;
-  my $scope  = 0;
-  my $next   = 0;
+  my $has_locals_state;
+  my $scope = 0;
+  my $next  = 0;
   my %labels;
   my @statements;
 
@@ -1652,41 +1716,39 @@ sub _fixup_labels {   # $ast ($ast)
       $statement->{directive}
       && $statement->{directive}{type} eq 'locals'
     ) {
-      $locals = $statement->{directive}{value};
+      $has_locals_state = 1;
       next;
     }
 
-    defined $locals
+    $has_locals_state
       or $self->warn("Missing initial LOCALS state");
 
     # Label declaration
     if (my $label = $statement->{label}) {
-      if ($label->{type} eq 'label') {
-        my $name = $label->{name};
+      my $name = $label->{name};
 
-        if ($locals && $name =~ /^@@/) {
-          $labels{$scope}{$name} //= sprintf '@@%04d', ++$next;
-          $label->{name} = $labels{$scope}{$name};
-        }
-        elsif ($name !~ /^@@/) {
-          ++$scope;
-        }
-
-        delete $label->{type};
+      if ($label->{type} eq 'local') {
+        $labels{$scope}{$name} //= sprintf '@@%04d', ++$next;
+        $label->{name} = $labels{$scope}{$name};
       }
+      elsif ($label->{type} eq 'label' && $name !~ /^@@/) {
+        ++$scope;
+      }
+
+      delete $label->{type};
     }
 
     # Label reference
     if (my $instruction = $statement->{instruction}) {
       my $operand = $instruction->{operand};
 
-      if ($operand && $operand->{type} eq 'label') {
+      if ($operand && $operand->{type} eq 'local') {
         my $name = $operand->{value};
 
-        if ($locals && $name =~ /^@@/) {
-          $labels{$scope}{$name} //= sprintf '@@%04d', ++$next;
-          $operand->{value} = $labels{$scope}{$name};
-        }
+        $labels{$scope}{$name} //= sprintf '@@%04d', ++$next;
+
+        $operand->{type}  = 'label';
+        $operand->{value} = $labels{$scope}{$name};
       }
     }
 
@@ -1696,6 +1758,24 @@ sub _fixup_labels {   # $ast ($ast)
   $code->{statements} = \@statements;
 
   return $ast;
+}
+
+sub _label_type {    # $type ($ident)
+  my ($self, $ident) = @_;
+
+  my $name = $self->_canonical_symbol($ident);
+
+  if ( my $macro_name = $self->{_macro}{name} ) {
+    my $macro = $self->{_macro}{definitions}{$macro_name};
+    return 'macro'
+      if grep { $_ eq $name } @{$macro->{locals} || []};
+  }
+  elsif ( $self->{locals} ) {
+    return 'local'
+      if $name =~ /^@@/;
+  }
+
+  return 'label'
 }
 
 sub _prepare_ast {    # $ast ($ast)
@@ -1738,6 +1818,42 @@ sub _prepare_ast {    # $ast ($ast)
   $ast->{model}    //= $self->{model};
 
   return $self->_fixup_labels($ast);
+}
+
+sub _resolve_macro_labels {    # \%code (\%code)
+  my ($self, $code) = @_;
+  $code = dclone($code);
+
+  my %macro_labels;
+
+  for my $statement (@{$code->{statements}}) {
+    my $label = $statement->{label};
+
+    if ($label && $label->{type} eq 'macro') {
+      my $name = $label->{name};
+
+      $macro_labels{$name} //= sprintf('??%04d', $self->{_macro}{label}++);
+
+      $label->{type} = 'label';
+      $label->{name} = $macro_labels{$name};
+
+      next;
+    }
+
+    my $instruction = $statement->{instruction};
+    my $operand = $instruction && $instruction->{operand};
+
+    if ($operand && $operand->{type} eq 'macro') {
+      my $name = $operand->{value};
+
+      $macro_labels{$name} //= sprintf('??%04d', $self->{_macro}{label}++);
+
+      $operand->{type}  = 'label';
+      $operand->{value} = $macro_labels{$name};
+    }
+  }
+
+  return $code;
 }
 
 1;

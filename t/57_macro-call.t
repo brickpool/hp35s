@@ -23,7 +23,7 @@ use Parser::HPC;
         # Establish a known macro definition before parsing its use.
         $self->parse_macro_section;
 
-        return $self->parse_macro_statement;
+        return $self->parse_macro_call;
       },
     );
   }

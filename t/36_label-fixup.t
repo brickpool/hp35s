@@ -38,19 +38,19 @@ ASM
       statements => [
         { directive => { type => 'locals', value => 1 } },
         { label => { type => 'label', name => 'START' } },
-        { label => { type => 'label', name => '@@LOOP' } },
+        { label => { type => 'local', name => '@@LOOP' } },
         {
           instruction => {
             value   => 'GTO',
-            operand => { type => 'label', value => '@@LOOP' },
+            operand => { type => 'local', value => '@@LOOP' },
           },
         },
         { label => { type => 'label', name => 'NEXT' } },
-        { label => { type => 'label', name => '@@LOOP' } },
+        { label => { type => 'local', name => '@@LOOP' } },
         {
           instruction => {
             value   => 'XEQ',
-            operand => { type => 'label', value => '@@LOOP' },
+            operand => { type => 'local', value => '@@LOOP' },
           },
         },
       ],
@@ -81,11 +81,11 @@ ASM
       statements => [
         { directive => { type => 'locals', value => 1 } },
         { label => { type => 'label', name => 'START' } },
-        { label => { type => 'label', name => '@@LOCAL' } },
+        { label => { type => 'local', name => '@@LOCAL' } },
         {
           instruction => {
             value   => 'GTO',
-            operand => { type => 'label', value => '@@LOCAL' },
+            operand => { type => 'local', value => '@@LOCAL' },
           },
         },
         { directive => { type => 'locals', value => 0 } },
@@ -98,11 +98,11 @@ ASM
         },
         { directive => { type => 'locals', value => 1 } },
         { label => { type => 'label', name => 'NEXT' } },
-        { label => { type => 'label', name => '@@LOCAL' } },
+        { label => { type => 'local', name => '@@LOCAL' } },
         {
           instruction => {
             value   => 'XEQ',
-            operand => { type => 'label', value => '@@LOCAL' },
+            operand => { type => 'local', value => '@@LOCAL' },
           },
         },
       ],
@@ -124,7 +124,7 @@ next:
 ASM
 
   my $ast = { segments => [ $code ] };
-  $parser->_fixup_labels($ast);
+  $ast = $parser->_fixup_labels($ast);
 
   is_deeply(
     $ast->{segments}[0],
@@ -166,7 +166,7 @@ next:
 ASM
 
   my $ast = { segments => [ $code ] };
-  $parser->_fixup_labels($ast);
+  $ast = $parser->_fixup_labels($ast);
 
   is_deeply(
     $ast->{segments}[0],

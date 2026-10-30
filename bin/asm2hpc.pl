@@ -153,8 +153,9 @@ sub main { # $ ()
   $parser->{_track_source_ids} = 1 if $listing;
   $response = $parser->from_string( $source_text );
 
-  # sort segments in alphabetic order
   my @segments = @{ $response->{segments} };
+
+  # sort segments in alphabetic order if the --alphabetic option is set
   @segments = sort { $a->{name} cmp $b->{name} } @segments if $alphabetic;
 
   if ( $debug ) {
@@ -981,6 +982,10 @@ Show the full documentation.
 =item B<< -v >>, B<< --version >>
 
 Show the version and author information.
+
+=item B<< -a >>, B<< --alphabetic >>
+
+Alphabetic segment ordering (default source-code segment ordering is used)
 
 =item B<< -j >>, B<< --jumpmark >>
 

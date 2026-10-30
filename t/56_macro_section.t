@@ -38,6 +38,7 @@ ASM
       macro => {
         TEST => {
           arguments => [],
+          lines     => [],
         },
       },
     },
@@ -53,39 +54,22 @@ subtest 'macro section combines header and block' => sub {
   is_deeply(
     $parser->from_string(<<'ASM'),
 MACRO test target
-LOCAL again
-LOCAL retry
+  LOCAL again
+  LOCAL retry
 again:
-GTO again
-RTN
+  GTO again
+  RTN
 ENDM
 ASM
     {
       macro => {
         TEST => {
           arguments => ['TARGET'],
-          locals => ['AGAIN', 'RETRY'],
-          statements => [
-            {
-              label => {
-                type => 'local',
-                name => 'AGAIN',
-              },
-            },
-            {
-              instruction => {
-                value => 'GTO',
-                operand => {
-                  type  => 'local',
-                  value => 'AGAIN',
-                },
-              },
-            },
-            {
-              instruction => {
-                value => 'RTN',
-              },
-            },
+          locals    => ['AGAIN', 'RETRY'],
+          lines     => [
+            'again:',
+            'GTO again',
+            'RTN',
           ],
         },
       },
@@ -121,7 +105,7 @@ subtest 'missing ENDM is rejected' => sub {
   throws_ok {
     $parser->from_string(<<'ASM');
 MACRO test
-RTN
+  RTN
 ASM
   } qr/Expected .+?ENDM/,
     'ENDM is required';

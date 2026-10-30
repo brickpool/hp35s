@@ -65,33 +65,41 @@ subtest 'label names are case-insensitive' => sub {
 
 subtest 'label accepts supported label names' => sub {
   my @valid = (
-    [ 'start:',   'START',   1 ],
-    [ '@shared:', '@SHARED', 1 ],
-    [ '@@local:', '@@LOCAL', 0 ],
-    [ '$2:',      '$2',      1 ],
-    [ 'A00:',     'A00',     1 ],
+    [ 'start:',   'START',   'label' ],
+    [ '@shared:', '@SHARED', 'label' ],
+    [ '@@local:', '@@LOCAL', 'local' ],
+    [ '$2:',      '$2',      'label' ],
+    [ 'A00:',     'A00',     'label' ],
   );
 
   for my $case (@valid) {
-    my ($source, $name, $registered) = @$case;
+    my ($source, $name, $type) = @$case;
     my $parser = ParserTest->new();
 
     is_deeply(
       $parser->from_string("$source\n"),
       {
         label => {
-          type => 'label',
+          type => $type,
           name => $name,
         },
       },
       "$source is accepted",
     );
 
-    is(
-      $parser->{symbols}{$name},
-      $registered ? 'label' : undef,
-      $registered ? "$name is registered" : "$name is unresolved",
-    );
+    if ($type eq 'label') {
+      is(
+        $parser->{symbols}{$name},
+        'label',
+        "$name is registered",
+      );
+    }
+    else {
+      ok(
+        !exists $parser->{symbols}{$name},
+        "$name is unresolved",
+      );
+    }
   }
 };
 

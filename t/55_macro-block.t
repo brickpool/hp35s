@@ -17,19 +17,17 @@ use Parser::HPC;
   sub parse {
     my $self = shift;
 
-    my $name = 'TEST';
-    $self->{_macro}{$name}{arguments} = ['TARGET'];
+    return $self->any_of(
+      sub {
+        $self->commit;
 
-    local $self->{_macro_name} = $name;
-
-    my $result = $self->scope_of(
-      undef,
-      sub { $self->parse_macro_block($name) },
-      qr/(?=ENDM\b)/i,
+        return $self->scope_of(
+          undef,
+          'parse_macro_block',
+          qr/ENDM\b/i,
+        );
+      },
     );
-
-    $self->expect(qr/ENDM\b/i);
-    return $result;
   }
 
   $INC{'ParserTest.pm'} = 1;
@@ -41,97 +39,118 @@ subtest 'empty macro block' => sub {
   my $parser = ParserTest->new();
 
   is_deeply(
-    $parser->from_string("ENDM\n"),
+    $parser->from_string(<<'ASM'),
+ENDM
+ASM
     {
-      statements => [],
+      lines => [],
     },
     'empty block',
   );
 };
 
-subtest 'macro block parses instructions' => sub {
+subtest 'macro block preserves source lines' => sub {
   my $parser = ParserTest->new();
 
   is_deeply(
-    $parser->from_string("RTN\nENDM\n"),
+    $parser->from_string(<<'ASM'),
+  RTN
+  GTO target
+  STO target
+ENDM
+ASM
     {
-      statements => [
-        {
-          instruction => {
-            value => 'RTN',
-          },
-        },
+      lines => [
+        'RTN',
+        'GTO target',
+        'STO target',
       ],
     },
-    'instruction',
+    'macro body remains unparsed source',
   );
 };
 
-subtest 'macro block parses labels and instructions' => sub {
+subtest 'labels remain part of macro source' => sub {
   my $parser = ParserTest->new();
 
   is_deeply(
     $parser->from_string(<<'ASM'),
 again:
-RTN
+  GTO again
 ENDM
 ASM
     {
-      statements => [
-        {
-          label => {
-            type => 'label',
-            name => 'AGAIN',
-          },
-        },
-        {
-          instruction => {
-            value => 'RTN',
-          },
-        },
+      lines => [
+        'again:',
+        'GTO again',
       ],
     },
-    'label and instruction',
+    'label and instruction remain source lines',
   );
 };
 
-subtest 'macro block parses ordinary code constructs' => sub {
+subtest 'label and source may share a line' => sub {
   my $parser = ParserTest->new();
 
   is_deeply(
     $parser->from_string(<<'ASM'),
-again: RTN
+again: GTO again
 ENDM
 ASM
     {
-      statements => [
-        {
-          label => {
-            type => 'label',
-            name => 'AGAIN',
-          },
-        },
-        {
-          instruction => {
-            value => 'RTN',
-          },
-        },
+      lines => [
+        'again: GTO again',
       ],
     },
-    'label and instruction may share a line',
+    'complete physical macro line is preserved',
   );
 };
 
-subtest 'illegal macro block instruction is rejected' => sub {
+subtest 'macro body is not validated as HPC syntax' => sub {
   my $parser = ParserTest->new();
 
-  throws_ok {
-    $parser->from_string(<<'ASM');
-UNKNOWN statement
+  is_deeply(
+    $parser->from_string(<<'ASM'),
+name "message"
+  STO target
+  MOV AX,jmp
 ENDM
 ASM
-  } qr/Illegal instruction/,
-    'illegal instruction';
+    {
+      lines => [
+        'name "message"',
+        'STO target',
+        'MOV AX,jmp',
+      ],
+    },
+    'macro syntax is validated only after substitution',
+  );
+};
+
+subtest 'LOCAL declarations are collected and flattened' => sub {
+  my $parser = ParserTest->new();
+
+  is_deeply(
+    $parser->from_string(<<'ASM'),
+  LOCAL again
+  LOCAL retry, fallback
+again:
+  GTO retry
+ENDM
+ASM
+    {
+      locals => [
+        'AGAIN',
+        'RETRY',
+        'FALLBACK',
+      ],
+      lines => [
+        'again:',
+        'GTO retry',
+      ],
+    },
+    'LOCAL declarations are separated from macro source',
+  );
 };
 
 subtest 'invalid LOCAL declarations fail inside macro block' => sub {
@@ -139,7 +158,7 @@ subtest 'invalid LOCAL declarations fail inside macro block' => sub {
 
   throws_ok {
     $parser->from_string(<<'ASM');
-LOCAL again,
+  LOCAL again,
 ENDM
 ASM
   } qr/Illegal local argument/,
@@ -149,132 +168,36 @@ ASM
 
   throws_ok {
     $parser->from_string(<<'ASM');
-LOCAL again
-LOCAL retry,
+  LOCAL again
+  LOCAL retry,
 ENDM
 ASM
   } qr/Illegal local argument/,
     'error in later LOCAL declaration is preserved';
+
   is(
     $@->{pos},
-    index($parser->{str}, ',') + 1,
+    index($parser->{str}, 'LOCAL retry,') + length('LOCAL retry,'),
     'failure position points after comma',
   );
 };
 
-subtest 'LOCAL declarations must precede macro statements' => sub {
+subtest 'LOCAL declarations must precede macro source' => sub {
   my $parser = ParserTest->new();
 
   throws_ok {
     $parser->from_string(<<'ASM');
-RTN
-LOCAL again
+  RTN
+  LOCAL again
 ENDM
 ASM
-  } qr/Illegal instruction/,
-    'LOCAL after first macro statement is rejected';
+  } qr/Unexpected LOCAL in macro line/,
+    'LOCAL after first macro line is rejected';
 
   is(
     $@->{pos},
-    index($parser->{str}, 'LOCAL'),
+    index($parser->{str}, 'LOCAL again'),
     'failure position points to LOCAL',
-  );
-};
-
-subtest 'macro dummy is classified in address operand' => sub {
-  my $parser = ParserTest->new();
-
-  $parser->{_macro}{TEST}{arguments} = ['TARGET'];
-
-  is_deeply(
-    $parser->from_string(<<'ASM'),
-GTO target
-ENDM
-ASM
-    {
-      statements => [
-        {
-          instruction => {
-            value   => 'GTO',
-            operand => {
-              type  => 'dummy',
-              value => 'TARGET',
-            },
-          },
-        },
-      ],
-    },
-    'GTO operand is classified as a macro dummy',
-  );
-};
-
-subtest 'macro LOCAL wins over dummy in address context' => sub {
-  my $parser = ParserTest->new();
-
-  $parser->{_macro}{TEST}{arguments} = ['TARGET'];
-
-  is_deeply(
-    $parser->from_string(<<'ASM'),
-LOCAL target
-GTO target
-ENDM
-ASM
-    {
-      locals => ['TARGET'],
-      statements => [
-        {
-          instruction => {
-            value   => 'GTO',
-            operand => {
-              type  => 'local',
-              value => 'TARGET',
-            },
-          },
-        },
-      ],
-    },
-    'LOCAL wins over dummy for an address operand',
-  );
-};
-
-subtest 'macro dummy wins over LOCAL in non-address operand' => sub {
-  my $parser = ParserTest->new();
-
-  $parser->{_macro}{TEST} = {
-    arguments => ['TARGET'],
-  };
-
-  is_deeply(
-    $parser->from_string(<<'ASM'),
-  LOCAL target
-  STO target
-  VIEW target
-ENDM
-ASM
-    {
-      locals => ['TARGET'],
-      statements => [
-        {
-          instruction => {
-            value   => 'STO',
-            operand => {
-              type  => 'dummy',
-              value => 'TARGET',
-            },
-          },
-        },
-        {
-          instruction => {
-            value   => 'VIEW',
-            operand => {
-              type  => 'dummy',
-              value => 'TARGET',
-            },
-          },
-        },
-      ],
-    },
-    'STO and VIEW operands use dummy instead of macro LOCAL',
   );
 };
 

@@ -21,6 +21,8 @@ WriteMakefile(
     'warnings'            => 1.09,
     'Exporter'            => 5.6401,
     'Parser::MGC'         => 0.16,
+    'Text::Balanced'      => 1.76,
+    'Storable'            => 2.27,
   },
   LICENSE             => 'mit',
 
